@@ -1,0 +1,23 @@
+#!/bin/bash
+
+DIRECTORY=$(cd `dirname $0` && pwd)
+CONFIG_FILE=$(cd `dirname $0` && pwd)/config.txt
+source ${DIRECTORY}/config.txt
+
+echo "Build Type = ${BUILD_TYPE}"
+
+ARGUMENTS="-DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DARCH=${ARCH}"
+
+if [ "$TARGET" = exe ]; then
+  ARGUMENTS="-DEXECUTABLE=1 ${ARGUMENTS}" 
+fi
+
+if [ "$ARCH" = ARM ]; then
+  ARGUMENTS="${ARGUMENTS} -DCMAKE_TOOLCHAIN_FILE=${DIRECTORY}/targets/tegra_toolchain.cmake"
+fi
+
+if [ -n ${INSTALL+x} ]; then
+  ARGUMENTS="${ARGUMENTS} -DCMAKE_INSTALL_PREFIX=${INSTALL}"
+fi
+
+${CMAKE} ${ARGUMENTS} ${DIRECTORY}
