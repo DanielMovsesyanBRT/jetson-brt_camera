@@ -44,17 +44,15 @@ int main(int argc, char **argv)
 
   std::vector<int> ids;
 
-  std::vector<std::string> cameras = meta_args.matching_keys("camera\\d");
+  std::vector<std::string> cameras = meta_args.matching_keys("device\\d");
   for (auto camera : cameras)
   {
     std::cout << "Loading device " << camera << std::endl;
     int id = strtol(camera.substr(6).c_str(),nullptr,0);
-    uint8_t deserializer_id = static_cast<uint8_t>(id >> 1);
-    uint8_t camera_id = static_cast<uint8_t>(id & 1);
 
     std::string script_file = meta_args.get<std::string>(camera.c_str(),"");
 
-    auto device = brt::jupiter::CameraManager::get()->get_device(MAKE_CAM_ID(deserializer_id, camera_id));
+    auto device = brt::jupiter::CameraManager::get()->get_device(id);
     if (device != nullptr)
     {
       device->load_script(script_file.c_str());
