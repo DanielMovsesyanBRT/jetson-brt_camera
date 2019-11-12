@@ -30,6 +30,7 @@
 #define DRIVER_NAME                         ("/dev/brt_camera")
 
 #define MAX_DATA_SIZE                       (256)
+#define CAMERA_NAME_LEN                     (32)
 
 /*
  * \\struct brt_camera_bulk
@@ -48,24 +49,24 @@ struct brt_camera_xfer
   uint8_t                         _data[MAX_DATA_SIZE];
 };
 
+
 /*
- * \\struct brt_camera_activate
+ * \\struct brt_camera_name
  *
- * created on: Nov 5, 2019
+ * created on: Nov 12, 2019
  *
  */
-struct brt_camera_activate
+struct brt_camera_name
 {
   uint8_t                         _deser_id;
   uint8_t                         _camera_id;
+  char                            _name[CAMERA_NAME_LEN];
 };
 
-
-#define BRT_CAMERA_TRIGGER_ONOFF            _IOW('B',   0, int)
-#define BRT_CAMERA_ACTIVATE_CAMERA          _IOW('B',   1, struct brt_camera_activate)
-#define BRT_CAMERA_STOP_CAMERA              _IOW('B',   2, struct brt_camera_activate)
-#define BRT_CAMERA_WRITE                    _IOW('B',   3, struct brt_camera_xfer)
-#define BRT_CAMERA_READ                     _IOWR('B',  4, struct brt_camera_xfer)
+#define BRT_CAMERA_TRIGGER_ONOFF            _IOW('B',  0, int)
+#define BRT_CAMERA_GET_NAME                 _IOR('B',  1, struct brt_camera_name)
+#define BRT_CAMERA_WRITE                    _IOW('B',  3, struct brt_camera_xfer)
+#define BRT_CAMERA_READ                     _IOR('B',  4, struct brt_camera_xfer)
 
 
 namespace brt

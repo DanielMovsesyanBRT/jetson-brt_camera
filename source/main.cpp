@@ -44,18 +44,18 @@ int main(int argc, char **argv)
 
   std::vector<int> ids;
 
-  std::vector<std::string> cameras = meta_args.matching_keys("device\\d");
-  for (auto camera : cameras)
+  std::vector<std::string> devices = meta_args.matching_keys("device\\d");
+  for (auto device : devices)
   {
-    std::cout << "Loading device " << camera << std::endl;
-    int id = strtol(camera.substr(6).c_str(),nullptr,0);
+    std::cout << "Loading device " << device << std::endl;
+    int id = strtol(device.substr(6).c_str(),nullptr,0);
 
-    std::string script_file = meta_args.get<std::string>(camera.c_str(),"");
+    std::string script_file = meta_args.get<std::string>(device.c_str(),"");
 
-    auto device = brt::jupiter::CameraManager::get()->get_device(id);
-    if (device != nullptr)
+    auto deserializer = brt::jupiter::CameraManager::get()->get_device(id);
+    if (deserializer != nullptr)
     {
-      device->load_script(script_file.c_str());
+      deserializer->load_script(script_file.c_str());
       ids.push_back(id);
     }
   }
@@ -77,35 +77,7 @@ int main(int argc, char **argv)
     std::cin.getline(buffer, sizeof(buffer));
     line = buffer;
 
-    if (Utils::stristr(line, "activate") == 0)
-    {
-      line = line.substr(8);
-      int cam_id = strtoul(line.c_str(),nullptr,0);
-
-      Deserializer* des = CameraManager::get()->get_device(cam_id >> 1);
-      if (des != nullptr)
-      {
-        Camera* cam = des->get_camera(cam_id & 1);
-        if (cam != nullptr)
-          cam->activate();
-      }
-    }
-
-    else if (Utils::stristr(line, "release") == 0)
-    {
-      line = line.substr(7);
-      int cam_id = strtoul(line.c_str(),nullptr,0);
-
-      Deserializer* des = CameraManager::get()->get_device(cam_id >> 1);
-      if (des != nullptr)
-      {
-        Camera* cam = des->get_camera(cam_id & 1);
-        if (cam != nullptr)
-          cam->activate(false);
-      }
-    }
-
-    else if (Utils::stristr(line, "run") == 0)
+    if (Utils::stristr(line, "run") == 0)
     {
       line = line.substr(3);
       int cam_id = strtoul(line.c_str(),nullptr,0);
@@ -120,12 +92,12 @@ int main(int argc, char **argv)
           {
             if (wnd == nullptr)
             {
-              wnd = wm::get()->create_window("Video Streaming", 2,
+              wnd = wm::get()->create_window("Video Streaming", devices.size() * 2,
                     cam->format()->fmt.pix.width,
                     cam->format()->fmt.pix.height);
             }
 
-            wnd->create_subwnd(cam_id & 1, 0, cam);
+            wnd->create_subwnd(cam_id & 1, cam_id >> 1, cam);
           }
         }
       }

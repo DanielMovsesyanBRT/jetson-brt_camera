@@ -38,8 +38,6 @@ public:
   Camera(Deserializer* owner,int id);
   virtual ~Camera();
 
-          bool                    activate(bool = true);
-          bool                    is_active() const { return _active; }
           int                     id() const { return _id; }
 
           bool                    start_streaming();
@@ -79,7 +77,6 @@ private:
   Deserializer*                   _owner;
   int                             _id;
   bool                            _active;
-  int                             _video_id;
   std::string                     _device_name;
   int                             _handle;
 

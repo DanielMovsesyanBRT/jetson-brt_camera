@@ -37,7 +37,6 @@ Camera::Camera(Deserializer* owner,int id)
 : _owner (owner)
 , _id(id)
 , _active(false)
-, _video_id(0)
 , _device_name()
 , _handle(-1)
 , _terminate(false)
@@ -47,6 +46,18 @@ Camera::Camera(Deserializer* owner,int id)
 , _buffers(nullptr)
 , _n_buffers(0)
 {
+  brt_camera_name video_name;
+  video_name._deser_id = owner->id();
+  video_name._camera_id = id;
+
+  if (ioctl(CameraManager::get()->handle(),BRT_CAMERA_GET_NAME,(unsigned long)&video_name) < 0)
+    std::cerr << "Name extraction error " << errno << std::endl;
+
+  else
+  {
+    if (strlen(video_name._name) > 0)
+      _device_name = Utils::string_format("/dev/%s", video_name._name);
+  }
 }
 
 /*
@@ -62,71 +73,6 @@ Camera::~Camera()
 }
 
 /*
- * \\fn bool bool Camera::activate
- *
- * created on: Nov 8, 2019
- * author: daniel
- *
- */
-bool Camera::activate(bool active /*= true*/)
-{
-  if (active == is_active())
-    return true;
-
-  brt_camera_activate activate;
-  activate._deser_id = _owner->id();
-  activate._camera_id = _id;
-
-  if (active)
-  {
-    if (ioctl(CameraManager::get()->handle(),BRT_CAMERA_ACTIVATE_CAMERA,(unsigned long)&activate) < 0)
-    {
-      std::cerr << "Read error " << errno << std::endl;
-      return false;
-    }
-
-    int camera_video_id = -1;
-
-    // Check latest video index
-    DIR* devdir = opendir("/dev");
-    if (devdir == nullptr)
-      return false;
-
-    struct dirent *dp;
-    while ((dp = readdir(devdir)) != nullptr)
-    {
-      if ( ((dp->d_type == DT_BLK) || (dp->d_type == DT_CHR)) &&
-            (strstr(dp->d_name,"video") == dp->d_name))
-      {
-        int video_id = strtol(&dp->d_name[5],nullptr,0);
-        camera_video_id = std::max(camera_video_id,video_id);
-      }
-    }
-    closedir(devdir);
-
-    if (camera_video_id >= 0)
-    {
-      _video_id = camera_video_id;
-      _device_name = Utils::string_format("/dev/video%d", _video_id);
-    }
-  }
-  else
-  {
-    stop_streaming();
-
-    if (ioctl(CameraManager::get()->handle(),BRT_CAMERA_STOP_CAMERA,(unsigned long)&activate) < 0)
-    {
-      std::cerr << "Read error " << errno << std::endl;
-      return false;
-    }
-  }
-
-  _active = active;
-  return true;
-}
-
-
-/*
  * \\fn bool Camera::start_streaming
  *
  * created on: Nov 8, 2019
@@ -135,6 +81,8 @@ bool Camera::activate(bool active /*= true*/)
  */
 bool Camera::start_streaming()
 {
+  std::cout << "Start streaming " << _device_name << std::endl;
+
   if (_thread.joinable())
     return false;
 
