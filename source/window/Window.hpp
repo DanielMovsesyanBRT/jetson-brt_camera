@@ -44,6 +44,7 @@ public:
           ::Window                handle() const { return _hndl; }
 
           size_t                  create_subwnd(int col,int row, image::ImageProducer* ip);
+
   virtual void                    consume(image::ImageBox);
           size_t                  rows() const { return _rows; }
           size_t                  cols() const { return _cols; }

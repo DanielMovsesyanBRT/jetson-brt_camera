@@ -63,8 +63,22 @@ struct brt_camera_name
   char                            _name[CAMERA_NAME_LEN];
 };
 
+/*
+ * \\struct brt_camera_trigger
+ *
+ * created on: Nov 12, 2019
+ *
+ */
+struct brt_camera_trigger
+{
+  int                             _pwm_period; //ms
+  int                             _duty_period;
+};
+
 #define BRT_CAMERA_TRIGGER_ONOFF            _IOW('B',  0, int)
-#define BRT_CAMERA_GET_NAME                 _IOR('B',  1, struct brt_camera_name)
+#define BRT_CAMERA_TRIGGER_SET_PWM          _IOW('B',  1, struct brt_camera_trigger)
+
+#define BRT_CAMERA_GET_NAME                 _IOR('B',  2, struct brt_camera_name)
 #define BRT_CAMERA_WRITE                    _IOW('B',  3, struct brt_camera_xfer)
 #define BRT_CAMERA_READ                     _IOR('B',  4, struct brt_camera_xfer)
 

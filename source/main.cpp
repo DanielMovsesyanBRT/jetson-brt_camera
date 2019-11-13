@@ -14,6 +14,7 @@
 
 
 
+#include <map>
 #include <iostream>
 #include <string>
 
@@ -42,8 +43,18 @@ int main(int argc, char **argv)
 
   brt::jupiter::Metadata meta_args = args.get_as_metadata();
 
-  std::vector<int> ids;
+  double frame_rate = brt::jupiter::Utils::frame_rate(meta_args.get<std::string>("frame_rate","10fps").c_str());
+  std::cout << "Setting trigger to " << frame_rate << "fps" << std::endl;
+  brt_camera_trigger trg;
 
+  trg._pwm_period = (int)(frame_rate * 1000);
+  trg._duty_period = 5; //ms
+
+  if (::ioctl(brt::jupiter::CameraManager::get()->handle(),BRT_CAMERA_TRIGGER_SET_PWM,(unsigned long)&trg))
+    std::cerr << "Unable to set trigger error:" << errno << std::endl;
+
+
+  std::vector<int> ids;
   std::vector<std::string> devices = meta_args.matching_keys("device\\d");
   for (auto device : devices)
   {
@@ -62,14 +73,10 @@ int main(int argc, char **argv)
 
   char buffer[1024];
   std::string line;
-
-//  double frame_rate = brt::jupiter::Utils::frame_rate(meta_args.get<std::string>("frame_rate","10fps").c_str());
-//  std::cout << "Setting trigger to " << frame_rate << "fps" << std::endl;
-
-//  brt::jupiter::Trigger* tr = new brt::jupiter::Trigger(frame_rate);
-
   window::Window *wnd = nullptr;
 
+  std::map<Camera*,uint16_t>  camera_pos_map;
+  uint8_t row = 0, col = 0;
 
   do
   {
@@ -97,7 +104,17 @@ int main(int argc, char **argv)
                     cam->format()->fmt.pix.height);
             }
 
-            wnd->create_subwnd(cam_id & 1, cam_id >> 1, cam);
+            if (camera_pos_map.find(cam) == camera_pos_map.end())
+            {
+              wnd->create_subwnd(col, row, cam);
+              camera_pos_map[cam] = (col << 8) | row;
+
+              if (++col >= wnd->cols())
+              {
+                col = 0;
+                row++;
+              }
+            }
           }
         }
       }

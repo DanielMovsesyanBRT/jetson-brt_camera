@@ -10,10 +10,6 @@
 #include "Utils.hpp"
 #include "Image.hpp"
 
-//#include <opencv2/core/core.hpp>
-//#include <opencv2/highgui/highgui.hpp>
-//#include <opencv2/imgproc.hpp>
-
 #include "cuda_debayering.h"
 
 #include <iostream>
@@ -177,6 +173,7 @@ size_t Window::create_subwnd(int col,int row, image::ImageProducer* ip)
 
   return result;
 }
+
 
 /*
  * \\fn void Window::consume
