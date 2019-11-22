@@ -164,8 +164,8 @@ struct LShowImageEvent : public LWindowEvent
 
   virtual bytestream              serialize()
   {
-    bytestream result = LEvent::serialize();
-    result << _id << _wnd;
+    bytestream result = LWindowEvent::serialize();
+    result << _id;
     return result;
   }
 

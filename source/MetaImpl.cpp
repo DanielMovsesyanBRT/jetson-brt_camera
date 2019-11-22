@@ -78,6 +78,47 @@ void MetaImpl::add(const MetaImpl* params)
   }
 }
 
+/*
+ * \\fn void MetaImpl::parse
+ *
+ * created on: Nov 22, 2019
+ * author: daniel
+ *
+ */
+void MetaImpl::parse(int argc,char** argv)
+{
+  for (int index = 1; index < argc; index++)
+  {
+    if (strstr(argv[index],"--") == argv[index])
+    {
+      const char *arg = &(argv[index][2]);
+      const char *eq = strstr(arg,"=");
+      std::string value;
+      std::string name;
+
+      if (eq == nullptr)
+      {
+        name = arg;
+        value = "1";
+      }
+      else
+      {
+        name = std::string (arg,eq - arg);
+        value = (eq + 1);
+      }
+      set(name.c_str(),value.c_str());
+    }
+
+    else if (strstr(argv[index],"-") == argv[index])
+    {
+      set(&(argv[index][1]),"1");
+    }
+    else
+    {
+      set(argv[index],"true");
+    }
+  }
+}
 
 /*
  * \\fn std::string std::string MetaImpl::to_string

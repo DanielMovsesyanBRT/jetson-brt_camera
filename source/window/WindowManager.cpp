@@ -231,7 +231,7 @@ void WindowManager::post_message(const bytestream& msg)
 void WindowManager::x_loop()
 {
   XSetErrorHandler(x_error_handler);
-  _display = XOpenDisplay(nullptr);//_default_display.c_str());//nullptr);
+  _display = XOpenDisplay(_default_display.c_str());
   if (_display == nullptr)
   {
     std::cerr << "Error: cannot open display " << std::endl;

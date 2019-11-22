@@ -60,11 +60,11 @@ find_library(GL REQUIRED
         PATHS ${LD_PATH})
 
 set(SOURCES 
-  source/cuda_debayering/src/cuda_debayering.cu
+ source/cuda_debayering/src/cuda_debayering.cu
 
   source/device/Camera.cpp
-  source/device/CameraManager.cpp
   source/device/Deserializer.cpp
+  source/device/DeviceManager.cpp
   source/device/ScriptAction.cpp
   source/device/ScriptFile.cpp
   
@@ -78,7 +78,7 @@ set(SOURCES
   source/window/window.cpp
   source/window/window_manager.cpp
   
-  source/Args.cpp
+#  source/Args.cpp
   source/Metadata.cpp
   source/MetaImpl.cpp
  # source/Trigger.cpp
@@ -115,7 +115,6 @@ target_include_directories(${PROJECT_NAME}
                               "script")
                               # ${FLTK_INCLUDE_DIRS})
                               
-# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
 target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL})
 
 #if (ARCH EQUAL ARCH_ARM)

@@ -5,7 +5,7 @@
 #include "ScriptAction.hpp"
 #ifdef HARDWARE
 #include "Deserializer.hpp"
-#include "CameraManager.hpp"
+#include "DeviceManager.hpp"
 #endif
 
 #include <string.h>

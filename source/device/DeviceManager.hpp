@@ -5,8 +5,8 @@
  *      Author: daniel
  */
 
-#ifndef SOURCE_DEVICE_CAMERAMANAGER_HPP_
-#define SOURCE_DEVICE_CAMERAMANAGER_HPP_
+#ifndef SOURCE_DEVICE_DEVICEMANAGER_HPP_
+#define SOURCE_DEVICE_DEVICEMANAGER_HPP_
 
 #include <unordered_map>
 #include <linux/i2c-dev.h>
@@ -118,4 +118,4 @@ private:
 } /* namespace jupiter */
 } /* namespace brt */
 
-#endif /* SOURCE_DEVICE_CAMERAMANAGER_HPP_ */
+#endif /* SOURCE_DEVICE_DEVICEMANAGER_HPP_ */

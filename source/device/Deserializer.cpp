@@ -6,11 +6,11 @@
  */
 
 #include "Deserializer.hpp"
-#include "CameraManager.hpp"
 #include "Utils.hpp"
 #include "Camera.hpp"
 
 #include <iostream>
+#include "DeviceManager.hpp"
 
 namespace brt
 {

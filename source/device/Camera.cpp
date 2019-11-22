@@ -7,7 +7,6 @@
 
 #include "Camera.hpp"
 #include "Deserializer.hpp"
-#include "CameraManager.hpp"
 #include "Utils.hpp"
 
 #include <iostream>
@@ -20,6 +19,7 @@
 
 #include <dirent.h>
 #include <string.h>
+#include "DeviceManager.hpp"
 
 namespace brt
 {

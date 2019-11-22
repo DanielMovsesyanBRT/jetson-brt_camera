@@ -4,9 +4,9 @@
  *
  *
  */
-#include "Args.hpp"
+//#include "Args.hpp"
 #include "Utils.hpp"
-#include "CameraManager.hpp"
+#include "DeviceManager.hpp"
 #include "Deserializer.hpp"
 #include "Camera.hpp"
 
@@ -38,15 +38,10 @@ using namespace brt::jupiter;
  */
 int main(int argc, char **argv)
 {
-  if (!ar::get().parse(argc,(const char**)argv))
-  {
-    std::cout << "Not enough arguments" << std::endl << ar::get().help();
-    return 1;
-  }
-
   wm::get()->init();
 
-  brt::jupiter::Metadata meta_args = ar::get().get_as_metadata();
+  brt::jupiter::Metadata meta_args;
+  meta_args.parse(argc,argv);
 
   double frame_rate = brt::jupiter::Utils::frame_rate(meta_args.get<std::string>("frame_rate","10fps").c_str());
   std::cout << "Setting trigger to " << frame_rate << "fps" << std::endl;
@@ -76,7 +71,6 @@ int main(int argc, char **argv)
     }
   }
 
-
   // Check Displays
 
 
@@ -88,7 +82,7 @@ int main(int argc, char **argv)
 
   for (auto device : devices)
   {
-    std::cout << "Activating cameras" << device << std::endl;
+    std::cout << "Activating cameras " << device << std::endl;
     int id = strtol(device.substr(6).c_str(),nullptr,0);
 
     Deserializer* des = DeviceManager::get()->get_device(id);
@@ -132,19 +126,21 @@ int main(int argc, char **argv)
 
   if (wnd != nullptr)
     wnd->show(nullptr);
-
-//
-//
+    
+    
   char buffer[1024];
   std::string line;
-//
-//
+  //window::Window *wnd = nullptr;
+
+  //std::map<Camera*,uint16_t>  camera_pos_map;
+  //uint8_t row = 0, col = 0;
+
   do
   {
     std::cout << "T.... :" << line << ":" << std::endl;
     std::cin.getline(buffer, sizeof(buffer));
     line = buffer;
-//
+
 //    if (Utils::stristr(line, "run") == 0)
 //    {
 //      line = line.substr(3);
@@ -196,7 +192,7 @@ int main(int argc, char **argv)
 //        }
 //      }
 //    }
-//
+
   } while (line != "q");
 
   wm::get()->release();
