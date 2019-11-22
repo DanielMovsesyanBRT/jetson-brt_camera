@@ -72,6 +72,6 @@ private:
 } /* namespace jupiter */
 } /* namespace brt */
 
-#define args                    (brt::jupiter::Args::get())
+using arguments = brt::jupiter::Args;
 
 #endif /* JUPITER_IPP_INCLUDE_ARGS_HPP_ */

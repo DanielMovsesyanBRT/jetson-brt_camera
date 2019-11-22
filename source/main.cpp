@@ -4,7 +4,7 @@
  *
  *
  */
-#include "Args.hpp"
+//#include "Args.hpp"
 #include "Utils.hpp"
 #include "DeviceManager.hpp"
 #include "Deserializer.hpp"
@@ -38,15 +38,10 @@ using namespace brt::jupiter;
  */
 int main(int argc, char **argv)
 {
-  if (!args.parse(argc,(const char**)argv))
-  {
-    std::cout << "Not enough arguments" << std::endl << args.help();
-    return 1;
-  }
-
   wm::get()->init();
 
-  brt::jupiter::Metadata meta_args = args.get_as_metadata();
+  brt::jupiter::Metadata meta_args;
+  meta_args.parse(argc,argv);
 
   double frame_rate = brt::jupiter::Utils::frame_rate(meta_args.get<std::string>("frame_rate","10fps").c_str());
   std::cout << "Setting trigger to " << frame_rate << "fps" << std::endl;

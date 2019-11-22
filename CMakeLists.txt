@@ -62,7 +62,7 @@ set(SOURCES
   source/window/window.cpp
   source/window/window_manager.cpp
   
-  source/Args.cpp
+#  source/Args.cpp
   source/Metadata.cpp
   source/MetaImpl.cpp
 #  source/Trigger.cpp

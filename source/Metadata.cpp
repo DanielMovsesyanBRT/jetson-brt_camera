@@ -200,6 +200,18 @@ template<> Metadata::byte_buffer Metadata::get_at<Metadata::byte_buffer>(const c
 }
 
 /*
+ * \\fn void Metadata::parse
+ *
+ * created on: Nov 22, 2019
+ * author: daniel
+ *
+ */
+void Metadata::parse(int argc,char** argv)
+{
+  _impl->parse(argc,argv);
+}
+
+/*
  * \\fn bool Metadata::exist
  *
  * created on: May 17, 2019

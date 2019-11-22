@@ -80,6 +80,7 @@ public:
   template<typename T> T          get(const char* key,T default_value = default_arg<T>::get()) const;
   template<typename T> T          get_at(const char* key,size_t index, const T& default_value = default_arg<T>::get());
 
+        void                      parse(int argc,char** argv);
         bool                      exist(const char *key) const;
         void                      erase(const char *key);
         

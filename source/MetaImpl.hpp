@@ -140,6 +140,7 @@ public:
     return result;
   }
 
+        void                      parse(int argc,char** argv);
         bool                      exist(const char *key) const { return (_meta_data != nullptr) ? (_meta_data->find(key) != _meta_data->end()) : false; }
         void                      erase(const char *key) { if (_meta_data != nullptr) _meta_data->erase(key); }
 
