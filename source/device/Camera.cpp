@@ -50,7 +50,7 @@ Camera::Camera(Deserializer* owner,int id)
   video_name._deser_id = owner->id();
   video_name._camera_id = id;
 
-  if (ioctl(CameraManager::get()->handle(),BRT_CAMERA_GET_NAME,(unsigned long)&video_name) < 0)
+  if (ioctl(DeviceManager::get()->handle(),BRT_CAMERA_GET_NAME,(unsigned long)&video_name) < 0)
     std::cerr << "Name extraction error " << errno << std::endl;
 
   else

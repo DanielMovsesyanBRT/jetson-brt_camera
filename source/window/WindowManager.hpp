@@ -70,6 +70,8 @@ private:
 
 private:
   static WindowManager            _object;
+  std::string                     _default_display;
+
   Display*                        _display;
 
   int                             _blackColor;

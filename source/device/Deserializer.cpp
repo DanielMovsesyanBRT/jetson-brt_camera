@@ -55,7 +55,7 @@ Deserializer::~Deserializer()
 bool Deserializer::read(uint8_t address, uint16_t offset, size_t offset_size, uint8_t* buffer, size_t size)
 {
   int ret = 0;
-  if (CameraManager::get()->handle() == INVALID_DEVICE_HANDLE)
+  if (DeviceManager::get()->handle() == INVALID_DEVICE_HANDLE)
     return false;
 
   brt_camera_xfer xfer;
@@ -65,7 +65,7 @@ bool Deserializer::read(uint8_t address, uint16_t offset, size_t offset_size, ui
   xfer._register_address = offset;
   xfer._data_size = static_cast<uint16_t>(size);
 
-  if ((ret = ioctl(CameraManager::get()->handle(),BRT_CAMERA_READ,(unsigned long)&xfer)) < 0)
+  if ((ret = ioctl(DeviceManager::get()->handle(),BRT_CAMERA_READ,(unsigned long)&xfer)) < 0)
   {
     std::cerr << "Read error " << errno << std::endl;
     return false;
@@ -85,7 +85,7 @@ bool Deserializer::read(uint8_t address, uint16_t offset, size_t offset_size, ui
 bool Deserializer::write(uint8_t address, uint16_t offset, size_t offset_size, const uint8_t* buffer, size_t size)
 {
   int ret = 0;
-  if (CameraManager::get()->handle() == INVALID_DEVICE_HANDLE)
+  if (DeviceManager::get()->handle() == INVALID_DEVICE_HANDLE)
     return false;
 
   brt_camera_xfer xfer;
@@ -96,7 +96,7 @@ bool Deserializer::write(uint8_t address, uint16_t offset, size_t offset_size, c
   xfer._data_size = static_cast<uint16_t>(size);
   memcpy(xfer._data,buffer,size);
 
-  if ((ret = ioctl(CameraManager::get()->handle(),BRT_CAMERA_WRITE,(unsigned long)&xfer)) < 0)
+  if ((ret = ioctl(DeviceManager::get()->handle(),BRT_CAMERA_WRITE,(unsigned long)&xfer)) < 0)
   {
     std::cerr << "Read error " << errno << std::endl;
     return false;

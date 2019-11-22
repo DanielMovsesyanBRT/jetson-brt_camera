@@ -14,7 +14,7 @@ namespace brt
 namespace jupiter
 {
 
-CameraManager CameraManager::_object;
+DeviceManager DeviceManager::_object;
 
 /*
  * \\class Constructor CameraManager::CameraManager
@@ -22,7 +22,7 @@ CameraManager CameraManager::_object;
  * created on: Aug 19, 2019
  *
  */
-CameraManager::CameraManager()
+DeviceManager::DeviceManager()
 {
   _brt_handle = ::open(DRIVER_NAME, O_RDWR);
 }
@@ -34,7 +34,7 @@ CameraManager::CameraManager()
  * author: daniel
  *
  */
-CameraManager::~CameraManager()
+DeviceManager::~DeviceManager()
 {
   while (_device_map.size())
   {
@@ -53,7 +53,7 @@ CameraManager::~CameraManager()
  * author: daniel
  *
  */
-Deserializer* CameraManager::get_device(uint16_t id)
+Deserializer* DeviceManager::get_device(uint16_t id)
 {
   device_map_type::iterator iter = _device_map.find(id);
   if (iter != _device_map.end())

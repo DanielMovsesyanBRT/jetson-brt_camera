@@ -9,6 +9,7 @@
 #include <string>
 #include <memory>
 #include <atomic>
+#include <vector>
 
 #include <stdlib.h>
 #include <stdint.h>
@@ -113,6 +114,18 @@ private:
 };
 
 
+/*
+ * \\enum DisplayType
+ *
+ * created on: Nov 19, 2019
+ *
+ */
+enum DisplayType
+{
+  eLocalDisplays = 1,
+  eRemoteDisplay = 2,
+  eAllDisplays = eLocalDisplays | eRemoteDisplay
+};
 
 /**
  *
@@ -135,6 +148,10 @@ public:
   static const char*              stristr(const char* src,const char* dst,size_t len = (size_t)-1);
   static size_t                   stristr(const std::string& src,const char* dst,size_t len = (size_t)-1);
   static double                   frame_rate(const char* fr_string);
+
+  static  std::vector<std::string>
+                                  enumerate_displays(DisplayType = eAllDisplays);
+
 };
 
 } // jupiter
