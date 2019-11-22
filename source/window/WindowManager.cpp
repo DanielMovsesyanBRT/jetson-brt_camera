@@ -7,6 +7,7 @@
 
 #include "WindowManager.hpp"
 #include "Window.hpp"
+#include "Utils.hpp"
 
 #include <iostream>
 #include <algorithm>
@@ -67,6 +68,60 @@ void WindowManager::init()
   if (_display != nullptr)
     return;
 
+  XInitThreads();
+  // Check for default display
+  char* display_name = getenv("DISPLAY");
+  //if ((display_name == nullptr) || (strlen(display_name) == 0))
+  {
+    std::vector<std::string> displays = Utils::enumerate_displays();
+    if (displays.size() == 0)
+    {
+      if ((display_name == nullptr) || (strlen(display_name) == 0))
+        _default_display = display_name;
+    }
+
+    else if (displays.size() == 1)
+    {
+      _default_display = displays[0];
+    }
+    else
+    {
+      char buffer[1024];
+      std::string line;
+      int id;
+
+      do
+      {
+        std::cout << "Please select default display " << std::endl;
+
+        for (size_t index = 0; index < displays.size(); index++)
+        {
+          std::cout << (index + 1) << ") " << displays[index];
+          if ((display_name != nullptr) && (displays[index].compare(display_name) == 0))
+            std::cout << "[default]";
+
+          std::cout << std::endl;
+        }
+
+        std::cin >> id;
+        if ((id < 1) || (id > displays.size()))
+        {
+          if ((display_name == nullptr) || (strlen(display_name) == 0))
+          {
+            _default_display = display_name;
+            break;
+          }
+
+          std::cout << "Invalid entry" << std::endl;
+        }
+      }
+      while((id < 1) || (id > displays.size()));
+
+      if ((id >= 1) && (id <= displays.size()))
+        _default_display = displays[id - 1];
+    }
+  }
+
   // Messaging Pipe
   pipe(_pipe);
 
@@ -75,8 +130,6 @@ void WindowManager::init()
     winm->x_loop();
   },this);
 
-
-//  XInitThreads();
 }
 
 /*
@@ -178,7 +231,7 @@ void WindowManager::post_message(const bytestream& msg)
 void WindowManager::x_loop()
 {
   XSetErrorHandler(x_error_handler);
-  _display = XOpenDisplay(nullptr);
+  _display = XOpenDisplay(_default_display.c_str());
   if (_display == nullptr)
   {
     std::cerr << "Error: cannot open display " << std::endl;

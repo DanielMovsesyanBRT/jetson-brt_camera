@@ -5,8 +5,19 @@
 #include <cstdio>
 #include "Utils.hpp"
 
+#include <dirent.h>
+#include <unistd.h>
+#include <iostream>
+
 #undef _lengthof
 #define _lengthof(x)        (sizeof(x)/sizeof(x[0]))
+
+#define _PATH_PROCNET_X11                   "/tmp/.X11-unix"
+#define _PATH_PROCNET_TCP                   "/proc/net/tcp"
+#define _PATH_PROCNET_TCP6                  "/proc/net/tcp6"
+#define X11_PORT_MIN                        (6000)
+#define X11_PORT_MAX                        (6100)
+
 
 namespace brt {
 
@@ -81,6 +92,76 @@ double Utils::frame_rate(const char* fr_string)
   }
 
   return frame_rate = 1.0 / (frame_rate * multiplier);
+}
+
+/*
+ * \\fn std::vector<std::string> FLTKManager::enumerate_displays
+ *
+ * created on: Nov 19, 2019
+ * author: daniel
+ *
+ */
+std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
+{
+  std::vector<std::string> result;
+
+  // Check local displays
+  if ((dt & eLocalDisplays) != 0)
+  {
+    DIR* d = opendir(_PATH_PROCNET_X11);
+
+    if (d != nullptr)
+    {
+      struct dirent *dr;
+      while ((dr = readdir(d)) != nullptr)
+      {
+        if (dr->d_name[0] != 'X')
+          continue;
+
+        result.push_back(Utils::string_format(":%s", dr->d_name + 1));
+      }
+      closedir(d);
+    }
+  }
+
+  // Check remotes
+  if ((dt & eRemoteDisplay) != 0)
+  {
+    FILE *fd = fopen(_PATH_PROCNET_TCP, "r");
+
+    if (fd != nullptr)
+    {
+      size_t pagesz = getpagesize();
+      char *buf = (char *)malloc(pagesz);
+      setvbuf(fd, buf, _IOFBF, pagesz);
+
+      char buffer[8192];
+      int num, local_port, rem_port, d, state, uid, timer_run, timeout;
+      char rem_addr[128], local_addr[128], timers[64];
+      unsigned long rxq, txq, time_len, retr, inode;
+
+      do
+      {
+        if (fgets(buffer, sizeof(buffer), fd))
+        {
+          num = sscanf(buffer,
+                          "%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %lu %*s\n",
+                          &d, local_addr, &local_port, rem_addr, &rem_port, &state,
+                          &txq, &rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode);
+
+          if ((local_port >= X11_PORT_MIN) && (local_port < X11_PORT_MAX))
+            result.push_back(Utils::string_format("localhost:%d.0", local_port - X11_PORT_MIN));
+
+        }
+      }
+      while (!feof(fd));
+
+      fclose(fd);
+      ::free(buf);
+    }
+  }
+
+  return result;
 }
 
 } // jupiter

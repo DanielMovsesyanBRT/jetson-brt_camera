@@ -49,8 +49,8 @@ set(SOURCES
  source/cuda_debayering/src/cuda_debayering.cu
 
  source/device/Camera.cpp
- source/device/CameraManager.cpp
  source/device/Deserializer.cpp
+ source/device/DeviceManager.cpp
  source/device/ScriptAction.cpp
  source/device/ScriptFile.cpp
   

@@ -5,8 +5,8 @@
  *      Author: daniel
  */
 
-#ifndef SOURCE_DEVICE_CAMERAMANAGER_HPP_
-#define SOURCE_DEVICE_CAMERAMANAGER_HPP_
+#ifndef SOURCE_DEVICE_DEVICEMANAGER_HPP_
+#define SOURCE_DEVICE_DEVICEMANAGER_HPP_
 
 #include <unordered_map>
 #include <linux/i2c-dev.h>
@@ -96,18 +96,18 @@ class Deserializer;
  * created on: Aug 19, 2019
  *
  */
-class CameraManager
+class DeviceManager
 {
-  CameraManager();
-  virtual ~CameraManager();
+  DeviceManager();
+  virtual ~DeviceManager();
 
 public:
-  static  CameraManager*          get() {return &_object; }
+  static  DeviceManager*          get() {return &_object; }
           Deserializer*           get_device(uint16_t);
           int                     handle() const { return _brt_handle; }
 
 private:
-  static  CameraManager           _object;
+  static  DeviceManager           _object;
 
   typedef  std::unordered_map<uint16_t,Deserializer*> device_map_type;
   device_map_type                 _device_map;
@@ -118,4 +118,4 @@ private:
 } /* namespace jupiter */
 } /* namespace brt */
 
-#endif /* SOURCE_DEVICE_CAMERAMANAGER_HPP_ */
+#endif /* SOURCE_DEVICE_DEVICEMANAGER_HPP_ */
