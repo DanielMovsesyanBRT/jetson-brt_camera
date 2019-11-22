@@ -72,18 +72,13 @@ set(SOURCES
   
   source/image/Image.cpp
   
-#  source/window/Window.cpp
-#  source/window/WindowManager.cpp
   source/window/camera_window.cpp
   source/window/window.cpp
   source/window/window_manager.cpp
   
-#  source/Args.cpp
   source/Metadata.cpp
   source/MetaImpl.cpp
- # source/Trigger.cpp
   source/Utils.cpp
- # source/v4l2.cpp
 )
 
 
@@ -115,6 +110,7 @@ target_include_directories(${PROJECT_NAME}
                               "script")
                               # ${FLTK_INCLUDE_DIRS})
                               
+# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
 target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL})
 
 #if (ARCH EQUAL ARCH_ARM)
