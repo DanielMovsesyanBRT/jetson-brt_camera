@@ -9,9 +9,14 @@
 #include "DeviceManager.hpp"
 #include "Deserializer.hpp"
 #include "Camera.hpp"
-#include "WindowManager.hpp"
-#include "Window.hpp"
 
+//#include "WindowManager.hpp"
+//#include "Window.hpp"
+
+#include "window_manager.hpp"
+#include "camera_window.hpp"
+
+// #include "fltk_manager.hpp"
 
 
 #include <map>
@@ -71,9 +76,14 @@ int main(int argc, char **argv)
     }
   }
 
-  window::Window *wnd = nullptr;
-  std::map<Camera*,uint16_t>  camera_pos_map;
-  uint8_t row = 0, col = 0;
+  // Check Displays
+
+
+
+  window::CameraWindow *wnd = nullptr;
+//  window::Window *wnd = nullptr;
+//  std::map<Camera*,uint16_t>  camera_pos_map;
+//  uint8_t row = 0, col = 0;
 
   for (auto device : devices)
   {
@@ -92,33 +102,37 @@ int main(int argc, char **argv)
           {
             if (wnd == nullptr)
             {
-//              wnd = window::CameraWindow::create("Video Streaming", nullptr,
-//                  cam->format()->fmt.pix.width,
-//                  cam->format()->fmt.pix.height);
+              wnd = window::CameraWindow::create("Video Streaming", nullptr,
+                  cam->format()->fmt.pix.width,
+                  cam->format()->fmt.pix.height);
 
-              wnd = wm::get()->create_window("Video Streaming", devices.size() * 2,
-                    cam->format()->fmt.pix.width,
-                    cam->format()->fmt.pix.height);
+//              wnd = wm::get()->create_window("Video Streaming", devices.size() * 2,
+//                    cam->format()->fmt.pix.width,
+//                    cam->format()->fmt.pix.height);
             }
-//            wnd->add_subwnd(cam);
+            wnd->add_subwnd(cam);
 
-            if (camera_pos_map.find(cam) == camera_pos_map.end())
-            {
-              wnd->create_subwnd(col, row, cam);
-              camera_pos_map[cam] = (col << 8) | row;
-
-              if (++col >= wnd->cols())
-              {
-                col = 0;
-                row++;
-              }
-            }
+//            if (camera_pos_map.find(cam) == camera_pos_map.end())
+//            {
+//              wnd->create_subwnd(col, row, cam);
+//              camera_pos_map[cam] = (col << 8) | row;
+//
+//              if (++col >= wnd->cols())
+//              {
+//                col = 0;
+//                row++;
+//              }
+//            }
           }
         }
       }
     }
   }
 
+  if (wnd != nullptr)
+    wnd->show(nullptr);
+    
+    
   char buffer[1024];
   std::string line;
   //window::Window *wnd = nullptr;

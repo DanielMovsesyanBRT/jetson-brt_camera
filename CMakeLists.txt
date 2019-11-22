@@ -46,25 +46,28 @@ find_library(GL REQUIRED
         PATHS ${LD_PATH})
 
 set(SOURCES 
- source/cuda_debayering/src/cuda_debayering.cu
+  source/cuda_debayering/src/cuda_debayering.cu
 
- source/device/Camera.cpp
- source/device/Deserializer.cpp
- source/device/DeviceManager.cpp
- source/device/ScriptAction.cpp
- source/device/ScriptFile.cpp
+  source/device/Camera.cpp
+  source/device/Deserializer.cpp
+  source/device/DeviceManager.cpp
+  source/device/ScriptAction.cpp
+  source/device/ScriptFile.cpp
   
- source/image/Image.cpp
+  source/image/Image.cpp
   
- source/window/Window.cpp
- source/window/WindowManager.cpp
+#  source/window/Window.cpp
+#  source/window/WindowManager.cpp
+  source/window/camera_window.cpp
+  source/window/window.cpp
+  source/window/window_manager.cpp
   
   source/Args.cpp
   source/Metadata.cpp
   source/MetaImpl.cpp
- # source/Trigger.cpp
+#  source/Trigger.cpp
   source/Utils.cpp
- # source/v4l2.cpp
+#  source/v4l2.cpp
 )
 
 
