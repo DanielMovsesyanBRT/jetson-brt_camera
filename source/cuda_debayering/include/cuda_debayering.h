@@ -77,6 +77,16 @@ void debayerUsingBilinearInterpolation(const uint16_t* bayeredImg, uint8_t* deba
  */
 void debayerUsingDownsample(const uint16_t* bayeredImg, uint8_t* downsampledDebayeredImg, const bool outputBGR);
 
+/*
+ * \\fn void bilinearInterpolationDebayer16
+ *
+ * created on: Nov 22, 2019
+ * author: daniel
+ *  Return's 16 bit debayered imagege (16xR,16xG,16xB)
+ *
+ */
+void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* debayedImage, const bool outputBGR);
+
 } // end namespace brt
 } // end namespace cuda
 

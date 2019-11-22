@@ -111,6 +111,8 @@
                         					
                     </folderInfo>
                     					
+                    <fileInfo id="cdt.managedbuild.toolchain.gnu.cross.base.1527600330.593412271" name="cuda_debayering.cu" rcbsApplicability="disable" resourcePath="source/cuda_debayering/src/cuda_debayering.cu" toolsToInvoke=""/>
+                    					
                     <sourceEntries>
                         						
                         <entry flags="VALUE_WORKSPACE_PATH|RESOLVED" kind="sourcePath" name=""/>

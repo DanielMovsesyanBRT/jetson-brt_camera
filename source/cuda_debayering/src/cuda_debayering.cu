@@ -451,6 +451,212 @@ __global__ void debayerUsingBilinearInterpolationCudaImpl(const uint16_t* bayere
     }
 }
 
+// Debayer an CRBC bayered image using bilinear interpolation
+// and output debayered image in RGBRGBRGB (or BGRBGRBGR) in its
+// original resolution.
+__global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredImg, uint16_t* debayeredImg, const bool outputBGR)
+{
+    // The bayered image must have the following format (when expanded to 2D):
+    //
+    // C R C R C R
+    // B C B C B C
+    // C R C R C R
+    // B C B C B C
+    // C R C R C R
+    // B C B C B C
+    //
+    // where upper left corner (i.e. the first element in the array is C,
+    // and the second element in the array is R).
+    //
+    // Other format might work, but requires rewriting this kernel
+    // Otherwise the color will be messed up.
+    //
+    // Also, each pixel in the original bayered image but be 12 bits
+    // which stored in a 16 bit uint16_t structure.
+    //
+    // We will treat C channel as G channel in this kernel, because during image capture,
+    // we have already set the proper gain for R and B.
+    //
+    // (x, y) is the coordinate how we will inspect the bayered pattern
+    // Note that x and y are only even numbers, meaning that
+    // in every kernel, we will perform bilinear interpolation for four pixels.
+    // Therefore, for image size of 1920 * 1208, this kernel is called 960 * 604 times
+
+    int x = 2 * ((blockIdx.x * blockDim.y) + threadIdx.y);
+    int y = 2 * ((blockIdx.y * blockDim.x) + threadIdx.x);
+
+
+    uint16_t b, g, r;
+
+
+    /* Upper left: C */
+    if (x == 0 && y == 0)
+    {
+        g = PIXEL_FIX( bayeredImg[y * IMG_WIDTH + x]);
+        r = PIXEL_FIX( bayeredImg[y * IMG_WIDTH + (x+1)]);
+        b = PIXEL_FIX( bayeredImg[(y+1) * IMG_WIDTH + x]);
+    }
+    else if (x == 0)
+    {
+        g = PIXEL_FIX( bayeredImg[y * IMG_WIDTH + x]);
+        r = PIXEL_FIX( bayeredImg[y * IMG_WIDTH + (x+1)]);
+        b = (PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x])) / 2;
+    }
+    else if (y == 0)
+    {
+        g = PIXEL_FIX( bayeredImg[y * IMG_WIDTH + x]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x-1)]) + PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)])) / 2;
+        b = PIXEL_FIX( bayeredImg[(y+1) * IMG_WIDTH + x]);
+    }
+    else
+    {
+        g = PIXEL_FIX( bayeredImg[y * IMG_WIDTH + x]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x-1)]) + PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)])) / 2;
+        b = (PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x])) / 2;
+    }
+
+    if (outputBGR)
+    {
+        debayeredImg[3 * (y * IMG_WIDTH + x)] = b;
+        debayeredImg[3 * (y * IMG_WIDTH + x) + 1] = g;
+        debayeredImg[3 * (y * IMG_WIDTH + x) + 2] = r;
+    } else
+    {
+        debayeredImg[3 * (y * IMG_WIDTH + x)] = r;
+        debayeredImg[3 * (y * IMG_WIDTH + x) + 1] = g;
+        debayeredImg[3 * (y * IMG_WIDTH + x) + 2] = b;
+    }
+
+    /* Upper right: R */
+    if (x == IMG_WIDTH - 2 && y == 0)
+    {
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)])) / 2;
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+    }
+    else if (y == 0)
+    {
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+2)]) +
+                                      PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)])) / 3;
+
+        b = (PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+2)])) / 2;
+    }
+    else if (x == IMG_WIDTH - 2)
+    {
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + (x+1)]) +
+                                      PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)])) / 3;
+
+        b = (PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x])) / 2;
+    }
+    else
+    {
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+2)]) +
+                            PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + (x+1)]) +PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)])) / 4;
+
+        b = (PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y-1) * IMG_WIDTH + (x+2)]) +
+                            PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+2)])) / 4;
+    }
+
+    if (outputBGR)
+    {
+        debayeredImg[3 * (y * IMG_WIDTH + (x+1))] = b;
+        debayeredImg[3 * (y * IMG_WIDTH + (x+1)) + 1] = g;
+        debayeredImg[3 * (y * IMG_WIDTH + (x+1)) + 2] = r;
+    }
+    else
+    {
+        debayeredImg[3 * (y * IMG_WIDTH + (x+1))] = r;
+        debayeredImg[3 * (y * IMG_WIDTH + (x+1)) + 1] = g;
+        debayeredImg[3 * (y * IMG_WIDTH + (x+1)) + 2] = b;
+    }
+
+    /* Lower left: B */
+    if (x == 0 && y == IMG_HEIGHT - 2)
+    {
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)])) / 2;
+    }
+    else if (x == 0)
+    {
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]) + PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + (x+1)])) / 2;
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]) +
+                            PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + x])) / 3;
+    }
+    else if (y == IMG_HEIGHT - 2)
+    {
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x-1)]) + PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)])) / 2;
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]) +
+                            PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x-1)])) / 3;
+    }
+    else
+    {
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x-1)]) + PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]) +
+                            PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + (x-1)]) + PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + (x+1)])) / 4;
+
+        g = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]) +
+                            PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x-1)])) / 4;
+    }
+
+    if (outputBGR)
+    {
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + x)] = b;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + x) + 1] = g;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + x) + 2] = r;
+    }
+    else
+    {
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + x)] = r;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + x) + 1] = g;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + x) + 2] = b;
+    }
+
+    /* Lower right: C */
+    if (x == IMG_WIDTH - 2 && y == IMG_HEIGHT - 2)
+    {
+        g = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]);
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+    }
+    else if (x == IMG_WIDTH - 2)
+    {
+        g = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]) + PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + (x+1)])) / 2;
+        b = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]);
+    }
+    else if (y == IMG_HEIGHT - 2)
+    {
+        g = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]);
+        r = PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]);
+        b = (PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+2)])) / 2;
+    }
+    else
+    {
+        g = PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+1)]);
+        r = (PIXEL_FIX(bayeredImg[y * IMG_WIDTH + (x+1)]) + PIXEL_FIX(bayeredImg[(y+2) * IMG_WIDTH + (x+1)])) / 2;
+        b = (PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + x]) + PIXEL_FIX(bayeredImg[(y+1) * IMG_WIDTH + (x+2)])) / 2;
+    }
+
+    if (outputBGR)
+    {
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1))] = b;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1)) + 1] = g;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1)) + 2] = r;
+    }
+    else
+    {
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1))] = r;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1)) + 1] = g;
+        debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1)) + 2] = b;
+    }
+}
+
 // Debayer an CRBC bayered image using downsampling
 // and output the downsampled debayered image in
 // RGBRGBRGB (or BGRBGRBGR)
@@ -549,6 +755,29 @@ void debayerUsingBilinearInterpolation(const uint16_t* bayeredImage, uint8_t* de
     {
         gpuCheck( cudaMemcpy(debayedImage, d_output_img_original_resolution, 3 * IMG_WIDTH * IMG_HEIGHT * sizeof(uint8_t), cudaMemcpyDeviceToHost) );
     }
+
+    // TODO - Lingjian & Daniel :
+    // CUDA malloc/free should happen in class construtor/destructor.
+    gpuCheck( cudaFree(d_input_img) );
+    gpuCheck( cudaFree(d_output_img_original_resolution) );
+}
+
+void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* debayedImage, const bool outputBGR)
+{
+    uint16_t* d_input_img;
+    gpuCheck( cudaMalloc(&d_input_img, IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t)) );
+    gpuCheck( cudaMemcpy(d_input_img, bayeredImage, IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t), cudaMemcpyHostToDevice) );
+
+    uint16_t* d_output_img_original_resolution;
+    gpuCheck( cudaMalloc(&d_output_img_original_resolution, 3 * IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t)) );
+
+    dim3 threads(4, 64);
+    dim3 grid((IMG_WIDTH / 2)/(threads.y), (IMG_HEIGHT / 2)/(threads.x));
+    bilinearInterpolationDebayer16CudaImpl<<<grid, threads>>>(d_input_img, d_output_img_original_resolution, outputBGR);
+    gpuCheck( cudaPeekAtLastError() );
+    gpuCheck( cudaDeviceSynchronize() );
+
+    gpuCheck( cudaMemcpy(debayedImage, d_output_img_original_resolution, 3 * IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t), cudaMemcpyDeviceToHost) );
 
     // TODO - Lingjian & Daniel :
     // CUDA malloc/free should happen in class construtor/destructor.

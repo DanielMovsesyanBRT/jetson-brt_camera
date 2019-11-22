@@ -378,10 +378,15 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 
   const size_t outputImgWidth = wnd._image->width();
   const size_t outputImgHeight = wnd._image->height();
-  uint8_t *outputImgBuffer = (uint8_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint8_t));
-  memset(outputImgBuffer, 128, outputImgWidth * outputImgHeight * 3 * sizeof(uint8_t));
+//  uint8_t *outputImgBuffer = (uint8_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint8_t));
+//  memset(outputImgBuffer, 128, outputImgWidth * outputImgHeight * 3 * sizeof(uint8_t));
+//
+//  cuda::debayerUsingBilinearInterpolation((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, false);
 
-  cuda::debayerUsingBilinearInterpolation((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, false);
+  uint16_t *outputImgBuffer = (uint16_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
+  //memset(outputImgBuffer, 128, outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
+
+  cuda::bilinearInterpolationDebayer16((uint16_t*)wnd._image->bytes(), outputImgBuffer, false);
 
   glBindTexture(GL_TEXTURE_2D, _texture);
 
@@ -389,7 +394,8 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_BYTE, mat8uc4_rgb.data);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_BYTE, outputImgBuffer);
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_BYTE, outputImgBuffer);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, outputImgBuffer);
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _texture);
