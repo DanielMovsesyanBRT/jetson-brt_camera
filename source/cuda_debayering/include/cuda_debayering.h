@@ -85,7 +85,7 @@ void debayerUsingDownsample(const uint16_t* bayeredImg, uint8_t* downsampledDeba
  *  Return's 16 bit debayered imagege (16xR,16xG,16xB)
  *
  */
-void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* debayedImage, const bool outputBGR);
+void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* debayedImage, const bool outputBGR, uint32_t* histogram, size_t hist_size, uint32_t* max);
 
 } // end namespace brt
 } // end namespace cuda

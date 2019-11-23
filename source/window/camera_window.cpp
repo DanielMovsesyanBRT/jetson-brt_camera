@@ -384,10 +384,34 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 //  cuda::debayerUsingBilinearInterpolation((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, false);
 
   uint16_t *outputImgBuffer = (uint16_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
+  uint32_t *histogram = (uint32_t *)malloc(0x1000 * sizeof(uint32_t));
   //memset(outputImgBuffer, 128, outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
 
-  cuda::bilinearInterpolationDebayer16((uint16_t*)wnd._image->bytes(), outputImgBuffer, false);
+  uint32_t max;
+  cuda::bilinearInterpolationDebayer16((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, histogram, 0x1000, &max);
 
+  //GLfloat max = 0.0;
+
+//  memset (histogram, 0 , sizeof(uint32_t));
+//  for (size_t xx = 0; xx < 1920; xx++)
+//  {
+//    for (size_t yy = 0; yy < 1208; yy++)
+//    {
+//      uint16_t r,g,b;
+//      r = outputImgBuffer[(yy * 1920 + xx) * 3];
+//      g = outputImgBuffer[(yy * 1920 + xx) * 3 + 1];
+//      b = outputImgBuffer[(yy * 1920 + xx) * 3 + 2];
+//
+//      uint32_t brightness = (uint32_t)(r+r+r+b+g+g+g+g) * 0x1000 >> (3 + 16);
+//      histogram[brightness & 0xFFF]++;
+//
+//      max = (max < histogram[brightness & 0xFFF]) ? histogram[brightness & 0xFFF] : max;
+//    }
+//  }
+
+
+
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
   glBindTexture(GL_TEXTURE_2D, _texture);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -399,7 +423,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _texture);
-  glEnable(GL_TEXTURE_2D);
+  //glEnable(GL_TEXTURE_2D);
   glBegin(GL_QUADS);
     glTexCoord2f(0.0, 0.0); glVertex3f(wnd._left, wnd._top, 0.0);
     glTexCoord2f(0.0, 1.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
@@ -407,11 +431,30 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
     glTexCoord2f(1.0, 0.0); glVertex3f(wnd._right, wnd._top, 0.0);
   glEnd();
 
-  glXSwapBuffers(display(context), handle());
   glDisable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, 0);
+  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+
+  glShadeModel(GL_SMOOTH);
+  glLineWidth(4.0);
+  glBegin(GL_LINE_STRIP);
+    glColor3f(1.0, 0.0, 0.0);
+//    GLfloat max = 1920.0 * 1208.0;
+    GLfloat gap = (wnd._right -  wnd._left) * 10 / 1920;
+    for (size_t hist_index = 0; hist_index < 0x1000; hist_index++)
+    {
+
+      GLfloat value = wnd._top + (wnd._bottom -  wnd._top) * histogram[hist_index] / max;
+      GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / 0x1000;
+
+      glVertex3f(xx, value, 0.0);
+    }
+  glEnd();
+
+  glXSwapBuffers(display(context), handle());
 
   ::free(outputImgBuffer);
+  ::free(histogram);
 
 //#else
 //  cv::Mat mat16uc1_bayer(wnd._image->height(), wnd._image->width(), CV_16UC1, wnd._image->bytes());

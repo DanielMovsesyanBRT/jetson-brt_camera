@@ -73,12 +73,7 @@ int main(int argc, char **argv)
 
   // Check Displays
 
-
-
   window::CameraWindow *wnd = nullptr;
-//  window::Window *wnd = nullptr;
-//  std::map<Camera*,uint16_t>  camera_pos_map;
-//  uint8_t row = 0, col = 0;
 
   for (auto device : devices)
   {
@@ -100,24 +95,8 @@ int main(int argc, char **argv)
               wnd = window::CameraWindow::create("Video Streaming", nullptr,
                   cam->format()->fmt.pix.width,
                   cam->format()->fmt.pix.height);
-
-//              wnd = wm::get()->create_window("Video Streaming", devices.size() * 2,
-//                    cam->format()->fmt.pix.width,
-//                    cam->format()->fmt.pix.height);
             }
             wnd->add_subwnd(cam);
-
-//            if (camera_pos_map.find(cam) == camera_pos_map.end())
-//            {
-//              wnd->create_subwnd(col, row, cam);
-//              camera_pos_map[cam] = (col << 8) | row;
-//
-//              if (++col >= wnd->cols())
-//              {
-//                col = 0;
-//                row++;
-//              }
-//            }
           }
         }
       }
@@ -130,68 +109,11 @@ int main(int argc, char **argv)
     
   char buffer[1024];
   std::string line;
-  //window::Window *wnd = nullptr;
-
-  //std::map<Camera*,uint16_t>  camera_pos_map;
-  //uint8_t row = 0, col = 0;
-
   do
   {
     std::cout << "T.... :" << line << ":" << std::endl;
     std::cin.getline(buffer, sizeof(buffer));
     line = buffer;
-
-//    if (Utils::stristr(line, "run") == 0)
-//    {
-//      line = line.substr(3);
-//      int cam_id = strtoul(line.c_str(),nullptr,0);
-//
-//      Deserializer* des = DeviceManager::get()->get_device(cam_id >> 1);
-//      if (des != nullptr)
-//      {
-//        Camera* cam = des->get_camera(cam_id & 1);
-//        if (cam != nullptr)
-//        {
-//          if (cam->start_streaming())
-//          {
-//            if (wnd == nullptr)
-//            {
-//              wnd = wm::get()->create_window("Video Streaming", devices.size() * 2,
-//                    cam->format()->fmt.pix.width,
-//                    cam->format()->fmt.pix.height);
-//            }
-//
-//            if (camera_pos_map.find(cam) == camera_pos_map.end())
-//            {
-//              wnd->create_subwnd(col, row, cam);
-//              camera_pos_map[cam] = (col << 8) | row;
-//
-//              if (++col >= wnd->cols())
-//              {
-//                col = 0;
-//                row++;
-//              }
-//            }
-//          }
-//        }
-//      }
-//    }
-//
-//    else if (Utils::stristr(line, "stop") == 0)
-//    {
-//      line = line.substr(4);
-//      int cam_id = strtoul(line.c_str(),nullptr,0);
-//
-//      Deserializer* des = DeviceManager::get()->get_device(cam_id >> 1);
-//      if (des != nullptr)
-//      {
-//        Camera* cam = des->get_camera(cam_id & 1);
-//        if (cam != nullptr)
-//        {
-//          cam->stop_streaming();
-//        }
-//      }
-//    }
 
   } while (line != "q");
 

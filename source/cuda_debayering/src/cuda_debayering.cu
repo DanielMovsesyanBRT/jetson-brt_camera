@@ -454,7 +454,8 @@ __global__ void debayerUsingBilinearInterpolationCudaImpl(const uint16_t* bayere
 // Debayer an CRBC bayered image using bilinear interpolation
 // and output debayered image in RGBRGBRGB (or BGRBGRBGR) in its
 // original resolution.
-__global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredImg, uint16_t* debayeredImg, const bool outputBGR)
+__global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredImg, uint16_t* debayeredImg, const bool outputBGR,
+                                                    uint32_t* histogram, size_t hist_size)
 {
     // The bayered image must have the following format (when expanded to 2D):
     //
@@ -487,7 +488,7 @@ __global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredIm
 
 
     uint16_t b, g, r;
-
+    uint32_t brightness;
 
     /* Upper left: C */
     if (x == 0 && y == 0)
@@ -525,6 +526,12 @@ __global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredIm
         debayeredImg[3 * (y * IMG_WIDTH + x)] = r;
         debayeredImg[3 * (y * IMG_WIDTH + x) + 1] = g;
         debayeredImg[3 * (y * IMG_WIDTH + x) + 2] = b;
+    }
+
+    if (histogram != nullptr)
+    {
+      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
+      atomicAdd(&histogram[brightness & 0xFFF], 1);
     }
 
     /* Upper right: R */
@@ -573,6 +580,12 @@ __global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredIm
         debayeredImg[3 * (y * IMG_WIDTH + (x+1)) + 2] = b;
     }
 
+    if (histogram != nullptr)
+    {
+      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
+      atomicAdd(&histogram[brightness & 0xFFF], 1);
+    }
+
     /* Lower left: B */
     if (x == 0 && y == IMG_HEIGHT - 2)
     {
@@ -617,6 +630,12 @@ __global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredIm
         debayeredImg[3 * ((y+1) * IMG_WIDTH + x) + 2] = b;
     }
 
+    if (histogram != nullptr)
+    {
+      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
+      atomicAdd(&histogram[brightness & 0xFFF], 1);
+    }
+
     /* Lower right: C */
     if (x == IMG_WIDTH - 2 && y == IMG_HEIGHT - 2)
     {
@@ -654,6 +673,12 @@ __global__ void bilinearInterpolationDebayer16CudaImpl(const uint16_t* bayeredIm
         debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1))] = r;
         debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1)) + 1] = g;
         debayeredImg[3 * ((y+1) * IMG_WIDTH + (x+1)) + 2] = b;
+    }
+
+    if (histogram != nullptr)
+    {
+      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
+      atomicAdd(&histogram[brightness & 0xFFF], 1);
     }
 }
 
@@ -700,6 +725,36 @@ __global__ void debayerUsingDownsampleCudaImpl(const uint16_t* bayeredImg, uint8
         downsampledDebayeredImg[3 * idx + 2] = b;
     }
 }
+
+/*
+ * \\fn void cudaMax
+ *
+ * created on: Nov 22, 2019
+ * author: daniel
+ *
+ */
+__global__ void cudaMax(uint32_t* max)
+{
+    const int tid = threadIdx.x + blockIdx.x * blockDim.x;
+
+    auto step_size = 1;
+    int number_of_threads = gridDim.x * blockDim.x;
+
+    while (number_of_threads > 0)
+    {
+        if (tid < number_of_threads)
+        {
+            const auto fst = tid * step_size * 2;
+            const auto snd = fst + step_size;
+
+            max[fst] = (max[fst] < max[snd]) ? max[snd] : max[fst];
+        }
+
+        step_size <<= 1;
+        number_of_threads >>= 1;
+    }
+}
+
 
 void debayerUsingDownsample(const uint16_t* bayeredImage, uint8_t* debayedImage, const bool outputBGR)
 {
@@ -762,7 +817,7 @@ void debayerUsingBilinearInterpolation(const uint16_t* bayeredImage, uint8_t* de
     gpuCheck( cudaFree(d_output_img_original_resolution) );
 }
 
-void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* debayedImage, const bool outputBGR)
+void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* debayedImage, const bool outputBGR, uint32_t* histogram, size_t hist_size, uint32_t* max)
 {
     uint16_t* d_input_img;
     gpuCheck( cudaMalloc(&d_input_img, IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t)) );
@@ -771,11 +826,36 @@ void bilinearInterpolationDebayer16(const uint16_t* bayeredImage, uint16_t* deba
     uint16_t* d_output_img_original_resolution;
     gpuCheck( cudaMalloc(&d_output_img_original_resolution, 3 * IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t)) );
 
+    uint32_t* d_histogram = nullptr;
+    if (histogram != nullptr)
+    {
+      gpuCheck( cudaMalloc(&d_histogram, hist_size/*0x1000*/ * sizeof(uint32_t)) );
+      gpuCheck( cudaMemset(d_histogram, 0, hist_size/*0x1000*/ * sizeof(uint32_t)) );
+    }
+
     dim3 threads(4, 64);
     dim3 grid((IMG_WIDTH / 2)/(threads.y), (IMG_HEIGHT / 2)/(threads.x));
-    bilinearInterpolationDebayer16CudaImpl<<<grid, threads>>>(d_input_img, d_output_img_original_resolution, outputBGR);
+    bilinearInterpolationDebayer16CudaImpl<<<grid, threads>>>(d_input_img, d_output_img_original_resolution, outputBGR, d_histogram, hist_size);
     gpuCheck( cudaPeekAtLastError() );
     gpuCheck( cudaDeviceSynchronize() );
+
+    if (histogram != nullptr)
+    {
+      uint32_t* maxes;
+      gpuCheck( cudaMalloc(&maxes, hist_size * sizeof(uint32_t)));
+      gpuCheck( cudaMemcpy(maxes, d_histogram, hist_size * sizeof(uint32_t), cudaMemcpyDeviceToDevice));
+
+      cudaMax<<<hist_size  / 64, 64>>>(maxes);
+      gpuCheck( cudaPeekAtLastError() );
+      gpuCheck( cudaDeviceSynchronize() );
+
+      gpuCheck( cudaMemcpy(max, maxes, sizeof(uint32_t), cudaMemcpyDeviceToHost));
+      gpuCheck( cudaFree(maxes) );
+
+
+      gpuCheck( cudaMemcpy(histogram, d_histogram, hist_size * sizeof(uint32_t), cudaMemcpyDeviceToHost) );
+      gpuCheck( cudaFree(d_histogram) );
+    }
 
     gpuCheck( cudaMemcpy(debayedImage, d_output_img_original_resolution, 3 * IMG_WIDTH * IMG_HEIGHT * sizeof(uint16_t), cudaMemcpyDeviceToHost) );
 
