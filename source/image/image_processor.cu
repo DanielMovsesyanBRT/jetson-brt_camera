@@ -291,7 +291,8 @@ bool ImageProcessor::runDebayer(bool outputBGR)
   while (_histogram.size() < thx)
     thx >>= 1;
 
-  cudaMax<<<_histogram.size() / thx, thx>>>(_histogram_max.ptr());
+  if (_histogram.copy(_histogram_max))
+    cudaMax<<<_histogram.size() / thx, thx>>>(_histogram_max.ptr());
 
   return true;
 }

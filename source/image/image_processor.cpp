@@ -108,6 +108,9 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
       _blky++;
   }
 
+  _histogram.fill(0);
+  _histogram_max.fill(0);
+
   runDebayer(outputBGR);
 
   RawRGBPtr result(new RawRGB(raw->width(), raw->height(), 3 * sizeof(uint16_t)));
@@ -116,6 +119,24 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
   return result;
 }
 
+/*
+ * \\fn bool ImageProcessor::get_histogram
+ *
+ * created on: Nov 25, 2019
+ * author: daniel
+ *
+ */
+bool ImageProcessor::get_histogram(std::vector<uint32_t>& hist, uint32_t& max)
+{
+  if (!_histogram || !_histogram_max)
+    return false;
+
+  hist.resize(_histogram.size());
+  _histogram.get(hist.data(), hist.size());
+  _histogram_max.get(&max, 1);
+
+  return true;
+}
 
 
 } /* namespace image */

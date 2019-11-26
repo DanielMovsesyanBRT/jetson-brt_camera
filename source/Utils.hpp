@@ -341,6 +341,43 @@ public:
     return (T*)(_data->_data);
   }
 
+
+  /*
+   * \\fn void fill
+   *
+   * created on: Nov 25, 2019
+   * author: daniel
+   *
+   */
+  void fill(uint8_t value)
+  {
+    if ((_data == nullptr) || (!_data->_valid))
+      return;
+
+    CUDA_CHECK(cudaMemset(_data->_data, value, _data->_size));
+  }
+
+
+  /*
+   * \\fn void copy
+   *
+   * created on: Nov 25, 2019
+   * author: daniel
+   *
+   */
+  bool copy(CudaPtr<T>& dst)
+  {
+    if (!dst || (dst.size() != size()))
+    {
+      dst = CudaPtr<T>(size());
+      if (!dst)
+        return false;
+    }
+
+    CUDA_CHECK(cudaMemcpy(dst._data->_data, _data->_data, _data->_size, cudaMemcpyDeviceToDevice));
+    return (___err == cudaSuccess);
+  }
+
 private:
   Data*                           _data;
 };

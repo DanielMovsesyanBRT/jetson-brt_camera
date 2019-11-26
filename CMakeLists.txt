@@ -97,7 +97,7 @@ else()
   message(STATUS "Compiling Library version")
 endif()
 
-include_directories( "source/cuda_debayering/include" "source")
+include_directories( "source/cuda_debayering/include" "source" "source/image")
 # cuda_include_directories( "source/cuda" )
 
 if(EXECUTABLE)

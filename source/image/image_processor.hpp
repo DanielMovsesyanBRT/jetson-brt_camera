@@ -11,11 +11,10 @@
 #include <stdint.h>
 #include <cuda_runtime.h>
 
-#include "Utils.hpp"
+#include <vector>
 
-#ifndef __CUDACC__
+#include "Utils.hpp"
 #include "Image.hpp"
-#endif
 
 #define DEFAULT_NUMBER_OF_THREADS           (64)
 
@@ -38,10 +37,8 @@ public:
   ImageProcessor();
   virtual ~ImageProcessor();
 
-#ifndef __CUDACC__
           RawRGBPtr               debayer(RawRGBPtr raw, bool outputBGR);
-#endif
-          bool                    get_histogram();
+          bool                    get_histogram(std::vector<uint32_t>&, uint32_t& max);
 
 private:
           bool                    runDebayer(bool outputBGR);

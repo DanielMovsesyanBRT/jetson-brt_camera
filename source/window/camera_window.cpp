@@ -410,20 +410,31 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glBindTexture(GL_TEXTURE_2D, 0);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-//  glShadeModel(GL_SMOOTH);
-//  glLineWidth(4.0);
-//  glBegin(GL_LINE_STRIP);
-//    glColor3f(1.0, 0.0, 0.0);
-//    GLfloat gap = (wnd._right -  wnd._left) * 10 / 1920;
-//    for (size_t hist_index = 0; hist_index < 0x1000; hist_index++)
-//    {
-//
-//      GLfloat value = wnd._top + (wnd._bottom -  wnd._top) * histogram[hist_index] / max;
-//      GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / 0x1000;
-//
-//      glVertex3f(xx, value, 0.0);
-//    }
-//  glEnd();
+  std::vector<uint32_t> hist;
+  uint32_t max;
+
+  if (wnd._ip->get_histogram(hist, max))
+  {
+    glShadeModel(GL_SMOOTH);
+    glLineWidth(4.0);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+    glBegin(GL_LINE_STRIP);
+      glColor4ub(255, 0, 0, 64);
+      //glColor3f(1.0, 0.0, 0.0);
+      GLfloat gap = (wnd._right -  wnd._left) * 10 / image->width();
+      for (size_t hist_index = 0; hist_index < hist.size(); hist_index++)
+      {
+        GLfloat value = (max == 0) ? wnd._top : wnd._top + (wnd._bottom -  wnd._top) * hist[hist_index] / max;
+        GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / hist.size();
+
+        glVertex3f(xx, value, 0.0);
+      }
+
+    glEnd();
+    glDisable(GL_BLEND);
+  }
 
   glXSwapBuffers(display(context), handle());
 
