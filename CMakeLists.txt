@@ -38,30 +38,34 @@ project(jetson-brt_camera C CXX)
 #
 #find_package(FLTK REQUIRED NO_MODULE)
 
+#set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
 find_package(CUDA REQUIRED)
 
-if (DEFINED OPENCV_PATH)
-  find_package(OpenCV REQUIRED
-        PATHS ${OPENCV_PATH}
-        NO_DEFAULT_PATH)
-        
-elseif(DEFINED ENV{OPENCV_PATH})
-  find_package(OpenCV REQUIRED
-        PATHS $ENV{OPENCV_PATH}
-        NO_DEFAULT_PATH)
-else()
-  find_package(OpenCV REQUIRED)
-endif()
+#if (DEFINED OPENCV_PATH)
+#  find_package(OpenCV REQUIRED
+#        PATHS ${OPENCV_PATH}
+#        NO_DEFAULT_PATH)
+#        
+#elseif(DEFINED ENV{OPENCV_PATH})
+#  find_package(OpenCV REQUIRED
+#        PATHS $ENV{OPENCV_PATH}
+#        NO_DEFAULT_PATH)
+#else()
+#  find_package(OpenCV REQUIRED)
+#endif()
 
 find_package(X11_user REQUIRED)
 
 find_library(GL REQUIRED
         NAMES GL
-        PATHS ${LD_PATH})
+        PATHS 
+          ${LD_PATH}
+          ${LD_PATH_EXTRA}
+          )
 
 set(SOURCES 
- source/cuda_debayering/src/cuda_debayering.cu
-
+  source/cuda_debayering/src/cuda_debayering.cu
+ 
   source/device/Camera.cpp
   source/device/Deserializer.cpp
   source/device/DeviceManager.cpp
@@ -70,6 +74,8 @@ set(SOURCES
   
   # source/fltk/fltk_manager.cpp  
   
+  source/image/image_processor.cpp
+  source/image/image_processor.cu
   source/image/Image.cpp
   
   source/window/camera_window.cpp
@@ -91,7 +97,8 @@ else()
   message(STATUS "Compiling Library version")
 endif()
 
-include_directories( "source/cuda_debayering/include" )
+include_directories( "source/cuda_debayering/include" "source")
+# cuda_include_directories( "source/cuda" )
 
 if(EXECUTABLE)
   cuda_add_executable(${PROJECT_NAME} ${SOURCES})
@@ -107,8 +114,10 @@ target_include_directories(${PROJECT_NAME}
                               # "source/fltk" 
                               "source/image" 
                               "source/window"
-                              "script")
-                              # ${FLTK_INCLUDE_DIRS})
+                              "script"
+                              # ${X11_X11_INCLUDE_PATH}
+                              # ${FLTK_INCLUDE_DIRS}
+                              )
                               
 # target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
 target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL})

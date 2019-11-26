@@ -20,6 +20,27 @@ namespace image
 /*
  * \\fn Constructor RawRGB::RawRGB
  *
+ * created on: Nov 25, 2019
+ * author: daniel
+ *
+ */
+RawRGB::RawRGB(size_t w, size_t h, int bytes_per_pixel /*= 2*/)
+{
+  _width = w;
+  _height = h;
+
+  uint32_t srcPitch = _width * bytes_per_pixel;  // 2 bytes for RAW 12 format
+  uint32_t srcImageSize = srcPitch * _height;
+
+  if (srcImageSize > 0)
+    _buffer = (uint8_t*)::malloc(srcImageSize);
+  else
+    _buffer = nullptr;
+}
+
+/*
+ * \\fn Constructor RawRGB::RawRGB
+ *
  * created on: Aug 8, 2019
  * author: daniel
  *
@@ -38,10 +59,10 @@ RawRGB::RawRGB(const uint8_t* buffer, size_t w, size_t h, int bytes_per_pixel/* 
     _buffer = (uint8_t*)::malloc(srcImageSize);
     memcpy(_buffer, buffer, srcImageSize);
 
-    uint16_t* buff = reinterpret_cast<uint16_t*>(_buffer);
-    size_t ss = w * h;
-    while (ss-- != 0)
-      *buff++ <<= 4;
+//    uint16_t* buff = reinterpret_cast<uint16_t*>(_buffer);
+//    size_t ss = w * h;
+//    while (ss-- != 0)
+//      *buff++ <<= 4;
   }
 }
 

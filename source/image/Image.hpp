@@ -35,6 +35,7 @@ class ImageProducer;
 class RawRGB
 {
 public:
+  RawRGB(size_t w, size_t h, int bytes_per_pixel = 2);
   RawRGB(const uint8_t*, size_t w, size_t h, int bytes_per_pixel = 2);
   RawRGB(const char *);
   virtual ~RawRGB();
@@ -42,7 +43,8 @@ public:
           size_t                  width() const { return _width; }
           size_t                  height() const { return _height; }
 
-          uint8_t*                bytes() const { return _buffer; }
+          uint8_t*                bytes() { return _buffer; }
+          const uint8_t*          bytes() const { return _buffer; }
           bool                    empty() const { return (_buffer == nullptr);}
 
 private:

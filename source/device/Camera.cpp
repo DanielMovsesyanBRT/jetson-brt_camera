@@ -146,6 +146,54 @@ bool Camera::stop_streaming()
   return true;
 }
 
+/*
+ * \\fn void Camera::set_exposure
+ *
+ * created on: Nov 24, 2019
+ * author: daniel
+ *
+ */
+void Camera::set_exposure(double ms)
+{
+  std::vector<script::Value> args;
+  args.push_back(script::Value().set<int>(_id));
+  args.push_back(script::Value().set(ms));
+
+  _owner->run_macro("set_exposure", args);
+}
+
+/*
+ * \\fn void Camera::read_exposure
+ *
+ * created on: Nov 24, 2019
+ * author: daniel
+ *
+ */
+void Camera::read_exposure()
+{
+  std::vector<script::Value> args;
+  args.push_back(script::Value().set<int>(_id));
+
+  _owner->run_macro("read_exposure", args);
+}
+
+
+/*
+ * \\fn void Camera::set_gain
+ *
+ * created on: Nov 24, 2019
+ * author: daniel
+ *
+ */
+void Camera::set_gain(eCameraGain gain)
+{
+  std::vector<script::Value> args;
+  args.push_back(script::Value().set<int>(_id));
+  args.push_back(script::Value().set<int>(gain, 2));
+
+  _owner->run_macro("set_gain", args);
+
+}
 
 
 /*
@@ -545,7 +593,7 @@ void Camera::main_loop()
     for (;;)
     {
       fd_set fds;
-      //struct timeval tv;
+      struct timeval tv;
       int r;
 
       FD_ZERO(&fds);
@@ -553,11 +601,11 @@ void Camera::main_loop()
       FD_SET(_pipe[0], &fds);
 
       /* Timeout. */
-//      tv.tv_sec = 2;
-//      tv.tv_usec = 0;
+      tv.tv_sec = 2;
+      tv.tv_usec = 0;
 
       //r = select(_handle + 1, &fds, NULL, NULL, &tv);
-      r = select(std::max(_handle,_pipe[0]) + 1, &fds, nullptr, nullptr, nullptr);
+      r = select(std::max(_handle,_pipe[0]) + 1, &fds, nullptr, nullptr, &tv);
 
       if (-1 == r)
       {
@@ -570,7 +618,10 @@ void Camera::main_loop()
       }
 
       if (0 == r)
+      {
+        std::cerr << "timeout" << std::endl;
         continue;
+      }
 
       if (FD_ISSET(_pipe[0],&fds))
       {

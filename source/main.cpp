@@ -75,6 +75,8 @@ int main(int argc, char **argv)
 
   window::CameraWindow *wnd = nullptr;
 
+  std::vector<uint16_t> cam_des;
+
   for (auto device : devices)
   {
     std::cout << "Activating cameras " << device << std::endl;
@@ -98,6 +100,7 @@ int main(int argc, char **argv)
             }
             wnd->add_subwnd(cam);
           }
+          cam_des.push_back(id << 8 | index);
         }
       }
     }
@@ -114,6 +117,44 @@ int main(int argc, char **argv)
     std::cout << "T.... :" << line << ":" << std::endl;
     std::cin.getline(buffer, sizeof(buffer));
     line = buffer;
+
+    if (Utils::stristr(line, "exposure") == 0)
+    {
+      line = line.substr(8);
+      double exposure = strtod(line.c_str(), nullptr);
+
+      for (auto id : cam_des)
+      {
+        Deserializer *des = DeviceManager::get()->get_device(id >> 8);
+        if (des != nullptr)
+        {
+          Camera *cam = des->get_camera(id & 0xff);
+          if (cam != nullptr)
+          {
+            if (exposure == 0.0)
+              cam->read_exposure();
+            else
+              cam->set_exposure(exposure);
+          }
+        }
+      }
+    }
+    else if (Utils::stristr(line, "gain") == 0)
+    {
+      line = line.substr(4);
+      long gain = strtol(line.c_str(), nullptr, 0);
+
+      for (auto id : cam_des)
+      {
+        Deserializer *des = DeviceManager::get()->get_device(id >> 8);
+        if (des != nullptr)
+        {
+          Camera *cam = des->get_camera(id & 0xff);
+          if (cam != nullptr)
+            cam->set_gain((eCameraGain)gain);
+        }
+      }
+    }
 
   } while (line != "q");
 

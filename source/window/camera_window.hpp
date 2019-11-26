@@ -18,6 +18,7 @@
 #include <atomic>
 
 #include "Image.hpp"
+#include "image_processor.hpp"
 
 namespace brt
 {
@@ -67,14 +68,17 @@ private:
 
   struct GLWindow
   {
-    GLfloat                       _left;
-    GLfloat                       _top;
-    GLfloat                       _right;
-    GLfloat                       _bottom;
-    GLuint                        _tex;
-    size_t                        _col;
-    size_t                        _row;
-    image::RawRGBPtr              _image;
+    GLfloat                         _left;
+    GLfloat                         _top;
+    GLfloat                         _right;
+    GLfloat                         _bottom;
+    GLuint                          _tex;
+    size_t                          _col;
+    size_t                          _row;
+    image::RawRGBPtr                _image;
+
+    std::shared_ptr<image::ImageProcessor>
+                                    _ip;
   };
 
   std::vector<GLWindow>           _gl_map;

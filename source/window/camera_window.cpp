@@ -202,6 +202,8 @@ size_t CameraWindow::add_subwnd(image::ImageProducer* ip)
   wnd._bottom = -1.0 + (row + 1) * frow_size;
   wnd._col = col;
   wnd._row = row;
+  wnd._ip.reset(new image::ImageProcessor());
+
   _gl_map.push_back(wnd);
   _mutex.unlock();
 
@@ -364,52 +366,26 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
     _click.store(-1);
   }
 
-//////#if (defined ARCH) && (defined ARM) && (ARCH==ARM)
-//  cv::Mat mat16uc1_bayer(wnd._image->height(), wnd._image->width(), CV_16UC1, wnd._image->bytes());
+//  const size_t outputImgWidth = wnd._image->width();
+//  const size_t outputImgHeight = wnd._image->height();
+//  uint16_t *outputImgBuffer = (uint16_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
+//  uint32_t *histogram = (uint32_t *)malloc(0x1000 * sizeof(uint32_t));
 //
-//  // Decode the Bayer data to RGB but keep using 16 bits per channel
-//  cv::Mat mat16uc4_rgb(wnd._image->height(), wnd._image->width(), CV_16UC3);
-//  cv::cvtColor(mat16uc1_bayer, mat16uc4_rgb,cv::COLOR_BayerGR2BGR);
-//
-//  // Convert the 16-bit per channel RGB image to 8-bit per channel
-//  cv::Mat mat8uc4_rgb(wnd._image->height(), wnd._image->width(), CV_8UC3);
-//  mat16uc4_rgb.convertTo(mat8uc4_rgb, CV_8UC3, 1.0/256);
+//  uint32_t max;
+//  cuda::bilinearInterpolationDebayer16((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, histogram, 0x1000, &max);
 
-
-  const size_t outputImgWidth = wnd._image->width();
-  const size_t outputImgHeight = wnd._image->height();
-//  uint8_t *outputImgBuffer = (uint8_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint8_t));
-//  memset(outputImgBuffer, 128, outputImgWidth * outputImgHeight * 3 * sizeof(uint8_t));
-//
-//  cuda::debayerUsingBilinearInterpolation((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, false);
-
-  uint16_t *outputImgBuffer = (uint16_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
-  uint32_t *histogram = (uint32_t *)malloc(0x1000 * sizeof(uint32_t));
-  //memset(outputImgBuffer, 128, outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
-
-  uint32_t max;
-  cuda::bilinearInterpolationDebayer16((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, histogram, 0x1000, &max);
-
-  //GLfloat max = 0.0;
-
-//  memset (histogram, 0 , sizeof(uint32_t));
-//  for (size_t xx = 0; xx < 1920; xx++)
+//  memset(outputImgBuffer, 0xC0, outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
+//  for (int y = 0; y < outputImgHeight; y++)
 //  {
-//    for (size_t yy = 0; yy < 1208; yy++)
+//    for (int x = 0; x < outputImgWidth; x++)
 //    {
-//      uint16_t r,g,b;
-//      r = outputImgBuffer[(yy * 1920 + xx) * 3];
-//      g = outputImgBuffer[(yy * 1920 + xx) * 3 + 1];
-//      b = outputImgBuffer[(yy * 1920 + xx) * 3 + 2];
-//
-//      uint32_t brightness = (uint32_t)(r+r+r+b+g+g+g+g) * 0x1000 >> (3 + 16);
-//      histogram[brightness & 0xFFF]++;
-//
-//      max = (max < histogram[brightness & 0xFFF]) ? histogram[brightness & 0xFFF] : max;
+//      *(outputImgBuffer + (y * outputImgWidth * 3 + x * 3)) = 0xFFFF;
+//      *(outputImgBuffer + (y * outputImgWidth * 3 + x * 3 + 1)) = 0xFFFF;
+//      *(outputImgBuffer + (y * outputImgWidth * 3 + x * 3 + 2)) = 0xFFFF;
 //    }
 //  }
 
-
+  image::RawRGBPtr image = wnd._ip->debayer(wnd._image, false);
 
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
   glBindTexture(GL_TEXTURE_2D, _texture);
@@ -417,9 +393,8 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_BYTE, mat8uc4_rgb.data);
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_BYTE, outputImgBuffer);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, outputImgBuffer);
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, outputImgBuffer);
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  image->width(), image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, image->bytes());
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _texture);
@@ -435,58 +410,25 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glBindTexture(GL_TEXTURE_2D, 0);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-  glShadeModel(GL_SMOOTH);
-  glLineWidth(4.0);
-  glBegin(GL_LINE_STRIP);
-    glColor3f(1.0, 0.0, 0.0);
-//    GLfloat max = 1920.0 * 1208.0;
-    GLfloat gap = (wnd._right -  wnd._left) * 10 / 1920;
-    for (size_t hist_index = 0; hist_index < 0x1000; hist_index++)
-    {
-
-      GLfloat value = wnd._top + (wnd._bottom -  wnd._top) * histogram[hist_index] / max;
-      GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / 0x1000;
-
-      glVertex3f(xx, value, 0.0);
-    }
-  glEnd();
+//  glShadeModel(GL_SMOOTH);
+//  glLineWidth(4.0);
+//  glBegin(GL_LINE_STRIP);
+//    glColor3f(1.0, 0.0, 0.0);
+//    GLfloat gap = (wnd._right -  wnd._left) * 10 / 1920;
+//    for (size_t hist_index = 0; hist_index < 0x1000; hist_index++)
+//    {
+//
+//      GLfloat value = wnd._top + (wnd._bottom -  wnd._top) * histogram[hist_index] / max;
+//      GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / 0x1000;
+//
+//      glVertex3f(xx, value, 0.0);
+//    }
+//  glEnd();
 
   glXSwapBuffers(display(context), handle());
 
-  ::free(outputImgBuffer);
-  ::free(histogram);
-
-//#else
-//  cv::Mat mat16uc1_bayer(wnd._image->height(), wnd._image->width(), CV_16UC1, wnd._image->bytes());
-//
-//  // Decode the Bayer data to RGB but keep using 16 bits per channel
-//  cv::Mat mat16uc4_rgb(wnd._image->height(), wnd._image->width(), CV_16UC4);
-//  cv::cvtColor(mat16uc1_bayer, mat16uc4_rgb,cv::COLOR_BayerGR2BGRA);
-//
-//  // Convert the 16-bit per channel RGB image to 8-bit per channel
-//  cv::Mat mat8uc4_rgb(wnd._image->height(), wnd._image->width(), CV_8UC4);
-//  mat16uc4_rgb.convertTo(mat8uc4_rgb, CV_8UC4, 1.0/256);
-//  //cv::flip(mat8uc4_rgb,mat8uc4_rgb,-1);
-//
-//  Display* display = wm::get()->display();
-//  int screenId = wm::get()->default_screen();
-//  XVisualInfo visual_template;
-//  int nxvisuals = 0;
-//  visual_template.screen = wm::get()->default_screen();
-//  XVisualInfo* vi = XGetVisualInfo (display, VisualScreenMask, &visual_template, &nxvisuals);
-//  if (vi != nullptr)
-//  {
-//    XImage* ximage = XCreateImage(display, vi->visual, 24, ZPixmap, 0,reinterpret_cast<char*>(mat8uc4_rgb.data),
-//                wnd._image->width(), wnd._image->height(), 32, 0);
-//
-//
-//
-//    XPutImage(display, _hndl, DefaultGC(display, screenId), ximage, 0, 0, wnd._col * _actual_width, wnd._row * _actual_height,
-//        _actual_width, _actual_height);
-//
-//    //XDestroyImage(ximage);
-//  }
-//#endif
+//  ::free(outputImgBuffer);
+//  ::free(histogram);
 
   _mutex.lock();
   _gl_map[evt->_id]._image.reset();

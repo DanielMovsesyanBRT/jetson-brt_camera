@@ -24,6 +24,32 @@ namespace brt
 namespace jupiter
 {
 
+
+enum eCameraGain
+{
+//###       0 = 1/8x    5 = 4/6x        10 = 6/3x
+//###       1 = 2/8x    6 = 4/5x        11 = 7/3x
+//###       2 = 2/7x    7 = 5/5x (1)    12 = 7/2x
+//###       3 = 3/7x    8 = 5/4x        13 = 8/2x
+//###       4 = 3/6x    9 = 6/4x        14 = 8/1x
+
+  eCG_1_DIV_8_X = 0,
+  eCG_2_DIV_8_X = 1,
+  eCG_2_DIV_7_X = 2,
+  eCG_3_DIV_7_X = 3,
+  eCG_3_DIV_6_X = 4,
+  eCG_4_DIV_6_X = 5,
+  eCG_4_DIV_5_X = 6,
+  eCG_5_DIV_5_X = 7, // 1x
+  eCG_5_DIV_4_X = 8,
+  eCG_6_DIV_4_X = 9,
+  eCG_6_DIV_3_X = 10,
+  eCG_7_DIV_3_X = 11,
+  eCG_7_DIV_2_X = 12,
+  eCG_8_DIV_2_X = 13,
+  eCG_8_DIV_1_X = 14
+};
+
 class Deserializer;
 
 /*
@@ -44,6 +70,10 @@ public:
           bool                    stop_streaming();
 
           const v4l2_format*      format() const { return &_fmt; }
+
+          void                    set_exposure(double ms);
+          void                    read_exposure();
+          void                    set_gain(eCameraGain);
 
 private:
           bool                    open_device();
