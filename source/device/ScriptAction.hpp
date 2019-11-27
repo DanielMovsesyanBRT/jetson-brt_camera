@@ -62,6 +62,7 @@ public:
 
   virtual script::ValueData&      var(std::string name);
   virtual bool                    var_exist(std::string name);
+          void                    to_meta(std::string name);
 
 private:
   bool                            _verbose;
@@ -294,7 +295,7 @@ protected:
   virtual bool                    extract(ParserEnv&);
 
 private:
-  std::vector<ScriptAction*>         _action_array;
+  std::vector<ScriptAction*>      _action_array;
   std::vector<std::string>        _arguments;
   std::string                     _name;
 };

@@ -121,6 +121,24 @@ void MetaImpl::parse(int argc,char** argv)
 }
 
 /*
+ * \\fn void MetaImpl::copy_key
+ *
+ * created on: Nov 26, 2019
+ * author: daniel
+ *
+ */
+void MetaImpl::copy_key(const char* to, const char* from, const MetaImpl* meta)
+{
+  if ((_meta_data != nullptr) && (meta->_meta_data != nullptr))
+  {
+    script::value_database::iterator iter = meta->_meta_data->find(from);
+    if (iter != meta->_meta_data->end())
+      (*_meta_data)[to] = iter->second;
+  }
+}
+
+
+/*
  * \\fn std::string std::string MetaImpl::to_string
  *
  * created on: May 17, 2019

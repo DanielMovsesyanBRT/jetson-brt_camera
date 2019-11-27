@@ -102,11 +102,21 @@ endm
 ###
 ### Configure Exposure
 ###
+macro get_exposure(id)
+    s $address = $sensor_addr[$id]
+    r 2,$address,0x3012,$exp_value
+    
+    s $_return = 1000.0 * int($exp_value) * $hts / $fvco
+endm
+
+###
+### Configure Exposure
+###
 macro set_exposure(id,exposure_ms)
     s $address = $sensor_addr[$id]
-    s $exp_value = $exposure_ms / ($hts * 1000) * $fvco
+    s $exp_value = $exposure_ms / (1000.0 * $hts) * $fvco
 
-    e "Set Exposure for sensor " + $sns_addr + " to " + $exposure_ms + "ms : " + $exp_value
+    e "Set Exposure for sensor " + $sns_addr + " to " + $exposure_ms + "ms : " + int($exp_value)
 
     w $address,0x3012,int($exp_value,2) # COARSE_INTEGRATION_TIME_
     w $address,0x3212,int($exp_value / 8,2) # COARSE_INTEGRATION_TIME_2
@@ -695,8 +705,8 @@ loop $global_loop_cntr < $num_cameras
    x config_serializer $serializer_addr[$global_loop_cntr], 1 + $global_loop_cntr * 2  # Y or U
    d 100ms
  
-   x config_hdr_sensor $sensor_addr[$global_loop_cntr]
-   # x config_sensor $sensor_addr[$global_loop_cntr]
+   # x config_hdr_sensor $sensor_addr[$global_loop_cntr]
+   x config_sensor $sensor_addr[$global_loop_cntr]
    # x config_hdr_sensor  $sensor_addr[$global_loop_cntr]
    
    s $global_loop_cntr = $global_loop_cntr + 1

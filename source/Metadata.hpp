@@ -87,6 +87,7 @@ public:
         std::vector<std::string>  matching_keys(const char *regex) const;
         
 
+        Metadata&                 copy_key(const char* to, const char* from, const Metadata&);
         Metadata&                 copy_metadata(const Metadata *from);
         Metadata&                 add(const char *semicolon_separated_list);
 

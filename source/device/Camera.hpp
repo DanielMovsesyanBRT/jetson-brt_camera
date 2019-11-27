@@ -73,6 +73,8 @@ public:
           const v4l2_format*      format() const { return &_fmt; }
 
           void                    set_exposure(double ms);
+          double                  get_exposure();
+
           void                    read_exposure();
           void                    set_gain(eCameraGain);
 

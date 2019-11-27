@@ -9,6 +9,7 @@
 #include "DeviceManager.hpp"
 #include "Deserializer.hpp"
 #include "Camera.hpp"
+#include "isp.hpp"
 
 //#include "WindowManager.hpp"
 //#include "Window.hpp"
@@ -101,6 +102,7 @@ int main(int argc, char **argv)
             wnd->add_subwnd(cam);
           }
           cam_des.push_back(id << 8 | index);
+          isp::get()->add_camera(cam);
         }
       }
     }
@@ -159,6 +161,7 @@ int main(int argc, char **argv)
   } while (line != "q");
 
   wm::get()->release();
+  isp::get()->stop();
 
 //  fm::get()->init();
   return 0;

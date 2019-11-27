@@ -59,7 +59,6 @@ private:
   int                             _blkx,_blky;
 
   std::atomic_bool                _overexposure_flag;
-  image::HistPtr                  _full_hist;
 };
 
 

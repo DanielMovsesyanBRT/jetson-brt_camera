@@ -121,8 +121,10 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
 
   RawRGBPtr result(new RawRGB(raw->width(), raw->height(), 3 * sizeof(uint16_t)));
   _img_debayer_buffer.get((uint16_t*)result->bytes(), debayer_img_size);
-  get_histogram(_full_hist);
-  result->set_histogram(_full_hist);
+
+  image::HistPtr  full_hist;
+  get_histogram(full_hist);
+  result->set_histogram(full_hist);
 
   return result;
 }

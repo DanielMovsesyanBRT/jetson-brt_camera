@@ -236,6 +236,19 @@ void Metadata::erase(const char *key)
 }
 
 /*
+ * \\fn Metadata& Metadata::copy_key
+ *
+ * created on: Nov 26, 2019
+ * author: daniel
+ *
+ */
+Metadata& Metadata::copy_key(const char* to, const char* from, const Metadata& meta)
+{
+  _impl->copy_key(to, from, meta._impl);
+  return *this;
+}
+
+/*
  * \\fn Metadata& Metadata::copy_metadata
  *
  * created on: May 17, 2019

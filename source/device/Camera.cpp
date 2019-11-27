@@ -163,6 +163,25 @@ void Camera::set_exposure(double ms)
 }
 
 /*
+ * \\fn Camera::get_exposure
+ *
+ * created on: Nov 26, 2019
+ * author: daniel
+ *
+ */
+double Camera::get_exposure()
+{
+  std::vector<script::Value> args;
+  args.push_back(script::Value().set<int>(_id));
+
+  script::Value result;
+  _owner->run_macro("get_exposure", result, args);
+
+  return result;
+}
+
+
+/*
  * \\fn void Camera::read_exposure
  *
  * created on: Nov 24, 2019
@@ -680,8 +699,10 @@ bool Camera::read_frame()
 
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
-      image::ImageBox box(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
-      consume(box);
+      image::RawRGBPtr raw12(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
+      image::RawRGBPtr result = _ip.debayer(raw12);
+      if (result)
+        consume(image::ImageBox(result));
     }
     //process_image(buffers[0].start, buffers[0].length);
     break;

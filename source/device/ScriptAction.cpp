@@ -74,6 +74,7 @@ bool Session::var_exist(std::string name)
 }
 
 
+
 /*
  * \\fn void Session::initialize
  *
@@ -514,6 +515,9 @@ bool ActionMacro::run_macro(Session& session,const std::vector<script::ValueData
   std::vector<ScriptAction*>::iterator iter;
   for (iter = _action_array.begin();iter != _action_array.end();++iter)
     (*iter)->do_action(stackSession);
+
+  if (stackSession.var_exist("_return"))
+    session.var(_name.c_str()) = stackSession.var("_return");
 
   return true;
 }

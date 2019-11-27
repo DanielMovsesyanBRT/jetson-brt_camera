@@ -162,7 +162,26 @@ bool Deserializer::run_macro(const char *macro_name,std::vector<script::Value> a
   if (!_script)
     return false;
 
-  return _script->run_macro(macro_name,arguments);
+  script::Value dummy_result;
+  return _script->run_macro(macro_name,dummy_result,arguments);
 }
+
+/*
+ * \\fn bool Deserializer::run_macro
+ *
+ * created on: Nov 26, 2019
+ * author: daniel
+ *
+ */
+bool Deserializer::run_macro(const char *macro_name,script::Value& result,
+                          std::vector<script::Value> arguments /*= std::vector<script::Value>()*/)
+{
+  if (!_script)
+    return false;
+
+  return _script->run_macro(macro_name,result, arguments);
+}
+
+
 } /* namespace jupiter */
 } /* namespace brt */

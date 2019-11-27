@@ -46,6 +46,8 @@ CameraWindow::CameraWindow(const char* title, int x, int y,
 , _click(-1)
 , _global_number(0)
 , _vi(nullptr)
+, _font(nullptr)
+, _gc(nullptr)
 {
 
 }

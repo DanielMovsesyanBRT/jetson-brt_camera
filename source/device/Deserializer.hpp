@@ -41,6 +41,7 @@ public:
 
           bool                    run_script(const char *text);
           bool                    run_macro(const char *macro_name,std::vector<script::Value> arguments = std::vector<script::Value>());
+          bool                    run_macro(const char *macro_name,script::Value& result,std::vector<script::Value> arguments = std::vector<script::Value>());
 
           size_t                  num_cameras() const { return _cameras.size(); }
           Camera*                 get_camera(size_t index) const { return ((index >= num_cameras())?nullptr:_cameras[index]); }

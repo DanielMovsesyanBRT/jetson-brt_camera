@@ -144,6 +144,7 @@ public:
         bool                      exist(const char *key) const { return (_meta_data != nullptr) ? (_meta_data->find(key) != _meta_data->end()) : false; }
         void                      erase(const char *key) { if (_meta_data != nullptr) _meta_data->erase(key); }
 
+        void                      copy_key(const char* to, const char* from, const MetaImpl* meta);
         void                      copy_metadata(const MetaImpl* from)
         {
           if (_meta_data != nullptr)
