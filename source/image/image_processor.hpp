@@ -51,6 +51,7 @@ private:
   CudaPtr<uint16_t>               _img_debayer_buffer;
   CudaPtr<uint32_t>               _histogram;
   CudaPtr<uint32_t>               _histogram_max;
+  CudaPtr<uint32_t>               _small_histogram;
 
   uint16_t                        _width;
   uint16_t                        _height;
@@ -58,6 +59,7 @@ private:
   int                             _blkx,_blky;
 
   std::atomic_bool                _overexposure_flag;
+  image::HistPtr                  _full_hist;
 };
 
 

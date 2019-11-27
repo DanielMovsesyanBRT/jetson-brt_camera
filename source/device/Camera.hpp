@@ -129,8 +129,6 @@ private:
   unsigned int                    _n_buffers;
 
   image::ImageProcessor           _ip;
-  image::HistPtr                  _histogram;
-
 };
 
 } /* namespace jupiter */

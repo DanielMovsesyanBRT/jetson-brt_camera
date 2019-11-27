@@ -17,7 +17,7 @@
 #include <mutex>
 #include <atomic>
 
-#include "../image/image.hpp"
+#include "image.hpp"
 #include "image_processor.hpp"
 
 namespace brt
@@ -60,12 +60,6 @@ protected:
           void                    show_video(Context ,LShowImageEvent*);
 
 private:
-  size_t                          _video_width, _video_height;
-  size_t                          _actual_width, _actual_height;
-  size_t                          _rows, _cols;
-  GLXContext                      _glc;
-  GLuint                          _texture;
-
   struct GLWindow
   {
     GLfloat                         _left;
@@ -76,16 +70,28 @@ private:
     size_t                          _col;
     size_t                          _row;
     image::RawRGBPtr                _image;
-//
-//    std::shared_ptr<image::ImageProcessor>
-//                                    _ip;
+
+    std::shared_ptr<std::vector<std::string>>
+                                    _text;
   };
+
+          Rect                    gl_rect(const GLWindow& wnd);
+
+private:
+  size_t                          _video_width, _video_height;
+  size_t                          _actual_width, _actual_height;
+  size_t                          _rows, _cols;
+  GLXContext                      _glc;
+  GLuint                          _texture;
 
   std::vector<GLWindow>           _gl_map;
   std::atomic_int_fast32_t        _click;
   uint32_t                        _global_number;
 
   XVisualInfo*                    _vi;
+  XFontStruct*                    _font;
+  GC                              _gc;
+  XColor                          _text_color;
 };
 
 } /* namespace window */

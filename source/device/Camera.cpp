@@ -718,11 +718,7 @@ bool Camera::read_frame()
       image::RawRGBPtr raw12(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
       image::RawRGBPtr result = _ip.debayer(raw12);
       if (result)
-      {
-        _ip.get_histogram(_histogram);
-        result->set_histogram(_histogram);
         consume(image::ImageBox(result));
-      }
     }
 
     if (-1 == xioctl(_handle, VIDIOC_QBUF, &buf))

@@ -279,6 +279,22 @@ __global__ void runCudaDebayer(const uint16_t* bayeredImg,
    }
 }
 
+
+/*
+ * \\fn __global__ void reduceHistogram
+ *
+ * created on: Nov 26, 2019
+ * author: daniel
+ *
+ */
+__global__ void reduceHistogram(uint32_t* big_hist, uint32_t big_size,
+                                uint32_t* small_hist, uint32_t small_size)
+{
+  int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  int sm_index = tid * small_size / big_size;
+  atomicAdd(&small_hist[sm_index], big_hist[tid]);
+}
+
 /*
  * \\fn void cudaMax
  *
@@ -340,6 +356,10 @@ bool ImageProcessor::runDebayer(bool outputBGR)
   if (_histogram.copy(_histogram_max))
     cudaMax<<<_histogram.size() / thx, thx>>>(_histogram_max.ptr());
 
+  reduceHistogram<<<_histogram.size() / thx, thx>>>(_histogram.ptr(),
+                                                    _histogram.size(),
+                                                    _small_histogram.ptr(),
+                                                    _small_histogram.size());
   return true;
 }
 

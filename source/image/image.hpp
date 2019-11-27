@@ -36,6 +36,7 @@ struct Histogram
 {
   std::vector<uint32_t>           _histogram;
   uint32_t                        _max_value;
+  std::vector<uint32_t>           _small_hist;
 };
 
 typedef std::shared_ptr<Histogram> HistPtr;

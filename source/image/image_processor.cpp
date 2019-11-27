@@ -8,6 +8,7 @@
 #include "image_processor.hpp"
 
 #define BITS_PER_PIXEL                      (1 << 16)
+#define SMALL_HIST_SIZE                     (5)
 
 namespace brt
 {
@@ -86,6 +87,9 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
   if (!_histogram_max || (_histogram_max.size() != BITS_PER_PIXEL))
     _histogram_max = CudaPtr<uint32_t>(BITS_PER_PIXEL);
 
+  if (!_small_histogram || (_small_histogram.size() != SMALL_HIST_SIZE))
+    _small_histogram = CudaPtr<uint32_t>(SMALL_HIST_SIZE);
+
   // Check, whether image dimensions have changed
   if ((_width != raw->width()) || (_height != raw->height()))
   {
@@ -111,11 +115,14 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
 
   _histogram.fill(0);
   _histogram_max.fill(0);
+  _small_histogram.fill(0);
 
   runDebayer(outputBGR);
 
   RawRGBPtr result(new RawRGB(raw->width(), raw->height(), 3 * sizeof(uint16_t)));
   _img_debayer_buffer.get((uint16_t*)result->bytes(), debayer_img_size);
+  get_histogram(_full_hist);
+  result->set_histogram(_full_hist);
 
   return result;
 }
@@ -138,7 +145,12 @@ bool ImageProcessor::get_histogram(HistPtr& histogram)
   if (histogram->_histogram.size() != _histogram.size())
     histogram->_histogram.resize(_histogram.size());
 
+  if (histogram->_small_hist.size() != _small_histogram.size())
+    histogram->_small_hist.resize(_small_histogram.size());
+
+
   _histogram.get(histogram->_histogram.data(), histogram->_histogram.size());
+  _small_histogram.get(histogram->_small_hist.data(), histogram->_small_hist.size());
   _histogram_max.get(&histogram->_max_value, 1);
 
   return true;

@@ -23,6 +23,29 @@ namespace window
 {
 
 /*
+ * \\struct Point
+ *
+ * created on: Nov 26, 2019
+ *
+ */
+struct Point
+{
+  int   x,y;
+};
+
+
+/*
+ * \\struct Rect
+ *
+ * created on: Nov 26, 2019
+ *
+ */
+struct Rect
+{
+  int  left,right,top,bottom;
+};
+
+/*
  * \\class Window
  *
  * created on: Nov 19, 2019

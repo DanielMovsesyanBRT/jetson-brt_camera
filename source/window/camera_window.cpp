@@ -202,6 +202,8 @@ size_t CameraWindow::add_subwnd(image::ImageProducer* ip)
   wnd._bottom = -1.0 + (row + 1) * frow_size;
   wnd._col = col;
   wnd._row = row;
+  wnd._text.reset(new std::vector<std::string>());
+
   //wnd._ip.reset(new image::ImageProcessor());
 
   _gl_map.push_back(wnd);
@@ -334,7 +336,48 @@ void CameraWindow::on_create_window(Context context)
   // Set GL Sample stuff
   glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
   glGenTextures(1, &_texture);
+
+  const char * fontname = "-*-courier 10 *-medium-r-*-*-*-*-*-*-*-*-*-*";
+  _font = XLoadQueryFont (display(context), fontname);
+
+  /* If the font could not be loaded, revert to the "fixed" font. */
+  if (_font == nullptr)
+  {
+     std::cerr << "unable to load font " << fontname << ": using fixed\n" << std::endl;
+     _font = XLoadQueryFont (display(context), "fixed");
+  }
+
+  _gc = XCreateGC (display(context), handle(), 0, 0);
+
+  Colormap cmap = DefaultColormap(display(context), screen(context));
+  // I guess XParseColor will work here
+  _text_color.red = 32000; _text_color.green = 65000; _text_color.blue = 32000;
+  _text_color.flags = DoRed | DoGreen | DoBlue;
+  XAllocColor(display(context), cmap, &_text_color);
+
 }
+
+
+/*
+ * \\fn CameraWindow::gl_rect
+ *
+ * created on: Nov 26, 2019
+ * author: daniel
+ *
+ */
+Rect CameraWindow::gl_rect(const GLWindow& wnd)
+{
+  Rect result;
+
+  float min = -1.0f;
+  result.left = (int)(_width * (wnd._left - min) / 2.0f);
+  result.right = (int)(_width * (wnd._right - min) / 2.0f);
+  result.top = (int)(_height * (wnd._top - min) / 2.0f);
+  result.bottom = (int)(_height * (wnd._bottom - min) / 2.0f);
+
+  return result;
+}
+
 
 /*
  * \\fn void CameraWindow::show_video
@@ -437,12 +480,49 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 
   glXSwapBuffers(display(context), handle());
 
-//  ::free(outputImgBuffer);
-//  ::free(histogram);
+  // Replace text
+  wnd._text->clear();
+  for (size_t index = 0; index < hist->_small_hist.size(); index++)
+    wnd._text->push_back(Utils::string_format("Num pixels: %d", hist->_small_hist[index]));
 
   _mutex.lock();
   _gl_map[evt->_id]._image.reset();
+
+  if (_font != nullptr)
+  {
+    for (auto glwnd : _gl_map)
+    {
+      if (glwnd._text->empty())
+        continue;
+
+      Rect cur_rect = gl_rect(glwnd);
+
+      XSetFont (display(context), _gc, _font->fid);
+      XSetForeground(display(context), _gc, _text_color.pixel);
+
+      /* Centre the text in the middle of the box. */
+      int direction, ascent, descent;
+      XCharStruct overall;
+
+      XTextExtents (_font, glwnd._text->at(0).c_str(), glwnd._text->at(0).size(),
+                    & direction, & ascent, & descent, & overall);
+
+      for (size_t index = 0; index < glwnd._text->size(); index++)
+      {
+        int x = cur_rect.left + 20;
+        int y = cur_rect.top + 20 + (overall.ascent + 5) * index;
+
+        //XClearWindow (display(context), handle());
+        XDrawString (display(context), handle(), _gc, x, y, glwnd._text->at(index).c_str(), glwnd._text->at(index).size());
+      }
+    }
+  }
+  XFlush(display(context));
   _mutex.unlock();
+
+//  ::free(outputImgBuffer);
+//  ::free(histogram);
+
 
 }
 
