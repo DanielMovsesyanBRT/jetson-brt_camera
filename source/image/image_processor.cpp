@@ -7,7 +7,7 @@
 
 #include "image_processor.hpp"
 
-#define BITS_PER_PIXEL                      (1 << 12) // RAW 12
+#define BITS_PER_PIXEL                      (1 << 16)
 
 namespace brt
 {
@@ -35,6 +35,7 @@ ImageProcessor::ImageProcessor()
 , _thy(0)
 , _blkx(0)
 , _blky(0)
+, _overexposure_flag(false)
 {
 }
 
@@ -62,7 +63,7 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
     return RawRGBPtr();
 
   size_t img_size = raw->width() * raw->height();
-  if (!_img_buffer.put((uint16_t*)raw->bytes(), raw->width() * raw->height()))
+  if (!_img_buffer.put((uint16_t*)raw->bytes(), img_size))
   {
     // assert
     return RawRGBPtr();
@@ -126,14 +127,19 @@ RawRGBPtr ImageProcessor::debayer(RawRGBPtr raw,bool outputBGR)
  * author: daniel
  *
  */
-bool ImageProcessor::get_histogram(std::vector<uint32_t>& hist, uint32_t& max)
+bool ImageProcessor::get_histogram(HistPtr& histogram)
 {
   if (!_histogram || !_histogram_max)
     return false;
 
-  hist.resize(_histogram.size());
-  _histogram.get(hist.data(), hist.size());
-  _histogram_max.get(&max, 1);
+  if (!histogram)
+    histogram.reset(new Histogram);
+
+  if (histogram->_histogram.size() != _histogram.size())
+    histogram->_histogram.resize(_histogram.size());
+
+  _histogram.get(histogram->_histogram.data(), histogram->_histogram.size());
+  _histogram_max.get(&histogram->_max_value, 1);
 
   return true;
 }

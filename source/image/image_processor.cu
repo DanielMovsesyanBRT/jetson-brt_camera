@@ -12,8 +12,15 @@ namespace image
 // Debayer an CRBC bayered image using bilinear interpolation
 // and output debayered image in RGBRGBRGB (or BGRBGRBGR) in its
 // original resolution.
-__global__ void runCudaDebayer(const uint16_t* bayeredImg,  uint16_t* debayeredImg, size_t width, size_t height,
-                               bool outputBGR, uint32_t* histogram, uint32_t hist_size, int hist_size_mask)
+__global__ void runCudaDebayer(const uint16_t* bayeredImg,
+                               uint16_t* debayeredImg,
+                               size_t width,
+                               size_t height,
+                               bool outputBGR,
+                               uint32_t* histogram,
+                               uint32_t hist_size,
+                               int hist_size_bits,
+                               bool overexpose)
 {
     // The bayered image must have the following format (when expanded to 2D):
     //
@@ -45,7 +52,7 @@ __global__ void runCudaDebayer(const uint16_t* bayeredImg,  uint16_t* debayeredI
     int y = 2 * ((blockIdx.y * blockDim.y) + threadIdx.y);
 
 
-    uint16_t b, g, r;
+    uint32_t b, g, r;
     uint32_t brightness;
 
     /* Upper left: C */
@@ -88,8 +95,16 @@ __global__ void runCudaDebayer(const uint16_t* bayeredImg,  uint16_t* debayeredI
 
     if (histogram != nullptr)
     {
-      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
-      atomicAdd(&histogram[brightness & hist_size_mask], 1);
+      brightness = ((uint32_t)(r+r+r+b+g+g+g+g) >> 3) * hist_size >> hist_size_bits;
+      atomicAdd(&histogram[brightness & ((1 << hist_size_bits) - 1)], 1);
+
+      //
+      if ((brightness == ((1 << hist_size_bits) - 1)) && overexpose)
+      {
+        debayeredImg[3 * (y * width + x)] = 0xFFFF;
+        debayeredImg[3 * (y * width + x) + 1] = 0;
+        debayeredImg[3 * (y * width + x) + 2] = 0;
+      }
     }
 
     /* Upper right: R */
@@ -140,8 +155,16 @@ __global__ void runCudaDebayer(const uint16_t* bayeredImg,  uint16_t* debayeredI
 
     if (histogram != nullptr)
     {
-      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
-      atomicAdd(&histogram[brightness & hist_size_mask], 1);
+      brightness = ((uint32_t)(r+r+r+b+g+g+g+g) >> 3) * hist_size >> hist_size_bits;
+      atomicAdd(&histogram[brightness & ((1 << hist_size_bits) - 1)], 1);
+
+      //
+      if ((brightness == ((1 << hist_size_bits) - 1)) && overexpose)
+      {
+        debayeredImg[3 * (y * width + (x+1))] = 0xFFFF;
+        debayeredImg[3 * (y * width + (x+1)) + 1] = 0;
+        debayeredImg[3 * (y * width + (x+1)) + 2] = 0;
+      }
     }
 
     /* Lower left: B */
@@ -190,8 +213,16 @@ __global__ void runCudaDebayer(const uint16_t* bayeredImg,  uint16_t* debayeredI
 
     if (histogram != nullptr)
     {
-      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
-      atomicAdd(&histogram[brightness & hist_size_mask], 1);
+      brightness = ((uint32_t)(r+r+r+b+g+g+g+g) >> 3) * hist_size >> hist_size_bits;
+      atomicAdd(&histogram[brightness & ((1 << hist_size_bits) - 1)], 1);
+
+      //
+      if ((brightness == ((1 << hist_size_bits) - 1)) && overexpose)
+      {
+        debayeredImg[3 * ((y+1) * width + x)] = 0xFFFF;
+        debayeredImg[3 * ((y+1) * width + x) + 1] = 0;
+        debayeredImg[3 * ((y+1) * width + x) + 2] = 0;
+      }
     }
 
     /* Lower right: C */
@@ -235,9 +266,17 @@ __global__ void runCudaDebayer(const uint16_t* bayeredImg,  uint16_t* debayeredI
 
     if (histogram != nullptr)
     {
-      brightness = (uint32_t)(r+r+r+b+g+g+g+g) * hist_size >> (3 + 16);
-      atomicAdd(&histogram[brightness & hist_size_mask], 1);
-    }
+      brightness = ((uint32_t)(r+r+r+b+g+g+g+g) >> 3) * hist_size >> hist_size_bits;
+      atomicAdd(&histogram[brightness & ((1 << hist_size_bits) - 1)], 1);
+
+      //
+      if ((brightness == ((1 << hist_size_bits) - 1)) && overexpose)
+      {
+        debayeredImg[3 * ((y+1) * width + (x+1))] = 0xFFFF;
+        debayeredImg[3 * ((y+1) * width + (x+1)) + 1] = 0;
+        debayeredImg[3 * ((y+1) * width + (x+1)) + 2] = 0;
+      }
+   }
 }
 
 /*
@@ -278,14 +317,21 @@ __global__ void cudaMax(uint32_t* max)
  */
 bool ImageProcessor::runDebayer(bool outputBGR)
 {
-  int hist_size_mask = (1 << ((sizeof(size_t) * 8) - 1 -
-              __builtin_clz(_histogram.size()))) - 1;
+  int hist_size_bits = ((sizeof(unsigned int) * 8) - 1 -
+          __builtin_clz(_histogram.size()));
 
   dim3 threads(_thx,_thy);
   dim3 blocks(_blkx, _blky);
 
-  runCudaDebayer<<<blocks,threads>>>(_img_buffer.ptr(), _img_debayer_buffer.ptr(), _width, _height,
-                                                outputBGR, _histogram.ptr(), _histogram.size(), hist_size_mask);
+  runCudaDebayer<<<blocks,threads>>>(_img_buffer.ptr(),
+                                     _img_debayer_buffer.ptr(),
+                                     _width,
+                                     _height,
+                                     outputBGR,
+                                     _histogram.ptr(),
+                                     _histogram.size(),
+                                     hist_size_bits,
+                                     _overexposure_flag.load());
 
   int thx = 64;
   while (_histogram.size() < thx)

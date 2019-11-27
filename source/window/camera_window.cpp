@@ -202,7 +202,7 @@ size_t CameraWindow::add_subwnd(image::ImageProducer* ip)
   wnd._bottom = -1.0 + (row + 1) * frow_size;
   wnd._col = col;
   wnd._row = row;
-  wnd._ip.reset(new image::ImageProcessor());
+  //wnd._ip.reset(new image::ImageProcessor());
 
   _gl_map.push_back(wnd);
   _mutex.unlock();
@@ -385,7 +385,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 //    }
 //  }
 
-  image::RawRGBPtr image = wnd._ip->debayer(wnd._image, false);
+  //image::RawRGBPtr image = wnd._ip->debayer(wnd._image, false);
 
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
   glBindTexture(GL_TEXTURE_2D, _texture);
@@ -394,7 +394,8 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
   //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, outputImgBuffer);
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  image->width(), image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, image->bytes());
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  image->width(), image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, image->bytes());
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, wnd._image->bytes());
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _texture);
@@ -410,10 +411,8 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glBindTexture(GL_TEXTURE_2D, 0);
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
-  std::vector<uint32_t> hist;
-  uint32_t max;
-
-  if (wnd._ip->get_histogram(hist, max))
+  image::HistPtr hist = wnd._image->get_histogram();
+  if (hist)
   {
     glShadeModel(GL_SMOOTH);
     glLineWidth(4.0);
@@ -423,11 +422,11 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
     glBegin(GL_LINE_STRIP);
       glColor4ub(255, 0, 0, 64);
       //glColor3f(1.0, 0.0, 0.0);
-      GLfloat gap = (wnd._right -  wnd._left) * 10 / image->width();
-      for (size_t hist_index = 0; hist_index < hist.size(); hist_index++)
+      GLfloat gap = (wnd._right -  wnd._left) * 10 / wnd._image->width();
+      for (size_t hist_index = 0; hist_index < hist->_histogram.size(); hist_index++)
       {
-        GLfloat value = (max == 0) ? wnd._top : wnd._top + (wnd._bottom -  wnd._top) * hist[hist_index] / max;
-        GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / hist.size();
+        GLfloat value = (hist->_max_value == 0) ? wnd._top : wnd._top + (wnd._bottom -  wnd._top) * hist->_histogram[hist_index] / hist->_max_value;
+        GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / hist->_histogram.size();
 
         glVertex3f(xx, value, 0.0);
       }

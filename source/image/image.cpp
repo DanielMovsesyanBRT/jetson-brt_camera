@@ -5,10 +5,10 @@
  *      Author: daniel
  */
 
-#include "Image.hpp"
 #include <string.h>
 #include <iostream>
 #include <fstream>
+#include "image.hpp"
 
 namespace brt
 {
@@ -54,15 +54,22 @@ RawRGB::RawRGB(const uint8_t* buffer, size_t w, size_t h, int bytes_per_pixel/* 
   uint32_t srcPitch = _width * bytes_per_pixel;  // 2 bytes for RAW 12 format
   uint32_t srcImageSize = srcPitch * _height;
 
+
   if (srcImageSize > 0)
   {
     _buffer = (uint8_t*)::malloc(srcImageSize);
     memcpy(_buffer, buffer, srcImageSize);
-
+//
+//    uint16_t max = 0;
 //    uint16_t* buff = reinterpret_cast<uint16_t*>(_buffer);
 //    size_t ss = w * h;
 //    while (ss-- != 0)
-//      *buff++ <<= 4;
+//    {
+//      //*buff++ <<= 4;
+//      max = (max < *buff) ? *buff : max;
+//      buff++;
+//    }
+//    buff = reinterpret_cast<uint16_t*>(_buffer);
   }
 }
 

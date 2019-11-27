@@ -402,7 +402,6 @@ macro config_hdr_sensor(address)
   w $address, 0x305C, 0x0080    # GREEN2_GAIN
   w $address, 0x3308, 0x0200    # DIG_GAIN_GLOBAL
 
-
   # Enable GPIO0 to to trigger fsync
   w $address,0x340A,0x00,0xEE
   w $address,0x340C,0x00,0x02   # GPIO0 TRIGGER mode

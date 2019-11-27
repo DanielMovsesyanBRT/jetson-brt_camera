@@ -12,9 +12,10 @@
 #include <cuda_runtime.h>
 
 #include <vector>
+#include <atomic>
 
+#include "image.hpp"
 #include "Utils.hpp"
-#include "Image.hpp"
 
 #define DEFAULT_NUMBER_OF_THREADS           (64)
 
@@ -37,8 +38,10 @@ public:
   ImageProcessor();
   virtual ~ImageProcessor();
 
-          RawRGBPtr               debayer(RawRGBPtr raw, bool outputBGR);
-          bool                    get_histogram(std::vector<uint32_t>&, uint32_t& max);
+          RawRGBPtr               debayer(RawRGBPtr raw, bool outputBGR = false);
+          bool                    get_histogram(HistPtr& histogram);
+
+          void                    set_overexp_flag(bool flag) { _overexposure_flag = flag; }
 
 private:
           bool                    runDebayer(bool outputBGR);
@@ -53,6 +56,8 @@ private:
   uint16_t                        _height;
   int                             _thx,_thy;
   int                             _blkx,_blky;
+
+  std::atomic_bool                _overexposure_flag;
 };
 
 

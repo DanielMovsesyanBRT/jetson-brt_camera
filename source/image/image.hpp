@@ -27,6 +27,21 @@ class ImageProducer;
 
 
 /*
+ * \\struct struct Histogram
+ *
+ * created on: Nov 26, 2019
+ *
+ */
+struct Histogram
+{
+  std::vector<uint32_t>           _histogram;
+  uint32_t                        _max_value;
+};
+
+typedef std::shared_ptr<Histogram> HistPtr;
+
+
+/*
  * \\class RawRGB
  *
  * created on: Jul 2, 2019
@@ -47,10 +62,13 @@ public:
           const uint8_t*          bytes() const { return _buffer; }
           bool                    empty() const { return (_buffer == nullptr);}
 
+          void                    set_histogram(HistPtr hist) { _hist = hist; }
+          HistPtr                 get_histogram() const { return _hist; }
 private:
   size_t                          _width;
   size_t                          _height;
   uint8_t*                        _buffer;
+  HistPtr                         _hist;
 };
 
 typedef std::shared_ptr<RawRGB> RawRGBPtr;

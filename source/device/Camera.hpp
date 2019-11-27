@@ -15,7 +15,8 @@
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
 
-#include "Image.hpp"
+#include "image.hpp"
+#include "image_processor.hpp"
 
 #define EVENT_STOP                          (1)
 
@@ -126,6 +127,9 @@ private:
     size_t length;
   }                               *_buffers;
   unsigned int                    _n_buffers;
+
+  image::ImageProcessor           _ip;
+  image::HistPtr                  _histogram;
 
 };
 

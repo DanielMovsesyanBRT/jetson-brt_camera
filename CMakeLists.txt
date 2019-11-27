@@ -76,7 +76,7 @@ set(SOURCES
   
   source/image/image_processor.cpp
   source/image/image_processor.cu
-  source/image/Image.cpp
+  source/image/image.cpp
   
   source/window/camera_window.cpp
   source/window/window.cpp

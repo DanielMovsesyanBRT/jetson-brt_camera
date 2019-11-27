@@ -17,7 +17,7 @@
 #include <mutex>
 #include <atomic>
 
-#include "Image.hpp"
+#include "../image/image.hpp"
 #include "image_processor.hpp"
 
 namespace brt
@@ -76,9 +76,9 @@ private:
     size_t                          _col;
     size_t                          _row;
     image::RawRGBPtr                _image;
-
-    std::shared_ptr<image::ImageProcessor>
-                                    _ip;
+//
+//    std::shared_ptr<image::ImageProcessor>
+//                                    _ip;
   };
 
   std::vector<GLWindow>           _gl_map;
