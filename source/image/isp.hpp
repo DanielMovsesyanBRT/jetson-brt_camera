@@ -29,22 +29,23 @@ namespace image
  */
 class ISP : public ImageConsumer
 {
-  ISP();
-  virtual ~ISP();
 public:
-  static  ISP*                    get() { return &_object; }
+  ISP(bool group = false);
+  virtual ~ISP();
+
   virtual void                    consume(ImageBox);
 
           void                    add_camera(Camera*);
           void                    stop();
 
 private:
-  static  ISP                     _object;
-
+  bool                            _group;
   struct CameraBlock
   {
     Camera*                         _cam;
     uint32_t                        _num_captured;
+    int                             _max;
+    uint32_t                        _max_val;
   };
 
   std::vector<CameraBlock>        _cameras;

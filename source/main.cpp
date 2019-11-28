@@ -10,6 +10,7 @@
 #include "Deserializer.hpp"
 #include "Camera.hpp"
 #include "isp.hpp"
+#include "isp_manager.hpp"
 
 //#include "WindowManager.hpp"
 //#include "Window.hpp"
@@ -40,6 +41,8 @@ using namespace brt::jupiter;
 int main(int argc, char **argv)
 {
   wm::get()->init();
+
+  image::ISPManager isp_manager;
 
   brt::jupiter::Metadata meta_args;
   meta_args.parse(argc,argv);
@@ -75,8 +78,11 @@ int main(int argc, char **argv)
   // Check Displays
 
   window::CameraWindow *wnd = nullptr;
-
   std::vector<uint16_t> cam_des;
+
+  image::ISP* current_isp = nullptr;
+  if (devices.size() != 0 && !meta_args.get<bool>("group_isp") && !meta_args.get<bool>("no_isp"))
+    current_isp = isp_manager.new_isp();
 
   for (auto device : devices)
   {
@@ -86,6 +92,9 @@ int main(int argc, char **argv)
     Deserializer* des = DeviceManager::get()->get_device(id);
     if (des != nullptr)
     {
+      if (meta_args.get<bool>("group_isp") && !meta_args.get<bool>("no_isp"))
+        current_isp = isp_manager.new_isp(true);
+
       for (size_t index = 0; index < 2; index++)
       {
         Camera* cam = des->get_camera(index);
@@ -102,7 +111,9 @@ int main(int argc, char **argv)
             wnd->add_subwnd(cam);
           }
           cam_des.push_back(id << 8 | index);
-          isp::get()->add_camera(cam);
+          if (current_isp != nullptr)
+            current_isp->add_camera(cam);
+
         }
       }
     }
@@ -160,8 +171,8 @@ int main(int argc, char **argv)
 
   } while (line != "q");
 
+  isp_manager.release();
   wm::get()->release();
-  isp::get()->stop();
 
 //  fm::get()->init();
   return 0;

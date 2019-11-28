@@ -21,8 +21,6 @@ namespace jupiter
 namespace image
 {
 
-
-ISP ISP::_object;
 /*
  * \\fn ISP::ISP
  *
@@ -30,7 +28,8 @@ ISP ISP::_object;
  * author: daniel
  *
  */
-ISP::ISP()
+ISP::ISP(bool group /*= false*/)
+: _group(group)
 {
 }
 
@@ -80,40 +79,99 @@ void ISP::consume(ImageBox box)
     }
   }
 
-  _mutex.lock();
+  std::lock_guard<std::mutex> l(_mutex);
   if (id < _cameras.size())
   {
     CameraBlock  &block = _cameras[id];
-    if (++block._num_captured > NUM_SKIPPS)
-    {
-      double change_speed = std::floor((double)max_val * 10.0 / total_pixels);
-      double exposure_ms = block._cam->get_exposure();
+    block._max = max;
+    block._max_val = max_val;
 
-      if (max == 0)
+    if (_group)
+    {
+      ++block._num_captured;
+
+      double absolute_exposure_ms = 0.1;
+      double winner_speed = 0.0;
+      bool change_exposure = false;
+
+      for (auto blk : _cameras)
       {
-        // under-expose
-        block._cam->set_exposure(exposure_ms + change_speed);
-        block._num_captured = 0;
+        if (blk._num_captured < NUM_SKIPPS)
+          // Skip until all cameras are aligned
+          return;
+
+        double change_speed = (double)blk._max_val * 10.0 / total_pixels;
+        if (change_speed < 10.0)
+          change_speed += 0.04 * change_speed * change_speed - 0.4 * change_speed;
+
+        if (winner_speed < change_speed)
+        {
+          winner_speed = change_speed;
+          double exposure_ms = blk._cam->get_exposure();
+          if (blk._max == 0)
+          {
+            // under-expose
+            absolute_exposure_ms = exposure_ms + change_speed;
+            change_exposure = true;
+          }
+
+          else if (blk._max == (hist->_small_hist.size() - 1))
+          {
+            if (exposure_ms > change_speed)
+            {
+              absolute_exposure_ms = exposure_ms - change_speed;
+              change_exposure = true;
+            }
+            else if (exposure_ms > 0.1)
+            {
+              absolute_exposure_ms = exposure_ms / 1.1;
+              change_exposure = true;
+            }
+          }
+        }
       }
 
-      else if (max == (hist->_small_hist.size() - 1))
+      if (change_exposure)
       {
-        if (exposure_ms > change_speed)
+        std::cout << "Winner speed: " << winner_speed << std::endl;
+
+        for (auto &blk : _cameras)
         {
-          block._cam->set_exposure(exposure_ms - change_speed);
+          blk._cam->set_exposure(absolute_exposure_ms);
+          blk._num_captured = 0;
+        }
+      }
+    }
+    else
+    {
+      if (++block._num_captured > NUM_SKIPPS)
+      {
+        double change_speed = std::floor((double)max_val * 10.0 / total_pixels);
+        double exposure_ms = block._cam->get_exposure();
+
+        if (max == 0)
+        {
+          // under-expose
+          block._cam->set_exposure(exposure_ms + change_speed);
           block._num_captured = 0;
         }
-        else if (exposure_ms > 0.1)
+
+        else if (max == (hist->_small_hist.size() - 1))
         {
-          block._cam->set_exposure(exposure_ms / 1.1);
-          block._num_captured = 0;
+          if (exposure_ms > change_speed)
+          {
+            block._cam->set_exposure(exposure_ms - change_speed);
+            block._num_captured = 0;
+          }
+          else if (exposure_ms > 0.1)
+          {
+            block._cam->set_exposure(exposure_ms / 1.1);
+            block._num_captured = 0;
+          }
         }
       }
     }
   }
-  _mutex.unlock();
-
-
 }
 
 /*
@@ -138,6 +196,8 @@ void ISP::add_camera(Camera* camera)
   CameraBlock block;
   block._cam = camera;
   block._num_captured = 0;
+  block._max = -1;
+  block._max_val = 0;
 
   _cameras.push_back(block);
   camera->register_consumer(this,Metadata().set<int>("camera_id",_cameras.size() - 1));
