@@ -465,7 +465,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     glBegin(GL_LINE_STRIP);
-      glColor4ub(255, 0, 0, 64);
+      glColor4ub(255, 0, 0, 32);
       //glColor3f(1.0, 0.0, 0.0);
       GLfloat gap = (wnd._right -  wnd._left) * 10 / wnd._image->width();
       for (size_t hist_index = 0; hist_index < hist->_histogram.size(); hist_index++)

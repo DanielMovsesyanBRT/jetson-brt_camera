@@ -332,6 +332,52 @@ private:
   script::Expression*             _condition;
 };
 
+/*
+ * \\class ActionIf
+ *
+ * created on: Jul 9, 2019
+ *
+ */
+class ActionIf : public ScriptAction
+{
+public:
+  ActionIf() : _statement() {}
+  virtual ~ActionIf()
+  {
+    while (!_statement.empty())
+    {
+      delete _statement.front();
+      _statement.erase(_statement.begin());
+    }
+  }
+
+  virtual bool                    do_action(Session&);
+protected:
+  virtual bool                    extract(ParserEnv&);
+
+private:
+  struct ConditionAction
+  {
+    ConditionAction() : _condition(nullptr), _action_array() {}
+    ~ConditionAction()
+    {
+      if (_condition != nullptr)
+        delete _condition;
+
+      while (!_action_array.empty())
+      {
+        delete _action_array.front();
+        _action_array.erase(_action_array.begin());
+      }
+    }
+
+    script::Expression*             _condition;
+    std::vector<ScriptAction*>      _action_array;
+  };
+
+  std::vector<ConditionAction*>   _statement;
+};
+
 /**
  *
  */

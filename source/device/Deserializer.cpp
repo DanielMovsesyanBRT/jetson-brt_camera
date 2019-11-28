@@ -112,7 +112,7 @@ bool Deserializer::write(uint8_t address, uint16_t offset, size_t offset_size, c
  * author: daniel
  *
  */
-bool Deserializer::load_script(const char *file_path)
+bool Deserializer::load_script(const char *file_path,const Metadata& extra_args/* = Metadata()*/)
 {
   _script = ScriptPtr(file_path);
   if (!_script)
@@ -121,6 +121,7 @@ bool Deserializer::load_script(const char *file_path)
   if (!_script->load())
     return false;
 
+  *(_script) += extra_args;
   _script->set<void*>("device", this);
 
   if (!_script->run())

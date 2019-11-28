@@ -99,7 +99,7 @@ void MetaImpl::parse(int argc,char** argv)
       if (eq == nullptr)
       {
         name = arg;
-        value = "1";
+        value = "true";
       }
       else
       {

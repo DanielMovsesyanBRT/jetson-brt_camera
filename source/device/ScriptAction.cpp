@@ -142,6 +142,7 @@ ScriptAction* ScriptAction::read_line(ParserEnv& ps)
     ps.trim_l(4);
     return result;
   }
+  // Loop
   else if (Utils::stristr(ps,"loop") == ps.c_str())
   {
     result = new ActionLoop();
@@ -154,6 +155,22 @@ ScriptAction* ScriptAction::read_line(ParserEnv& ps)
       throw script::ParserException::create("Mismatched loop");
 
     ps.trim_l(4);
+    return result;
+  }
+  // If
+  else if (Utils::stristr(ps,"if") == ps.c_str())
+  {
+    result = new ActionIf();
+    ps.trim_l(2);
+  }
+  else if ((Utils::stristr(ps,"elif") == ps.c_str()) ||
+           (Utils::stristr(ps,"endif") == ps.c_str()) ||
+           (Utils::stristr(ps,"else") == ps.c_str()) )
+  {
+    result = (ScriptAction*)ps.env().get<void*>("if");
+    if (result == nullptr)
+      throw script::ParserException::create("Mismatched if statement");
+
     return result;
   }
   else
@@ -631,6 +648,93 @@ bool ActionLoop::extract(ParserEnv& ps)
     _action_array.push_back(action);
   }
   throw script::ParserException::create("Endless loop");
+}
+
+/*
+ * \\fn ActionIf::do_action
+ *
+ * created on: Nov 28, 2019
+ * author: daniel
+ *
+ */
+bool ActionIf::do_action(Session& session)
+{
+  for (size_t index = 0; index < _statement.size(); index++)
+  {
+    if ((_statement[index]->_condition == nullptr) ||
+        ((bool)_statement[index]->_condition->evaluate(&session)))
+    {
+      std::vector<ScriptAction*>::iterator iter;
+      for (iter = _statement[index]->_action_array.begin();iter != _statement[index]->_action_array.end();++iter)
+        (*iter)->do_action(session);
+
+      break;
+    }
+  }
+
+  return true;
+}
+
+/*
+ * \\fn ActionIf::extract
+ *
+ * created on: Nov 28, 2019
+ * author: daniel
+ *
+ */
+bool ActionIf::extract(ParserEnv& ps)
+{
+  script::Parser pr;
+  _statement.push_back(new ConditionAction);
+  ConditionAction *ca = _statement[_statement.size() - 1];
+  ca->_condition = pr.parse(ps);
+
+  void* previous_if = ps.env().get<void*>("if");
+  ps.env().set("if", (void*)this);
+
+  while (ps.next_token("\n") != nullptr)
+  {
+    ScriptAction* action = ScriptAction::read_line(ps);
+    if (action == nullptr)
+      continue;
+
+    if (action == this)
+    {
+      if (Utils::stristr(ps,"endif") == ps.c_str())
+      {
+        ps.trim_l(5);
+        if (previous_if != nullptr)
+          ps.env().set("if", previous_if);
+        else
+          ps.env().erase("if");
+
+        return true;
+      }
+      else if (Utils::stristr(ps,"elif") == ps.c_str())
+      {
+        ps.trim_l(4);
+
+        _statement.push_back(new ConditionAction);
+        ca = _statement[_statement.size() - 1];
+        ca->_condition = pr.parse(ps);
+        continue;
+      }
+      else if (Utils::stristr(ps,"else") == ps.c_str())
+      {
+        ps.trim_l(4);
+
+        _statement.push_back(new ConditionAction);
+        ca = _statement[_statement.size() - 1];
+        continue;
+      }
+      else
+        throw script::ParserException::create("Undefined if statement");
+    }
+
+    ca->_action_array.push_back(action);
+  }
+
+  throw script::ParserException::create("Endless if statement");
 }
 
 

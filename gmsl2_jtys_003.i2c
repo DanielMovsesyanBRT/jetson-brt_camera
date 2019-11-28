@@ -559,7 +559,7 @@ macro config_hdr_sensor(address)
   
   # w $address, 0x3100,   0x4000    # DLO_CONTROL0
   w $address, 0x3180,   0x0080    # RESERVED_MFR_3180
-  w $address, 0x31AC,   0x140C    # DATA_FORMAT_BITS
+  w $address, 0x31AC,   0x100C    # DATA_FORMAT_BITS
   w $address, 0x31AE,   0x0204    # SERIAL_FORMAT
   w $address, 0x31AE,   0x0304    # SERIAL_FORMAT
   w $address, 0x31AE,   0x0204    # SERIAL_FORMAT
@@ -705,9 +705,12 @@ loop $global_loop_cntr < $num_cameras
    x config_serializer $serializer_addr[$global_loop_cntr], 1 + $global_loop_cntr * 2  # Y or U
    d 100ms
  
-   # x config_hdr_sensor $sensor_addr[$global_loop_cntr]
-   x config_sensor $sensor_addr[$global_loop_cntr]
-   # x config_hdr_sensor  $sensor_addr[$global_loop_cntr]
+   
+   if $hdr_mode
+      x config_hdr_sensor $sensor_addr[$global_loop_cntr]
+   else
+      x config_sensor $sensor_addr[$global_loop_cntr]
+   endif
    
    s $global_loop_cntr = $global_loop_cntr + 1
 endloop

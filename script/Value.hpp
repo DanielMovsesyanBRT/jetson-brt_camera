@@ -134,7 +134,7 @@ public:
           Value                   sub_array(int start, int length);
 
 private:
-  ValueData*                        _data;
+  ValueData*                      _data;
 };
 
 } // script

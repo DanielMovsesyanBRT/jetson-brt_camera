@@ -37,7 +37,7 @@ public:
           bool                    read(uint8_t address, uint16_t offset, size_t offset_size, uint8_t* buffer, size_t size);
           bool                    write(uint8_t address, uint16_t offset, size_t offset_size, const uint8_t* buffer, size_t size);
 
-          bool                    load_script(const char *file_path);
+          bool                    load_script(const char *file_path,const Metadata& extra_args = Metadata());
 
           bool                    run_script(const char *text);
           bool                    run_macro(const char *macro_name,std::vector<script::Value> arguments = std::vector<script::Value>());

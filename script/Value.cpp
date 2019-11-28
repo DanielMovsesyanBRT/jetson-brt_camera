@@ -872,41 +872,50 @@ Value Value::operator==(const Value& val) const
 {
   Value result;
 
-  switch (_data->type())
+  if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-  case ValueData::BOOL:
-    result._data->set_bool(_data->get_bool() == val._data->get_bool(),_data->size());
-    break;
+    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+              std::min(val._data->size(), _data->size()) == 0));
+  }
+  else
+  {
+    switch (_data->type())
+    {
+    case ValueData::BOOL:
+      result._data->set_bool(_data->get_bool() == val._data->get_bool(),_data->size());
+      break;
 
-  case ValueData::INT:
-    result._data->set_bool(_data->get_int() == val._data->get_int(),_data->size());
-    break;
+    case ValueData::INT:
+      result._data->set_bool(_data->get_int() == val._data->get_int(),_data->size());
+      break;
 
-  case ValueData::FLOAT:
-    result._data->set_bool(_data->get_float() == val._data->get_float(),_data->size());
-    break;
+    case ValueData::FLOAT:
+      result._data->set_bool(_data->get_float() == val._data->get_float(),_data->size());
+      break;
 
-  case ValueData::ULONGLONG:
-    result._data->set_bool(_data->get_ull() == val._data->get_ull(),_data->size());
-    break;
+    case ValueData::ULONGLONG:
+      result._data->set_bool(_data->get_ull() == val._data->get_ull(),_data->size());
+      break;
 
-  case ValueData::PTR:
-    result._data->set_bool(_data->get_ptr() == val._data->get_ptr(),_data->size());
-    break;
+    case ValueData::PTR:
+      result._data->set_bool(_data->get_ptr() == val._data->get_ptr(),_data->size());
+      break;
 
-  case ValueData::STRING:
-    result._data->set_bool(_data->get_string() == val._data->get_string());
-    break;
+    case ValueData::STRING:
+      result._data->set_bool(_data->get_string() == val._data->get_string());
+      break;
 
-  case ValueData::BYTEARRAY:
-    if (_data->size() != val._data->size())
-      result._data->set_bool(false);
-    else
-      result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) == 0));
-    break;
+    case ValueData::BYTEARRAY:
+      if (_data->size() != val._data->size())
+        result._data->set_bool(false);
+      else
+        result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) == 0));
+      break;
 
-  default:
-    break;
+    default:
+      result._data->set_bool((bool)(val == *this), size());
+      break;
+    }
   }
 
   return result;
@@ -920,41 +929,50 @@ Value Value::operator==(const Value& val) const
 Value Value::operator!=(const Value& val) const
 {
   Value result;
-  switch (_data->type())
+  if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-  case ValueData::BOOL:
-    result._data->set_bool(_data->get_bool() != val._data->get_bool(),_data->size());
-    break;
+    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+              std::min(val._data->size(), _data->size()) != 0));
+  }
+  else
+  {
+    switch (_data->type())
+    {
+    case ValueData::BOOL:
+      result._data->set_bool(_data->get_bool() != val._data->get_bool(),_data->size());
+      break;
 
-  case ValueData::INT:
-    result._data->set_bool(_data->get_int() != val._data->get_int(),_data->size());
-    break;
+    case ValueData::INT:
+      result._data->set_bool(_data->get_int() != val._data->get_int(),_data->size());
+      break;
 
-  case ValueData::FLOAT:
-    result._data->set_bool(_data->get_float() != val._data->get_float(),_data->size());
-    break;
+    case ValueData::FLOAT:
+      result._data->set_bool(_data->get_float() != val._data->get_float(),_data->size());
+      break;
 
-  case ValueData::ULONGLONG:
-    result._data->set_bool(_data->get_ull() != val._data->get_ull(),_data->size());
-    break;
+    case ValueData::ULONGLONG:
+      result._data->set_bool(_data->get_ull() != val._data->get_ull(),_data->size());
+      break;
 
-  case ValueData::PTR:
-    result._data->set_bool(_data->get_ptr() != val._data->get_ptr(),_data->size());
-    break;
+    case ValueData::PTR:
+      result._data->set_bool(_data->get_ptr() != val._data->get_ptr(),_data->size());
+      break;
 
-  case ValueData::STRING:
-    result._data->set_bool(_data->get_string() != val._data->get_string());
-    break;
+    case ValueData::STRING:
+      result._data->set_bool(_data->get_string() != val._data->get_string());
+      break;
 
-  case ValueData::BYTEARRAY:
-    if (_data->size() != val._data->size())
-      result._data->set_bool(true);
-    else
-      result._data->set_bool((_data->size() == 0) ? false : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) != 0));
-    break;
+    case ValueData::BYTEARRAY:
+      if (_data->size() != val._data->size())
+        result._data->set_bool(true);
+      else
+        result._data->set_bool((_data->size() == 0) ? false : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) != 0));
+      break;
 
-  default:
-    break;
+    default:
+      result._data->set_bool((bool)(val != *this), size());
+      break;
+    }
   }
 
   return result;
@@ -968,41 +986,51 @@ Value Value::operator!=(const Value& val) const
 Value Value::operator>(const Value& val) const
 {
   Value result;
-  switch (_data->type())
+
+  if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-  case ValueData::BOOL:
-    result._data->set_bool(_data->get_bool() > val._data->get_bool(),_data->size());
-    break;
+    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+              std::min(val._data->size(), _data->size()) > 0));
+  }
+  else
+  {
+    switch (_data->type())
+    {
+    case ValueData::BOOL:
+      result._data->set_bool(_data->get_bool() > val._data->get_bool(),_data->size());
+      break;
 
-  case ValueData::INT:
-    result._data->set_bool(_data->get_int() > val._data->get_int(),_data->size());
-    break;
+    case ValueData::INT:
+      result._data->set_bool(_data->get_int() > val._data->get_int(),_data->size());
+      break;
 
-  case ValueData::FLOAT:
-    result._data->set_bool(_data->get_float() > val._data->get_float(),_data->size());
-    break;
+    case ValueData::FLOAT:
+      result._data->set_bool(_data->get_float() > val._data->get_float(),_data->size());
+      break;
 
-  case ValueData::ULONGLONG:
-    result._data->set_bool(_data->get_ull() > val._data->get_ull(),_data->size());
-    break;
+    case ValueData::ULONGLONG:
+      result._data->set_bool(_data->get_ull() > val._data->get_ull(),_data->size());
+      break;
 
-  case ValueData::PTR:
-    result._data->set_bool(_data->get_ptr() > val._data->get_ptr(),_data->size());
-    break;
+    case ValueData::PTR:
+      result._data->set_bool(_data->get_ptr() > val._data->get_ptr(),_data->size());
+      break;
 
-  case ValueData::STRING:
-    result._data->set_bool(_data->get_string().compare(val._data->get_string()) > 0);
-    break;
+    case ValueData::STRING:
+      result._data->set_bool(_data->get_string().compare(val._data->get_string()) > 0);
+      break;
 
-  case ValueData::BYTEARRAY:
-    if (_data->size() != val._data->size())
-      result._data->set_bool(_data->size() > val._data->size());
-    else
-      result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) > 0));
-    break;
+    case ValueData::BYTEARRAY:
+      if (_data->size() != val._data->size())
+        result._data->set_bool(_data->size() > val._data->size());
+      else
+        result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) > 0));
+      break;
 
-  default:
-    break;
+    default:
+      result._data->set_bool((bool)(val < *this), size());
+      break;
+    }
   }
   return result;
 }
@@ -1015,43 +1043,52 @@ Value Value::operator>(const Value& val) const
 Value Value::operator<(const Value& val) const
 {
   Value result;
-  switch (_data->type())
+
+  if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-  case ValueData::BOOL:
-    result._data->set_bool(_data->get_bool() < val._data->get_bool(),_data->size());
-    break;
-
-  case ValueData::INT:
-    result._data->set_bool(_data->get_int() < val._data->get_int(),_data->size());
-    break;
-
-  case ValueData::FLOAT:
-    result._data->set_bool(_data->get_float() < val._data->get_float(),_data->size());
-    break;
-
-  case ValueData::ULONGLONG:
-    result._data->set_bool(_data->get_ull() < val._data->get_ull(),_data->size());
-    break;
-
-  case ValueData::PTR:
-    result._data->set_bool(_data->get_ptr() < val._data->get_ptr(),_data->size());
-    break;
-
-  case ValueData::STRING:
-    result._data->set_bool(_data->get_string().compare(val._data->get_string()) < 0);
-    break;
-
-  case ValueData::BYTEARRAY:
-    if (_data->size() != val._data->size())
-      result._data->set_bool(false);
-    else
-      result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) < 0));
-    break;
-
-  default:
-    break;
+    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+              std::min(val._data->size(), _data->size()) < 0));
   }
+  else
+  {
+    switch (_data->type())
+    {
+    case ValueData::BOOL:
+      result._data->set_bool(_data->get_bool() < val._data->get_bool(),_data->size());
+      break;
 
+    case ValueData::INT:
+      result._data->set_bool(_data->get_int() < val._data->get_int(),_data->size());
+      break;
+
+    case ValueData::FLOAT:
+      result._data->set_bool(_data->get_float() < val._data->get_float(),_data->size());
+      break;
+
+    case ValueData::ULONGLONG:
+      result._data->set_bool(_data->get_ull() < val._data->get_ull(),_data->size());
+      break;
+
+    case ValueData::PTR:
+      result._data->set_bool(_data->get_ptr() < val._data->get_ptr(),_data->size());
+      break;
+
+    case ValueData::STRING:
+      result._data->set_bool(_data->get_string().compare(val._data->get_string()) < 0);
+      break;
+
+    case ValueData::BYTEARRAY:
+      if (_data->size() != val._data->size())
+        result._data->set_bool(false);
+      else
+        result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) < 0));
+      break;
+
+    default:
+      result._data->set_bool((bool)(val > *this), size());
+      break;
+    }
+  }
   return result;
 }
 
@@ -1063,43 +1100,52 @@ Value Value::operator<(const Value& val) const
 Value Value::operator>=(const Value& val) const
 {
   Value result;
-  switch (_data->type())
+
+  if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-  case ValueData::BOOL:
-    result._data->set_bool(_data->get_bool() >= val._data->get_bool(),_data->size());
-    break;
-
-  case ValueData::INT:
-    result._data->set_bool(_data->get_int() >= val._data->get_int(),_data->size());
-    break;
-
-  case ValueData::FLOAT:
-    result._data->set_bool(_data->get_float() >= val._data->get_float(),_data->size());
-    break;
-
-  case ValueData::ULONGLONG:
-    result._data->set_bool(_data->get_ull() >= val._data->get_ull(),_data->size());
-    break;
-
-  case ValueData::PTR:
-    result._data->set_bool(_data->get_ptr() >= val._data->get_ptr(),_data->size());
-    break;
-
-  case ValueData::STRING:
-    result._data->set_bool(_data->get_string().compare(val._data->get_string()) >= 0);
-    break;
-
-  case ValueData::BYTEARRAY:
-    if (_data->size() != val._data->size())
-      result._data->set_bool(false);
-    else
-      result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) >= 0));
-    break;
-
-  default:
-    break;
+    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+              std::min(val._data->size(), _data->size()) >= 0));
   }
+  else
+  {
+    switch (_data->type())
+    {
+    case ValueData::BOOL:
+      result._data->set_bool(_data->get_bool() >= val._data->get_bool(),_data->size());
+      break;
 
+    case ValueData::INT:
+      result._data->set_bool(_data->get_int() >= val._data->get_int(),_data->size());
+      break;
+
+    case ValueData::FLOAT:
+      result._data->set_bool(_data->get_float() >= val._data->get_float(),_data->size());
+      break;
+
+    case ValueData::ULONGLONG:
+      result._data->set_bool(_data->get_ull() >= val._data->get_ull(),_data->size());
+      break;
+
+    case ValueData::PTR:
+      result._data->set_bool(_data->get_ptr() >= val._data->get_ptr(),_data->size());
+      break;
+
+    case ValueData::STRING:
+      result._data->set_bool(_data->get_string().compare(val._data->get_string()) >= 0);
+      break;
+
+    case ValueData::BYTEARRAY:
+      if (_data->size() != val._data->size())
+        result._data->set_bool(false);
+      else
+        result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) >= 0));
+      break;
+
+    default:
+      result._data->set_bool((bool)(val <= *this), size());
+      break;
+    }
+  }
   return result;
 }
 
@@ -1111,41 +1157,51 @@ Value Value::operator>=(const Value& val) const
 Value Value::operator<=(const Value& val) const
 {
   Value result;
-  switch (_data->type())
+
+  if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-  case ValueData::BOOL:
-    result._data->set_bool(_data->get_bool() <= val._data->get_bool(),_data->size());
-    break;
+    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+              std::min(val._data->size(), _data->size()) <= 0));
+  }
+  else
+  {
+    switch (_data->type())
+    {
+    case ValueData::BOOL:
+      result._data->set_bool(_data->get_bool() <= val._data->get_bool(),_data->size());
+      break;
 
-  case ValueData::INT:
-    result._data->set_bool(_data->get_int() <= val._data->get_int(),_data->size());
-    break;
+    case ValueData::INT:
+      result._data->set_bool(_data->get_int() <= val._data->get_int(),_data->size());
+      break;
 
-  case ValueData::FLOAT:
-    result._data->set_bool(_data->get_float() <= val._data->get_float(),_data->size());
-    break;
+    case ValueData::FLOAT:
+      result._data->set_bool(_data->get_float() <= val._data->get_float(),_data->size());
+      break;
 
-  case ValueData::ULONGLONG:
-    result._data->set_bool(_data->get_ull() <= val._data->get_ull(),_data->size());
-    break;
+    case ValueData::ULONGLONG:
+      result._data->set_bool(_data->get_ull() <= val._data->get_ull(),_data->size());
+      break;
 
-  case ValueData::PTR:
-    result._data->set_bool(_data->get_ptr() <= val._data->get_ptr(),_data->size());
-    break;
+    case ValueData::PTR:
+      result._data->set_bool(_data->get_ptr() <= val._data->get_ptr(),_data->size());
+      break;
 
-  case ValueData::STRING:
-    result._data->set_bool(_data->get_string().compare(val._data->get_string()) <= 0);
-    break;
+    case ValueData::STRING:
+      result._data->set_bool(_data->get_string().compare(val._data->get_string()) <= 0);
+      break;
 
-  case ValueData::BYTEARRAY:
-    if (_data->size() != val._data->size())
-      result._data->set_bool(false);
-    else
-      result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) <= 0));
-    break;
+    case ValueData::BYTEARRAY:
+      if (_data->size() != val._data->size())
+        result._data->set_bool(false);
+      else
+        result._data->set_bool((_data->size() == 0) ? true : (memcmp(_data->get_byte_array().data(), val._data->get_byte_array().data(), _data->size()) <= 0));
+      break;
 
-  default:
-    break;
+    default:
+      result._data->set_bool((bool)(val >= *this), size());
+      break;
+    }
   }
   return result;
 }

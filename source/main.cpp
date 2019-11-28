@@ -67,7 +67,7 @@ int main(int argc, char **argv)
     auto deserializer = brt::jupiter::DeviceManager::get()->get_device(id);
     if (deserializer != nullptr)
     {
-      deserializer->load_script(script_file.c_str());
+      deserializer->load_script(script_file.c_str(), meta_args);
       ids.push_back(id);
     }
   }
