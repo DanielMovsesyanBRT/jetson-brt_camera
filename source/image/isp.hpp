@@ -45,6 +45,15 @@ private:
     Camera*                         _cam;
     uint32_t                        _num_captured;
     std::vector<uint32_t>           _histogram;
+
+    double                          _last_delta_mean;
+    double                          _last_exposure_value;
+
+    double                          _accumulated_mean;
+    int                             _num_accumulations;
+
+    std::string                     _name;
+    int                             _id;
   };
 
   std::vector<CameraBlock>        _cameras;

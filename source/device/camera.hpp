@@ -78,6 +78,8 @@ public:
           void                    read_exposure();
           void                    set_gain(eCameraGain);
 
+          std::string             name() const { return _device_name; }
+
 private:
           bool                    open_device();
 

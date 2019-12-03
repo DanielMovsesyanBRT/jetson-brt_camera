@@ -8,7 +8,7 @@
 #include "image_processor.hpp"
 
 #define BITS_PER_PIXEL                      (1 << 16)
-#define SMALL_HIST_SIZE                     (5)
+#define SMALL_HIST_SIZE                     (9)
 
 namespace brt
 {

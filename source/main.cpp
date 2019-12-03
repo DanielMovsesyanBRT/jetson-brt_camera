@@ -131,9 +131,9 @@ int main(int argc, char **argv)
     std::cin.getline(buffer, sizeof(buffer));
     line = buffer;
 
-    if (Utils::stristr(line, "exposure") == 0)
+    if (Utils::stristr(line, "exp") == 0)
     {
-      line = line.substr(8);
+      line = line.substr(3);
       double exposure = strtod(line.c_str(), nullptr);
 
       for (auto id : cam_des)
