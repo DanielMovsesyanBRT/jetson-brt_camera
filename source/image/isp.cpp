@@ -94,9 +94,10 @@ void ISP::consume(ImageBox box)
       }
 
       double coeff = numerator / denumerator;
-      coeff = 5.0 * coeff / total_pixels;
+      coeff = 10.0 * coeff / total_pixels;
 
-      return coeff;
+      //coeff = (coeff < 0) ? -(coeff*coeff) : (coeff*coeff);
+      return coeff * coeff * coeff;
     };
 
 

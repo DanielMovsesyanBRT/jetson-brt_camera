@@ -124,6 +124,8 @@ bool Camera::stop_streaming()
   if (!_thread.joinable())
     return false;
 
+  std::cout << "Stopping device " << _device_name << std::endl;
+
   _terminate.store(true);
   uint32_t value = EVENT_STOP;
   ::write(_pipe[1], &value, sizeof(uint32_t));
@@ -142,6 +144,8 @@ bool Camera::stop_streaming()
   }
 
   _handle = -1;
+
+  std::cout << "Stopped device " << _device_name << std::endl;
 
   return true;
 }

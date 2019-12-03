@@ -172,8 +172,9 @@ int main(int argc, char **argv)
   } while (line != "q");
 
   isp_manager.release();
-
   wm::get()->release();
+
+  DeviceManager::get()->stop_all();
 
 //  fm::get()->init();
   return 0;

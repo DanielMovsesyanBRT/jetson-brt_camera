@@ -459,7 +459,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   image::HistPtr hist = wnd._image->get_histogram();
   if (hist)
   {
-    uint32_t max_value = (hist->_max_value >> 4) << 4;
+    uint32_t max_value = (hist->_max_value >> 5) << 6;
 
     glShadeModel(GL_SMOOTH);
     glLineWidth(4.0);
@@ -475,7 +475,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
         GLfloat value = (max_value == 0) ? wnd._top : wnd._top + (wnd._bottom -  wnd._top) * hist->_histogram[hist_index] / max_value;
         GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / hist->_histogram.size();
 
-        glVertex3f(xx, value, 0.0);
+        glVertex3f(xx, value, 1.0);
       }
 
     glEnd();

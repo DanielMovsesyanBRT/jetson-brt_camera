@@ -105,6 +105,7 @@ public:
   static  DeviceManager*          get() {return &_object; }
           Deserializer*           get_device(uint16_t);
           int                     handle() const { return _brt_handle; }
+          void                    stop_all();
 
 private:
   static  DeviceManager           _object;

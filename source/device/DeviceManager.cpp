@@ -7,6 +7,7 @@
 
 #include "Deserializer.hpp"
 #include "DeviceManager.hpp"
+#include "Camera.hpp"
 
 namespace brt
 {
@@ -64,6 +65,28 @@ Deserializer* DeviceManager::get_device(uint16_t id)
   return device;
 }
 
+/*
+ * \\fn void DeviceManager::stop_all
+ *
+ * created on: Dec 2, 2019
+ * author: daniel
+ *
+ */
+void DeviceManager::stop_all()
+{
+  for (auto deser : _device_map)
+  {
+    if (deser.second != nullptr)
+    {
+      for (size_t cam_id = 0; cam_id < deser.second->num_cameras(); cam_id++)
+      {
+        Camera* cam = deser.second->get_camera(cam_id);
+        if (cam != nullptr)
+          cam->stop_streaming();
+      }
+    }
+  }
+}
 
 } /* namespace jupiter */
 } /* namespace brt */
