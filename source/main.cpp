@@ -172,6 +172,7 @@ int main(int argc, char **argv)
   } while (line != "q");
 
   isp_manager.release();
+
   wm::get()->release();
 
 //  fm::get()->init();

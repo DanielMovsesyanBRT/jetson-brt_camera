@@ -13,6 +13,7 @@
 #include <cmath>
 
 #define NUM_SKIPPS                          (4)
+#define NUM_ACCUMULATIONS                   (8)
 
 namespace brt
 {
@@ -64,111 +65,100 @@ void ISP::consume(ImageBox box)
   if (!hist)
     return;
 
-  // First Check exposure
-  int max = -1;
-  uint32_t max_val = 0;
-  uint32_t total_pixels = 0;
-
-  for (size_t index = 0; index < hist->_small_hist.size(); index++)
-  {
-    total_pixels += hist->_small_hist[index];
-    if (max_val < hist->_small_hist[index])
-    {
-      max_val = hist->_small_hist[index];
-      max = index;
-    }
-  }
-
   std::lock_guard<std::mutex> l(_mutex);
   if (id < _cameras.size())
   {
     CameraBlock  &block = _cameras[id];
-    block._max = max;
-    block._max_val = max_val;
+
+    if (++block._num_captured > NUM_SKIPPS)
+    {
+      for (size_t index = 0; index < hist->_small_hist.size(); index++)
+      {
+        if (block._histogram.size() <= index)
+          block._histogram.push_back(hist->_small_hist[index]);
+        else
+          block._histogram[index] += hist->_small_hist[index];
+      }
+    }
+
+    // Line fitting function
+    auto line_interpolation = [](CameraBlock& block,uint32_t total_pixels)->double
+    {
+      double mean_x = block._histogram.size() / 2;
+      double mean_y = (double)total_pixels / block._histogram.size();
+      double numerator = 0.0, denumerator = 0.0;
+      for (size_t index = 0; index < block._histogram.size(); index++)
+      {
+        numerator += (index - mean_x) * (block._histogram[index] - mean_y);
+        denumerator += (index - mean_x) * (index - mean_x);
+      }
+
+      double coeff = numerator / denumerator;
+      coeff = 5.0 * coeff / total_pixels;
+
+      return coeff;
+    };
+
 
     if (_group)
     {
-      ++block._num_captured;
-
       double absolute_exposure_ms = 0.1;
-      double winner_speed = 0.0;
+      double max_coeff = 0.0;
       bool change_exposure = false;
 
-      for (auto blk : _cameras)
+      for (auto& blk : _cameras)
       {
-        if (blk._num_captured < NUM_SKIPPS)
+        if (blk._num_captured < NUM_ACCUMULATIONS)
           // Skip until all cameras are aligned
           return;
 
-        double change_speed = (double)blk._max_val * 10.0 / total_pixels;
-        if (change_speed < 10.0)
-          change_speed += 0.04 * change_speed * change_speed - 0.4 * change_speed;
+        uint32_t total_pixels = 0;
+        for (size_t index = 0; index < blk._histogram.size(); index++)
+          total_pixels += blk._histogram[index];
 
-        if (winner_speed < change_speed)
+        // Fitting points to a line to adjust exposure based on slope
+        double coeff = line_interpolation(blk, total_pixels);
+
+        if (std::fabs(max_coeff) < std::fabs(coeff))
         {
-          winner_speed = change_speed;
           double exposure_ms = blk._cam->get_exposure();
-          if (blk._max == 0)
-          {
-            // under-expose
-            absolute_exposure_ms = exposure_ms + change_speed;
-            change_exposure = true;
-          }
-
-          else if (blk._max == (hist->_small_hist.size() - 1))
-          {
-            if (exposure_ms > change_speed)
-            {
-              absolute_exposure_ms = exposure_ms - change_speed;
-              change_exposure = true;
-            }
-            else if (exposure_ms > 0.1)
-            {
-              absolute_exposure_ms = exposure_ms / 1.1;
-              change_exposure = true;
-            }
-          }
+          absolute_exposure_ms = exposure_ms - coeff;
+          change_exposure = true;
+          max_coeff = coeff;
         }
       }
 
       if (change_exposure)
       {
-        std::cout << "Winner speed: " << winner_speed << std::endl;
-
         for (auto &blk : _cameras)
         {
           blk._cam->set_exposure(absolute_exposure_ms);
           blk._num_captured = 0;
         }
       }
+
+      for (auto &blk : _cameras)
+      {
+        blk._histogram.clear();
+        blk._num_captured = (blk._num_captured != 0) ? NUM_SKIPPS : 0;
+      }
     }
     else
     {
-      if (++block._num_captured > NUM_SKIPPS)
+      if (block._num_captured > NUM_ACCUMULATIONS)
       {
-        double change_speed = std::floor((double)max_val * 10.0 / total_pixels);
+        uint32_t total_pixels = 0;
+        for (size_t index = 0; index < block._histogram.size(); index++)
+          total_pixels += block._histogram[index];
+
+        // Fitting points to a line to adjust exposure based on slope
+        double coeff = line_interpolation(block, total_pixels);
         double exposure_ms = block._cam->get_exposure();
 
-        if (max == 0)
-        {
-          // under-expose
-          block._cam->set_exposure(exposure_ms + change_speed);
-          block._num_captured = 0;
-        }
+        block._cam->set_exposure(exposure_ms - coeff);
 
-        else if (max == (hist->_small_hist.size() - 1))
-        {
-          if (exposure_ms > change_speed)
-          {
-            block._cam->set_exposure(exposure_ms - change_speed);
-            block._num_captured = 0;
-          }
-          else if (exposure_ms > 0.1)
-          {
-            block._cam->set_exposure(exposure_ms / 1.1);
-            block._num_captured = 0;
-          }
-        }
+        block._histogram.clear();
+        block._num_captured = (block._num_captured != 0) ? NUM_SKIPPS : 0;
       }
     }
   }
@@ -196,8 +186,8 @@ void ISP::add_camera(Camera* camera)
   CameraBlock block;
   block._cam = camera;
   block._num_captured = 0;
-  block._max = -1;
-  block._max_val = 0;
+//  block._max = -1;
+//  block._max_val = 0;
 
   _cameras.push_back(block);
   camera->register_consumer(this,Metadata().set<int>("camera_id",_cameras.size() - 1));

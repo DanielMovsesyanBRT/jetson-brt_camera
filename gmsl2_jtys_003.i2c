@@ -116,7 +116,7 @@ macro set_exposure(id,exposure_ms)
     s $address = $sensor_addr[$id]
     s $exp_value = $exposure_ms / (1000.0 * $hts) * $fvco
 
-    e "Set Exposure for sensor " + $sns_addr + " to " + $exposure_ms + "ms : " + int($exp_value)
+    # e "Set Exposure for sensor " + $sns_addr + " to " + $exposure_ms + "ms : " + int($exp_value)
 
     w $address,0x3012,int($exp_value,2) # COARSE_INTEGRATION_TIME_
     w $address,0x3212,int($exp_value / 8,2) # COARSE_INTEGRATION_TIME_2

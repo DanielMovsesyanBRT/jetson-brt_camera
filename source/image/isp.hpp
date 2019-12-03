@@ -44,8 +44,7 @@ private:
   {
     Camera*                         _cam;
     uint32_t                        _num_captured;
-    int                             _max;
-    uint32_t                        _max_val;
+    std::vector<uint32_t>           _histogram;
   };
 
   std::vector<CameraBlock>        _cameras;
