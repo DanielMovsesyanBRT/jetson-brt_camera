@@ -7,8 +7,6 @@
 
 #include "camera_window.hpp"
 #include "window_manager.hpp"
-#include "Utils.hpp"
-
 #include "cuda_debayering.h"
 
 #include <iostream>
@@ -16,6 +14,7 @@
 #include <chrono>
 #include <cmath>
 #include <fstream>
+#include "../utils.hpp"
 
 
 namespace brt
@@ -410,36 +409,12 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 
     _click.store(-1);
   }
-
-//  const size_t outputImgWidth = wnd._image->width();
-//  const size_t outputImgHeight = wnd._image->height();
-//  uint16_t *outputImgBuffer = (uint16_t*)malloc(outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
-//  uint32_t *histogram = (uint32_t *)malloc(0x1000 * sizeof(uint32_t));
-//
-//  uint32_t max;
-//  cuda::bilinearInterpolationDebayer16((uint16_t*)wnd._image->bytes(), outputImgBuffer, false, histogram, 0x1000, &max);
-
-//  memset(outputImgBuffer, 0xC0, outputImgWidth * outputImgHeight * 3 * sizeof(uint16_t));
-//  for (int y = 0; y < outputImgHeight; y++)
-//  {
-//    for (int x = 0; x < outputImgWidth; x++)
-//    {
-//      *(outputImgBuffer + (y * outputImgWidth * 3 + x * 3)) = 0xFFFF;
-//      *(outputImgBuffer + (y * outputImgWidth * 3 + x * 3 + 1)) = 0xFFFF;
-//      *(outputImgBuffer + (y * outputImgWidth * 3 + x * 3 + 2)) = 0xFFFF;
-//    }
-//  }
-
-  //image::RawRGBPtr image = wnd._ip->debayer(wnd._image, false);
-
   glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
   glBindTexture(GL_TEXTURE_2D, _texture);
 
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, outputImgBuffer);
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  image->width(), image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, image->bytes());
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, wnd._image->bytes());
 
   glEnable(GL_TEXTURE_2D);
@@ -504,7 +479,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
       XSetFont (display(context), _gc, _font->fid);
       XSetForeground(display(context), _gc, _text_color.pixel);
 
-      /* Centre the text in the middle of the box. */
+      // Centre the text in the middle of the box.
       int direction, ascent, descent;
       XCharStruct overall;
 
@@ -523,10 +498,6 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   }
   XFlush(display(context));
   _mutex.unlock();
-
-//  ::free(outputImgBuffer);
-//  ::free(histogram);
-
 
 }
 

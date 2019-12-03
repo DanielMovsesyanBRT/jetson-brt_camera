@@ -14,8 +14,8 @@
 #include <vector>
 #include <atomic>
 
+#include "../utils.hpp"
 #include "image.hpp"
-#include "Utils.hpp"
 
 #define DEFAULT_NUMBER_OF_THREADS           (64)
 

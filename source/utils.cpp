@@ -3,11 +3,10 @@
 //
 
 #include <cstdio>
-#include "Utils.hpp"
-
 #include <dirent.h>
 #include <unistd.h>
 #include <iostream>
+#include "utils.hpp"
 
 #undef _lengthof
 #define _lengthof(x)        (sizeof(x)/sizeof(x[0]))

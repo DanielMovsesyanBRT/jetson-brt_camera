@@ -5,8 +5,8 @@
  *      Author: daniel
  */
 
-#ifndef SOURCE_DEVICE_DEVICEMANAGER_HPP_
-#define SOURCE_DEVICE_DEVICEMANAGER_HPP_
+#ifndef SOURCE_DEVICE_DEVICE_MANAGER_HPP_
+#define SOURCE_DEVICE_DEVICE_MANAGER_HPP_
 
 #include <unordered_map>
 #include <linux/i2c-dev.h>
@@ -119,4 +119,4 @@ private:
 } /* namespace jupiter */
 } /* namespace brt */
 
-#endif /* SOURCE_DEVICE_DEVICEMANAGER_HPP_ */
+#endif /* SOURCE_DEVICE_DEVICE_MANAGER_HPP_ */

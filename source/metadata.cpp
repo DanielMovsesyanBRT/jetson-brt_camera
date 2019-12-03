@@ -2,14 +2,13 @@
 // Created by Daniel Movsesyan on 2019-06-19.
 //
 
-#include "Metadata.hpp"
-#include "MetaImpl.hpp"
-#include "Utils.hpp"
-
 #include <string>
 #include <vector>
 #include <string.h>
 #include <sstream>
+#include "metadata.hpp"
+#include "meta_impl.hpp"
+#include "utils.hpp"
 
 brt::jupiter::Metadata _context;
 

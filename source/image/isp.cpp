@@ -6,11 +6,10 @@
  */
 
 #include "isp.hpp"
-#include "Camera.hpp"
-
 #include <algorithm>
 #include <iostream>
 #include <cmath>
+#include "../device/camera.hpp"
 
 #define NUM_SKIPPS                          (4)
 #define NUM_ACCUMULATIONS                   (8)

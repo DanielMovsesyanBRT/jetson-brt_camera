@@ -5,11 +5,10 @@
  *      Author: dmovsesyan
  */
 
-#include "MetaImpl.hpp"
-#include "MetaImpl.hpp"
-
 #include <string.h>
 #include <sstream>
+#include "meta_impl.hpp"
+#include "meta_impl.hpp"
 
 namespace brt
 {

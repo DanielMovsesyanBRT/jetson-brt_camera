@@ -5,10 +5,6 @@
  *      Author: daniel
  */
 
-#include "Camera.hpp"
-#include "Deserializer.hpp"
-#include "Utils.hpp"
-
 #include <iostream>
 
 #include <sys/types.h>
@@ -19,7 +15,12 @@
 
 #include <dirent.h>
 #include <string.h>
-#include "DeviceManager.hpp"
+
+#include "camera.hpp"
+
+#include "../utils.hpp"
+#include "deserializer.hpp"
+#include "device_manager.hpp"
 
 namespace brt
 {
@@ -611,6 +612,9 @@ bool Camera::stop_capturing()
  */
 void Camera::main_loop()
 {
+  pthread_setname_np(pthread_self(), _device_name.c_str());
+
+
   while (!_terminate.load())
   {
     for (;;)

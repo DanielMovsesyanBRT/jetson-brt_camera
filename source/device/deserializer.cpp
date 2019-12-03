@@ -5,12 +5,13 @@
  *      Author: daniel
  */
 
-#include "Deserializer.hpp"
-#include "Utils.hpp"
-#include "Camera.hpp"
+#include "deserializer.hpp"
 
 #include <iostream>
-#include "DeviceManager.hpp"
+
+#include "../utils.hpp"
+#include "camera.hpp"
+#include "device_manager.hpp"
 
 namespace brt
 {

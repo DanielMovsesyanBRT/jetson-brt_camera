@@ -15,7 +15,8 @@
 #include <string.h>
 #include "window.hpp"
 #include "window_manager.hpp"
-#include "Utils.hpp"
+
+#include "../utils.hpp"
 
 #define _PATH_PROCNET_X11                   "/tmp/.X11-unix"
 #define _PATH_PROCNET_TCP                   "/proc/net/tcp"
@@ -43,13 +44,8 @@ WindowManager WindowManager::_object;
  */
 WindowManager::WindowManager()
 : _wind_set()
-    // _display(nullptr)
-// , _blackColor(0)
-// , _whiteColor(0)
-// , _thread()
 , _cv()
 , _mutex()
-// , _terminate(false)
 {
   srand(time(nullptr));
 }
@@ -161,6 +157,8 @@ Context WindowManager::get_context(const char* display_name,bool create /*= fals
 
     db->_thread  = std::thread([](WindowManager* m, _Context* d)
     {
+      pthread_setname_np(pthread_self(), "wnd_mngr");
+
       m->x_loop(d);
     },this, db);
 
@@ -276,55 +274,6 @@ WinSize WindowManager::resolution(Context context,size_t screen_id) const
 
   return WinSize(ctx->_screens[screen_id]->width, ctx->_screens[screen_id]->height);
 }
-
-///*
-// * \\fn Window* WindowManager::create_window
-// *
-// * created on: Nov 19, 2019
-// * author: daniel
-// *
-// */
-//Window* WindowManager::create_window(const char* display_name, const char* title,
-//                                        Window* parent, size_t width, size_t height,
-//                                        int x /*= RANDOM_POS*/, int y /*= RANDOM_POS*/)
-//{
-//  if (display_name == nullptr)
-//    display_name = _default_display.c_str();
-//
-//  std::unordered_set<_Context*>::iterator iter =
-//      std::find_if(_display_db.begin(), _display_db.end(),[display_name](_Context* db)
-//  {
-//    return db->_display_name == display_name;
-//  });
-//
-//  if (iter == _display_db.end())
-//  {
-//    _Context* db = new _Context;
-//    db->_display_name = (display_name != nullptr) ? display_name : "";
-//    pipe(db->_pipe);
-//    db->_terminate.store(false);
-//
-//    db->_thread  = std::thread([](WindowManager* m, _Context* d)
-//    {
-//      m->x_loop(d);
-//    },this, db);
-//
-//    _mutex.lock();
-//    iter  = _display_db.insert(db).first;
-//    _mutex.unlock();
-//  }
-//
-//  Window* new_wnd = new Window(title, x, y,width, height, parent);
-//
-//  _mutex.lock();
-//  _wind_set.insert(new_wnd);
-//  _mutex.unlock();
-//
-//  LCreateWindowEvent ce(new_wnd);
-//  post_message((*iter), ce.serialize());
-//
-//  return new_wnd;
-//}
 
 /*
  * \\fn void WindowManager::post_message

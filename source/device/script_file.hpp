@@ -12,7 +12,7 @@
 #include <string>
 #include <atomic>
 
-#include "ScriptAction.hpp"
+#include "script_action.hpp"
 
 namespace brt {
 

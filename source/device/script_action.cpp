@@ -2,10 +2,10 @@
 // Created by daniel on 3/28/19.
 //
 
-#include "ScriptAction.hpp"
+#include "script_action.hpp"
 #ifdef HARDWARE
-#include "Deserializer.hpp"
-#include "DeviceManager.hpp"
+#include "deserializer.hpp"
+#include "device_manager.hpp"
 #endif
 
 #include <string.h>
@@ -16,8 +16,8 @@
 #include <algorithm>
 
 #include "Parser.hpp"
-#include "Utils.hpp"
-#include "MetaImpl.hpp"
+#include "../utils.hpp"
+#include "../meta_impl.hpp"
 
 namespace brt {
 

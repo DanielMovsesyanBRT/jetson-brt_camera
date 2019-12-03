@@ -2,13 +2,14 @@
 // Created by daniel on 3/28/19.
 //
 
-#include "ScriptFile.hpp"
-#include "ParserString.hpp"
-#include "Utils.hpp"
+#include "script_file.hpp"
 
+#include "ParserString.hpp"
 #include <fstream>
 #include <iostream>
-#include "ScriptAction.hpp"
+
+#include "../utils.hpp"
+#include "script_action.hpp"
 
 namespace brt {
 

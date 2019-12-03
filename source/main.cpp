@@ -5,10 +5,6 @@
  *
  */
 //#include "Args.hpp"
-#include "Utils.hpp"
-#include "DeviceManager.hpp"
-#include "Deserializer.hpp"
-#include "Camera.hpp"
 #include "isp.hpp"
 #include "isp_manager.hpp"
 
@@ -26,6 +22,10 @@
 #include <string>
 
 #include <stdint.h>
+#include "device/camera.hpp"
+#include "device/deserializer.hpp"
+#include "device/device_manager.hpp"
+#include "utils.hpp"
 
 
 using namespace brt::jupiter;

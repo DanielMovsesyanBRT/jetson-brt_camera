@@ -66,11 +66,11 @@ find_library(GL REQUIRED
 set(SOURCES 
   source/cuda_debayering/src/cuda_debayering.cu
  
-  source/device/Camera.cpp
-  source/device/Deserializer.cpp
-  source/device/DeviceManager.cpp
-  source/device/ScriptAction.cpp
-  source/device/ScriptFile.cpp
+  source/device/camera.cpp
+  source/device/deserializer.cpp
+  source/device/device_manager.cpp
+  source/device/script_action.cpp
+  source/device/script_file.cpp
   
   # source/fltk/fltk_manager.cpp  
   
@@ -84,9 +84,9 @@ set(SOURCES
   source/window/window.cpp
   source/window/window_manager.cpp
   
-  source/Metadata.cpp
-  source/MetaImpl.cpp
-  source/Utils.cpp
+  source/metadata.cpp
+  source/meta_impl.cpp
+  source/utils.cpp
 )
 
 

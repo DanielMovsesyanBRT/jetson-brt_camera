@@ -14,9 +14,9 @@
 #include <map>
 #include <cstring>
 
+#include "../metadata.hpp"
 #include "Expression.hpp"
 #include "ParserString.hpp"
-#include "Metadata.hpp"
 
 namespace brt {
 
