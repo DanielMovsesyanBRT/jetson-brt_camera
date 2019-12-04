@@ -41,6 +41,7 @@ Camera::Camera(Deserializer* owner,int id)
 , _device_name()
 , _handle(-1)
 , _terminate(false)
+, _skip_frames(0)
 , _thread()
 , _io_method(IO_METHOD_MMAP)
 , _fmt()
@@ -164,6 +165,7 @@ void Camera::set_exposure(double ms)
   args.push_back(script::Value().set<int>(_id));
   args.push_back(script::Value().set(ms));
 
+  _skip_frames = 4;
   _owner->run_macro("set_exposure", args);
 }
 
@@ -234,8 +236,8 @@ void Camera::set_gain(eCameraGain gain)
   args.push_back(script::Value().set<int>(_id));
   args.push_back(script::Value().set<int>(gain, 2));
 
+  _skip_frames = 4;
   _owner->run_macro("set_gain", args);
-
 }
 
 
@@ -729,7 +731,13 @@ bool Camera::read_frame()
       image::RawRGBPtr raw12(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
       image::RawRGBPtr result = _ip.debayer(raw12);
       if (result)
-        consume(image::ImageBox(result));
+      {
+        if (_skip_frames-- == 0)
+        {
+          consume(image::ImageBox(result));
+          _skip_frames = 0;
+        }
+      }
     }
     //process_image(buffers[0].start, buffers[0].length);
     break;
@@ -766,7 +774,13 @@ bool Camera::read_frame()
       image::RawRGBPtr raw12(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
       image::RawRGBPtr result = _ip.debayer(raw12);
       if (result)
-        consume(image::ImageBox(result));
+      {
+        if (_skip_frames-- == 0)
+        {
+          consume(image::ImageBox(result));
+          _skip_frames = 0;
+        }
+      }
     }
 
     if (-1 == xioctl(_handle, VIDIOC_QBUF, &buf))

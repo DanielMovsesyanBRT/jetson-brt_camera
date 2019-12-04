@@ -421,10 +421,10 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glBindTexture(GL_TEXTURE_2D, _texture);
   //glEnable(GL_TEXTURE_2D);
   glBegin(GL_QUADS);
-    glTexCoord2f(0.0, 0.0); glVertex3f(wnd._left, wnd._top, 0.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f(wnd._right, wnd._bottom, 0.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f(wnd._right, wnd._top, 0.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(wnd._left, wnd._top, 0.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(wnd._right, wnd._bottom, 0.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(wnd._right, wnd._top, 0.0);
   glEnd();
 
   glDisable(GL_TEXTURE_2D);

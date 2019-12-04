@@ -11,9 +11,14 @@
 #include <cmath>
 #include "camera.hpp"
 
-#define NUM_SKIPPS                          (2)
-#define NUM_ACCUMULATIONS                   (5)
+#define NUM_SKIPPS                          (1)
+#define NUM_ACCUMULATIONS                   (8)
 #define MAX_EXPOSURE                        (20.0)
+#define MIN_DOUBLE_COMPARE                  (0.01)
+#define EXPOSURE_CORRECTION                 (0.87)
+
+#define G0                                  (0.8)
+#define G1                                  (1.0 - G0)
 
 namespace brt
 {
@@ -84,6 +89,10 @@ void ISP::consume(ImageBox box)
     return result;
   };
 
+  // For group exposure we calibrate only first camera
+  if (_group && (id != 0))
+    return;
+
   if (!box[0]->get_bits())
     return;
 
@@ -109,72 +118,38 @@ void ISP::consume(ImageBox box)
         total_pixels += block._histogram[index];
       }
 
-      double expected = expected_value(block, total_pixels);
-      block._accumulated_mean += expected;
-      block._num_accumulations++;
-    }
-
-    if (_group)
-    {
-      double absolute_exposure_ms = 0.1;
-      double max_coeff = 0.0;
-      bool change_exposure = false;
-
-      for (auto& blk : _cameras)
-      {
-        if (blk._num_captured < NUM_ACCUMULATIONS)
-          // Skip until all cameras are aligned
-          return;
-
-        uint32_t total_pixels = 0;
-        for (size_t index = 0; index < blk._histogram.size(); index++)
-          total_pixels += blk._histogram[index];
-
-        // Fitting points to a line to adjust exposure based on slope
-        double coeff = line_interpolation(blk, total_pixels);
-
-        if (std::fabs(max_coeff) < std::fabs(coeff))
-        {
-          double exposure_ms = blk._cam->get_exposure();
-          absolute_exposure_ms = exposure_ms - coeff;
-          change_exposure = true;
-          max_coeff = coeff;
-        }
-      }
-
-      if (change_exposure)
-      {
-        for (auto &blk : _cameras)
-        {
-          blk._cam->set_exposure(absolute_exposure_ms);
-          blk._num_captured = 0;
-        }
-      }
-
-      for (auto &blk : _cameras)
-      {
-        blk._histogram.clear();
-        blk._num_captured = (blk._num_captured != 0) ? NUM_SKIPPS : 0;
-      }
-    }
-    else
-    {
       if (block._num_captured > NUM_ACCUMULATIONS)
       {
-        double desired_mean = (double)(block._histogram.size() - 1) * (2 + block._histogram.size() - 2) / 2.0
-                                  / block._histogram.size();
+        ///
+        //
+        // Applying formula Xn = Y(n-1) * (Kn*G0 + K(n-1)*G1)
+        //
+        //  Here:
+        ///    Y(n-1) = M - m(n - 1)
+        ///         is difference between mean and desired Mean
+        ///
+        ///
+        ///    Kn = Y(n - 1) / X(n - 1)
+        ///    K(n-1) = Y(n - 2) / X(n - 2)
+        ///    G0 + G1 = 1 - Decaying components
+        ///
 
-        double current_mean = block._accumulated_mean / block._num_accumulations;
-        double delta_exposure = desired_mean - current_mean;
-        double exp_value = delta_exposure;
+        double current_mean = expected_value(block, total_pixels);
+        double desired_mean = ((double)(block._histogram.size() - 1) * (2 + block._histogram.size() - 2) / 2.0
+                                  / block._histogram.size()) * EXPOSURE_CORRECTION;
 
-        // Recalculate exposure value based on last settings
-        if ((block._last_delta_mean != 0.0) && (block._last_exposure_value != 0.0))
+        double x = desired_mean - current_mean;
+        double k1 = 1.0;
+
+        if (block._m0 != -1.0)
         {
-          double coeff = std::fabs((block._last_delta_mean - delta_exposure) / (block._last_exposure_value));
-          if (coeff != 0.0)
-            exp_value = delta_exposure / coeff;
+          if (std::fabs(desired_mean - block._m0) > MIN_DOUBLE_COMPARE )
+            k1 = x / (desired_mean - block._m0);
+          else
+            k1 = block._k0;
         }
+        k1 = std::fabs(G0 * k1 + G1 * block._k0);
+        double exp_value = x * k1;
 
         double exposure_ms = block._cam->get_exposure();
         double new_exposure = exposure_ms + exp_value;
@@ -193,20 +168,27 @@ void ISP::consume(ImageBox box)
 //        if (block._id != 0)
 //        {
 //          std::cout << "(" << block._name << ")"
-//                    << " mean = " << current_mean
-//                    << ", exp = " << exp_value
-//                    << ", cur_exp = " << exposure_ms << "ms."
-//                    << ", new_exp = " << new_exposure << "ms." << std::endl;
+//              << "m=" << current_mean
+//              << ", m0=" << block._m0
+//              << ", k=" << k1
+//              << ", k0=" << block._k0
+//              << ", cur_exp = " << exposure_ms << "ms."
+//              << ", new_exp = " << new_exposure << "ms." << std::endl;
 //        }
 
-        block._cam->set_exposure(new_exposure);
+        if (!_group)
+          block._cam->set_exposure(new_exposure);
+        else
+        {
+          for (auto& blk : _cameras)
+            blk._cam->set_exposure(new_exposure);
+        }
 
         block._histogram.clear();
         block._num_captured = 0;
-        block._accumulated_mean = 0.0;
-        block._num_accumulations = 0;
-        block._last_delta_mean = delta_exposure;
-        block._last_exposure_value = exp_value;
+        block._m0 = current_mean;
+        block._k0 = k1;
+
       }
     }
   }
@@ -235,11 +217,8 @@ void ISP::add_camera(Camera* camera)
   block._cam = camera;
   block._num_captured = 0;
 
-  block._last_delta_mean = 0.0;
-  block._last_exposure_value = 0.0;
-
-  block._accumulated_mean = 0.0;
-  block._num_accumulations = 0;
+  block._k0 = 0.0;
+  block._m0 = -1.0;
 
   block._name = camera->name();
   block._id = camera->id();

@@ -117,6 +117,7 @@ private:
   int                             _handle;
 
   std::atomic_bool                _terminate;
+  std::atomic_int                 _skip_frames;
   std::thread                     _thread;
   int                             _pipe[2];
 
