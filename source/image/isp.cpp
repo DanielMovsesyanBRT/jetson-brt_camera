@@ -12,12 +12,13 @@
 #include "camera.hpp"
 
 #define NUM_SKIPPS                          (1)
-#define NUM_ACCUMULATIONS                   (8)
+#define NUM_ACCUMULATIONS                   (5)
 #define MAX_EXPOSURE                        (20.0)
 #define MIN_DOUBLE_COMPARE                  (0.01)
-#define EXPOSURE_CORRECTION                 (0.87)
+#define EXPOSURE_CORRECTION                 (0.77)
+#define HISTERESIS_SIZE                     (0.11)
 
-#define G0                                  (0.8)
+#define G0                                  (0.65)
 #define G1                                  (1.0 - G0)
 
 namespace brt
@@ -129,28 +130,36 @@ void ISP::consume(ImageBox box)
         ///         is difference between mean and desired Mean
         ///
         ///
-        ///    Kn = Y(n - 1) / X(n - 1)
-        ///    K(n-1) = Y(n - 2) / X(n - 2)
+        ///    Kn = Y(n - 1) / (X(n - 1) * K(n-1))
+        ///    K(n-1) = Y(n - 2) / (X(n - 2) * * K(n-2))
         ///    G0 + G1 = 1 - Decaying components
         ///
 
         double current_mean = expected_value(block, total_pixels);
-        double desired_mean = ((double)(block._histogram.size() - 1) * (2 + block._histogram.size() - 2) / 2.0
-                                  / block._histogram.size()) * EXPOSURE_CORRECTION;
+
+        double real_mean = ((double)(block._histogram.size() - 1) * (2 + block._histogram.size() - 2) / 2.0
+                              / block._histogram.size());
+
+        double desired_mean = real_mean * EXPOSURE_CORRECTION;
+        double mean_top = desired_mean + real_mean * HISTERESIS_SIZE;
+        double mean_bottom = desired_mean - real_mean * HISTERESIS_SIZE;
 
         double x = desired_mean - current_mean;
-        double k1 = 1.0;
 
-        if (block._m0 != -1.0)
+        double k1 = 0.0;
+        if ((current_mean < mean_bottom) || (current_mean > mean_top))
         {
-          if (std::fabs(desired_mean - block._m0) > MIN_DOUBLE_COMPARE )
-            k1 = x / (desired_mean - block._m0);
-          else
-            k1 = block._k0;
+          if (block._m0 != -1.0)
+          {
+            if (std::fabs(block._m0 - current_mean) > MIN_DOUBLE_COMPARE)
+              k1 = x / (block._m0 - current_mean);
+            else
+              k1 = 1.0;
+          }
+          k1 = std::fabs(G0 * k1 + G1 * block._k0);
         }
-        k1 = std::fabs(G0 * k1 + G1 * block._k0);
-        double exp_value = x * k1;
 
+        double exp_value = x * k1;
         double exposure_ms = block._cam->get_exposure();
         double new_exposure = exposure_ms + exp_value;
         if (new_exposure < 0)
@@ -162,6 +171,14 @@ void ISP::consume(ImageBox box)
         {
           new_exposure = MAX_EXPOSURE;
           exp_value = new_exposure - exposure_ms;
+        }
+
+        if (!_group)
+          block._cam->set_exposure(new_exposure);
+        else
+        {
+          for (auto& blk : _cameras)
+            blk._cam->set_exposure(new_exposure);
         }
 
 //      Enable for debugging only
@@ -176,13 +193,6 @@ void ISP::consume(ImageBox box)
 //              << ", new_exp = " << new_exposure << "ms." << std::endl;
 //        }
 
-        if (!_group)
-          block._cam->set_exposure(new_exposure);
-        else
-        {
-          for (auto& blk : _cameras)
-            blk._cam->set_exposure(new_exposure);
-        }
 
         block._histogram.clear();
         block._num_captured = 0;
