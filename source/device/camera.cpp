@@ -185,6 +185,25 @@ double Camera::get_exposure()
   return result;
 }
 
+/*
+ * \\fn double Camera::get_temperature
+ *
+ * created on: Dec 3, 2019
+ * author: daniel
+ *
+ */
+double Camera::get_temperature(int temp_sensor_id)
+{
+  std::vector<script::Value> args;
+  args.push_back(script::Value().set<int>(_id));
+  args.push_back(script::Value().set<int>(temp_sensor_id));
+
+  script::Value result;
+  _owner->run_macro("get_temperature", result, args);
+
+  return result;
+}
+
 
 /*
  * \\fn void Camera::read_exposure

@@ -161,7 +161,7 @@ ValueData::ValueData(const ValueData& data)
 , _type(data._type)
 , _array()
 , _ref_cntr(1)
-, _little_endian(true)
+, _little_endian(data._little_endian)
 {
   if (data._buffer != nullptr)
   {
@@ -188,6 +188,7 @@ ValueData& ValueData::operator=(const ValueData& data)
 
   _size = data._size;
   _type = data._type;
+  _little_endian = data._little_endian;
 
   if (data._buffer != nullptr)
   {

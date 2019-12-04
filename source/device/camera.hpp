@@ -74,6 +74,7 @@ public:
 
           void                    set_exposure(double ms);
           double                  get_exposure();
+          double                  get_temperature(int temp_sensor_id);
 
           void                    read_exposure();
           void                    set_gain(eCameraGain);

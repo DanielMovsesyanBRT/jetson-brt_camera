@@ -168,6 +168,26 @@ int main(int argc, char **argv)
         }
       }
     }
+    else if (Utils::stristr(line, "temp") == 0)
+    {
+      line = line.substr(4);
+      long gain = strtol(line.c_str(), nullptr, 0);
+
+      for (auto id : cam_des)
+      {
+        Deserializer *des = DeviceManager::get()->get_device(id >> 8);
+        if (des != nullptr)
+        {
+          Camera *cam = des->get_camera(id & 0xff);
+          if (cam != nullptr)
+          {
+            double t0 = cam->get_temperature(0);
+            double t1 = cam->get_temperature(1);
+            std::cout << "Camera (" << cam->name() << ") T0 = " << t0 << ", T1 = " << t1 << std::endl;
+          }
+        }
+      }
+    }
 
   } while (line != "q");
 

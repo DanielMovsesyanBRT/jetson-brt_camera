@@ -9,6 +9,16 @@ s $serializer_addr[1] = 0x86
 s $sensor_addr[0] = 0x28
 s $sensor_addr[1] = 0x26
 
+s $temperature0_slope[0] = 1.0
+s $temperature1_slope[0] = 1.0
+s $temperature0_T0[0] = 0.0
+s $temperature1_T0[0] = 0.0
+
+s $temperature0_slope[1] = 1.0
+s $temperature1_slope[1] = 1.0
+s $temperature0_T0[1] = 0.0
+s $temperature1_T0[1] = 0.0
+
 s $deser_address = 0x94
 #s $deser_address = 0x90
 
@@ -100,7 +110,7 @@ macro read_exposure(id)
 endm
 
 ###
-### Configure Exposure
+### Retrieve Exposure
 ###
 macro get_exposure(id)
     s $address = $sensor_addr[$id]
@@ -110,13 +120,27 @@ macro get_exposure(id)
 endm
 
 ###
+### Retrieve Temperature
+###
+macro get_temperature(id,temp_sensor)
+    s $address = $sensor_addr[$id]
+    if $temp_sensor == 0
+      r 2,$address,0x20B0,$_return
+      s $_return = $temperature0_slope[$id] * int($_return) + $temperature0_T0[$id]
+   else
+      r 2,$address,0x20B2,$_return
+      s $_return = $temperature1_slope[$id] * int($_return) + $temperature1_T0[$id]
+   endif
+endm
+
+###
 ### Configure Exposure
 ###
 macro set_exposure(id,exposure_ms)
     s $address = $sensor_addr[$id]
     s $exp_value = $exposure_ms / (1000.0 * $hts) * $fvco
 
-    # e "Set Exposure for sensor " + $sns_addr + " to " + $exposure_ms + "ms : " + int($exp_value)
+    # e "Set Exposure for sensor " + $address + " to " + $exposure_ms + "ms : " + int($exp_value)
 
     w $address,0x3012,int($exp_value,2) # COARSE_INTEGRATION_TIME_
     w $address,0x3212,int($exp_value / 8,2) # COARSE_INTEGRATION_TIME_2
@@ -333,7 +357,31 @@ endm
 #
 #
 #
-macro config_sensor(address)
+macro read_temp_calib(addr_id,id)
+  s $address = $sensor_addr[$addr_id]
+
+  if $id == 0
+    r 2, $address, 0x30C6, $calib1
+    r 2, $address, 0x30C8, $calib2
+    s $temperature0_slope[$addr_id] = (125.0 - 55.0) / (int($calib1) - int($calib2))
+    s $temperature0_T0[$addr_id] = 55.0 - $temperature0_slope[$addr_id] * int($calib2)
+
+    e "Calib = " + dec($calib1) + ", " + dec($calib2) + "| " + $temperature0_slope[$addr_id] + ", " +  $temperature0_T0[$addr_id]
+
+  else
+    r 2, $address, 0x30CA, $calib1
+    r 2, $address, 0x30CC, $calib2
+    s $temperature1_slope[$addr_id] = (125.0 - 55.0) / (int($calib1) - int($calib2))
+    s $temperature1_T0[$addr_id] = 55.0 - $temperature1_slope[$addr_id] * int($calib2)
+  endif
+endm
+
+#
+#
+#
+macro config_sensor(id)
+  s $address = $sensor_addr[$id]
+  
   e "Config Sensor 0x" + hex($address)
   # Check Sensor
   
@@ -480,6 +528,11 @@ macro config_sensor(address)
   w $address, 0x31B8, 0x3047    # RESERVED_MFR_31B8
   w $address, 0x31BA, 0x0186    # RESERVED_MFR_31BA
   w $address, 0x31BC, 0x8805    # RESERVED_MFR_31BC
+  
+  w $address, 0x30B4, 0x0003    # Enable TEMP sensor 0
+  w $address, 0x30B8, 0x0003    # Enable TEMP sensor 1
+  x read_temp_calib $id,0
+  x read_temp_calib $id,1
 
   # White balance
   w $address, 0x3056, 0x0080    # GREEN1_GAIN
@@ -504,7 +557,9 @@ endm
 #
 #
 #
-macro config_hdr_sensor(address)
+macro config_hdr_sensor(id)
+  s $address = $sensor_addr[$id]
+  
   e "Config Sensor 0x" + hex($address)
   # Check Sensor
   
@@ -602,6 +657,11 @@ macro config_hdr_sensor(address)
   w $address, 0x354A,   0x007F      # RESERVED_MFR_354A
   w $address, 0x3566,   0x3328      # RESERVED_MFR_3566
 
+  w $address, 0x30B4, 0x0003    # Enable TEMP sensor 0
+  w $address, 0x30B8, 0x0003    # Enable TEMP sensor 1
+  x read_temp_calib $id,0
+  x read_temp_calib $id,1
+
   # White balance
   w $address, 0x3056, 0x0080    # GREEN1_GAIN
   w $address, 0x3058, 0x0132    # BLUE_GAIN
@@ -624,7 +684,9 @@ endm
 #
 #
 #
-macro config_hdr_x_sensor(address)
+macro config_hdr_x_sensor(id)
+  s $address = $sensor_addr[$id]
+  
   e "Config Sensor 0x" + hex($address)
   # Check Sensor
   
@@ -697,6 +759,11 @@ macro config_hdr_x_sensor(address)
   w $address, 0x3402, 0x0780    # X_OUTPUT_CONTROL
   w $address, 0x3404, 0x04B0    # Y_OUTPUT_CONTROL
 
+  w $address, 0x30B4, 0x0003    # Enable TEMP sensor 0
+  w $address, 0x30B8, 0x0003    # Enable TEMP sensor 1
+  x read_temp_calib $id,0
+  x read_temp_calib $id,1
+
   # White balance
   w $address, 0x3056, 0x0080    # GREEN1_GAIN
   w $address, 0x3058, 0x0132    # BLUE_GAIN
@@ -756,10 +823,10 @@ loop $global_loop_cntr < $num_cameras
  
    
    if $hdr_mode
-#      x config_hdr_sensor $sensor_addr[$global_loop_cntr]
-      x config_hdr_x_sensor $sensor_addr[$global_loop_cntr]
+#      x config_hdr_sensor $global_loop_cntr
+      x config_hdr_x_sensor $global_loop_cntr
    else
-      x config_sensor $sensor_addr[$global_loop_cntr]
+      x config_sensor $global_loop_cntr
    endif
    
    s $global_loop_cntr = $global_loop_cntr + 1
