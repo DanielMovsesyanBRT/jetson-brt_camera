@@ -420,6 +420,7 @@ public:
 
   static  std::vector<std::string>
                                   enumerate_displays(DisplayType = eAllDisplays);
+  static  std::string             aquire_display();
 
 };
 

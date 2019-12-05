@@ -5,7 +5,9 @@
 #include <cstdio>
 #include <dirent.h>
 #include <unistd.h>
+#include <string.h>
 #include <iostream>
+
 #include "utils.hpp"
 
 #undef _lengthof
@@ -160,6 +162,68 @@ std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
     }
   }
 
+  return result;
+}
+
+/*
+ * \\fn std::string Utils::aquire_display
+ *
+ * created on: Dec 5, 2019
+ * author: daniel
+ *
+ */
+std::string Utils::aquire_display()
+{
+  std::string result;
+  char* display_name = getenv("DISPLAY");
+
+  std::vector<std::string> displays = enumerate_displays();
+  if (displays.size() == 0)
+  {
+    if ((display_name == nullptr) || (strlen(display_name) == 0))
+      result = display_name;
+  }
+
+  else if (displays.size() == 1)
+  {
+    result = displays[0];
+  }
+  else
+  {
+    char buffer[1024];
+    std::string line;
+    int id;
+
+    do
+    {
+      std::cout << "Please select default display " << std::endl;
+
+      for (size_t index = 0; index < displays.size(); index++)
+      {
+        std::cout << (index + 1) << ") " << displays[index];
+        if ((display_name != nullptr) && (displays[index].compare(display_name) == 0))
+          std::cout << "[default]";
+
+        std::cout << std::endl;
+      }
+
+      std::cin >> id;
+      if ((id < 1) || (id > displays.size()))
+      {
+        if ((display_name == nullptr) || (strlen(display_name) == 0))
+        {
+          result = display_name;
+          break;
+        }
+
+        std::cout << "Invalid entry" << std::endl;
+      }
+    }
+    while((id < 1) || (id > displays.size()));
+
+    if ((id >= 1) && (id <= displays.size()))
+      result = displays[id - 1];
+  }
   return result;
 }
 

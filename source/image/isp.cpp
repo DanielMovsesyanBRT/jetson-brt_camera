@@ -12,14 +12,15 @@
 #include "camera.hpp"
 
 #define NUM_SKIPPS                          (1)
-#define NUM_ACCUMULATIONS                   (5)
+#define NUM_ACCUMULATIONS                   (3)
 #define MAX_EXPOSURE                        (20.0)
 #define MIN_DOUBLE_COMPARE                  (0.01)
 #define EXPOSURE_CORRECTION                 (0.77)
 #define HISTERESIS_SIZE                     (0.11)
 
-#define G0                                  (0.65)
-#define G1                                  (1.0 - G0)
+#define DECAYING_COEFFICIENT                (0.4)
+
+#define SIGN(x)                             ( ((x) < 0) ? -1 : ((x) > 0) ? 1 : 0 )
 
 namespace brt
 {
@@ -145,21 +146,22 @@ void ISP::consume(ImageBox box)
         double mean_bottom = desired_mean - real_mean * HISTERESIS_SIZE;
 
         double x = desired_mean - current_mean;
+        double k1 = DECAYING_COEFFICIENT;
 
-        double k1 = 0.0;
         if ((current_mean < mean_bottom) || (current_mean > mean_top))
         {
           if (block._m0 != -1.0)
           {
-            if (std::fabs(block._m0 - current_mean) > MIN_DOUBLE_COMPARE)
-              k1 = x / (block._m0 - current_mean);
-            else
-              k1 = 1.0;
+            // check for overshoot
+            if ((SIGN(x) == SIGN(desired_mean - block._m0)) &&
+                (std::fabs(block._m0 - current_mean) > MIN_DOUBLE_COMPARE))
+              k1 = block._k0 * x / (block._m0 - current_mean) * DECAYING_COEFFICIENT;
           }
-          k1 = std::fabs(G0 * k1 + G1 * block._k0);
         }
+        else
+          x = 0.0;
 
-        double exp_value = x * k1;
+        double exp_value = x * std::fabs(k1);
         double exposure_ms = block._cam->get_exposure();
         double new_exposure = exposure_ms + exp_value;
         if (new_exposure < 0)
@@ -227,7 +229,7 @@ void ISP::add_camera(Camera* camera)
   block._cam = camera;
   block._num_captured = 0;
 
-  block._k0 = 0.0;
+  block._k0 = 1.0;
   block._m0 = -1.0;
 
   block._name = camera->name();

@@ -4,17 +4,13 @@
  *
  *
  */
-//#include "Args.hpp"
 #include "isp.hpp"
 #include "isp_manager.hpp"
-
-//#include "WindowManager.hpp"
-//#include "Window.hpp"
 
 #include "window_manager.hpp"
 #include "camera_window.hpp"
 
-// #include "fltk_manager.hpp"
+#include "fltk_manager.hpp"
 
 
 #include <map>
@@ -41,6 +37,7 @@ using namespace brt::jupiter;
 int main(int argc, char **argv)
 {
   wm::get()->init();
+  fm::get()->init();
 
   image::ISPManager isp_manager;
 

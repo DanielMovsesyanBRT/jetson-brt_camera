@@ -24,19 +24,19 @@ add_subdirectory(script)
 #
 project(jetson-brt_camera C CXX)
 
-#if (NOT FLTK_PATH)
-#  if (DEFINED ENV{FLTK_PATH})
-#    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#      set(FLTK_DIR "$ENV{FLTK_PATH}/Debug/share/fltk")
-#    else()
-#      set(FLTK_DIR "$ENV{FLTK_PATH}/Release/share/fltk")
-#    endif()
-#  else()
-#    message(FATAL_ERROR "FLTK path is missing")
-#  endif()
-#endif()
-#
-#find_package(FLTK REQUIRED NO_MODULE)
+if (NOT FLTK_PATH)
+  if (DEFINED ENV{FLTK_PATH})
+    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+      set(FLTK_DIR "$ENV{FLTK_PATH}/Debug/share/fltk")
+    else()
+      set(FLTK_DIR "$ENV{FLTK_PATH}/Release/share/fltk")
+    endif()
+  else()
+    message(FATAL_ERROR "FLTK path is missing")
+  endif()
+endif()
+
+find_package(FLTK REQUIRED NO_MODULE)
 
 #set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
 find_package(CUDA REQUIRED)
@@ -72,7 +72,7 @@ set(SOURCES
   source/device/script_action.cpp
   source/device/script_file.cpp
   
-  # source/fltk/fltk_manager.cpp  
+  source/fltk/fltk_manager.cpp  
   
   source/image/image_processor.cpp
   source/image/image_processor.cu
@@ -113,16 +113,16 @@ target_include_directories(${PROJECT_NAME}
                               PRIVATE 
                               "source" 
                               "source/device" 
-                              # "source/fltk" 
+                              "source/fltk" 
                               "source/image" 
                               "source/window"
                               "script"
                               # ${X11_X11_INCLUDE_PATH}
-                              # ${FLTK_INCLUDE_DIRS}
+                              ${FLTK_INCLUDE_DIRS}
                               )
                               
-# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
-target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL})
+target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
+# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} )
 
 #if (ARCH EQUAL ARCH_ARM)
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)
