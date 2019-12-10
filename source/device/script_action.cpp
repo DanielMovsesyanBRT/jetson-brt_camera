@@ -15,9 +15,9 @@
 #include <iomanip>
 #include <algorithm>
 
-#include "Parser.hpp"
-#include "../utils.hpp"
-#include "../meta_impl.hpp"
+#include <parser.hpp>
+#include <utils.hpp>
+//#include "../meta_impl.hpp"
 
 namespace brt {
 
@@ -35,44 +35,19 @@ size_t ScriptAction::_line_number = 0;
  * author: daniel
  *
  */
-script::ValueData& Session::var(std::string name)
+ValueData& Session::var(std::string name)
 {
   // check local
-  if (_global_session != nullptr)
-  {
-    // This is local stack - first we check if we have
-    // local variable with this name
-    if (script::Session::var_exist(name))
-      return script::Session::var(name);
-
-    // Now check if global session has it
-    if (_global_session->var_exist(name))
-      return _global_session->var(name);
-
-    // None of the above - create local variable
+  if (exist(name.c_str()))
     return script::Session::var(name);
-  }
 
-  // This is Global Scope
-  //return Metadata::value(name.c_str());
-  return _impl->value(name.c_str());
+  // Check Global
+  if ((_global_session != nullptr) && _global_session->exist(name.c_str()))
+    return _global_session->var(name);
+
+  // Create Local Variable
+  return script::Session::var(name);
 }
-
-/*
- * \\fn bool Session::var_exist
- *
- * created on: Jul 30, 2019
- * author: daniel
- *
- */
-bool Session::var_exist(std::string name)
-{
-  if (script::Session::var_exist(name))
-    return true;
-
-  return Metadata::exist(name.c_str());
-}
-
 
 
 /*
@@ -518,7 +493,7 @@ bool ActionExpression::extract(ParserEnv& ps)
  * @param val_array
  * @return
  */
-bool ActionMacro::run_macro(Session& session,const std::vector<script::ValueData>& val_array)
+bool ActionMacro::run_macro(Session& session,const std::vector<ValueData>& val_array)
 {
   Session stackSession(session.global() != nullptr ? session.global() : &session,
                         session.verbose());
@@ -533,7 +508,7 @@ bool ActionMacro::run_macro(Session& session,const std::vector<script::ValueData
   for (iter = _action_array.begin();iter != _action_array.end();++iter)
     (*iter)->do_action(stackSession);
 
-  if (stackSession.var_exist("_return"))
+  if (stackSession.exist("_return"))
     session.var(_name.c_str()) = stackSession.var("_return");
 
   return true;
@@ -749,7 +724,7 @@ bool ActionRunMacro::do_action(Session& session)
   if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
     return false;
 
-  std::vector<script::ValueData> values;
+  std::vector<ValueData> values;
   for (size_t index = 0; index < _arguments.size(); index++)
     values.push_back(_arguments[index]->evaluate(&session));
 

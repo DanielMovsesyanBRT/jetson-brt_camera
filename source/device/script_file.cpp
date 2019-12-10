@@ -4,11 +4,11 @@
 
 #include "script_file.hpp"
 
-#include "ParserString.hpp"
 #include <fstream>
 #include <iostream>
 
-#include "../utils.hpp"
+#include <parser_string.hpp>
+#include <utils.hpp>
 #include "script_action.hpp"
 
 namespace brt {
@@ -182,7 +182,7 @@ bool ScriptFile::run_macro(const char *macro_name, script::Value& val, std::vect
   if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
     return false;
 
-  std::vector<script::ValueData> values;
+  std::vector<ValueData> values;
   for (size_t index = 0; index < arguments.size(); index++)
     values.push_back(arguments[index]);
 

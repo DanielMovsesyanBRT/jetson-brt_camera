@@ -2,10 +2,10 @@
 // Created by Daniel Movsesyan on 2019-04-06.
 //
 
-#include "Expression.hpp"
-#include "Parser.hpp"
+#include "expression.hpp"
 
 #include <string.h>
+#include "parser.hpp"
 
 #undef _lengthof
 #define _lengthof(x)    (sizeof(x)/sizeof(x[0]))

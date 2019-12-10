@@ -18,7 +18,7 @@
 
 #include "camera.hpp"
 
-#include "../utils.hpp"
+#include <utils.hpp>
 #include "deserializer.hpp"
 #include "device_manager.hpp"
 

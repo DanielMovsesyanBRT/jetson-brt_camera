@@ -2,7 +2,8 @@
 // Created by Daniel Movsesyan on 2019-06-14.
 //
 
-#include "ParserString.hpp"
+#include "parser_string.hpp"
+
 #include <cctype>
 #include <string.h>
 

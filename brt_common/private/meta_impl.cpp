@@ -84,7 +84,7 @@ void MetaImpl::add(const MetaImpl* params)
  * author: daniel
  *
  */
-void MetaImpl::parse(int argc,char** argv)
+void MetaImpl::parse(int argc,char** argv,const char* default_arg_name)
 {
   for (int index = 1; index < argc; index++)
   {
@@ -92,29 +92,24 @@ void MetaImpl::parse(int argc,char** argv)
     {
       const char *arg = &(argv[index][2]);
       const char *eq = strstr(arg,"=");
-      std::string value;
-      std::string name;
 
       if (eq == nullptr)
       {
-        name = arg;
-        value = "true";
+        add(arg,true);
       }
       else
       {
-        name = std::string (arg,eq - arg);
-        value = (eq + 1);
+        add(std::string (arg,eq - arg).c_str(),eq + 1);
       }
-      set(name.c_str(),value.c_str());
     }
 
     else if (strstr(argv[index],"-") == argv[index])
     {
-      set(&(argv[index][1]),"1");
+      set(&(argv[index][1]),true);
     }
     else
     {
-      set(argv[index],"true");
+      add(default_arg_name, argv[index]);
     }
   }
 }
@@ -130,7 +125,7 @@ void MetaImpl::copy_key(const char* to, const char* from, const MetaImpl* meta)
 {
   if ((_meta_data != nullptr) && (meta->_meta_data != nullptr))
   {
-    script::value_database::iterator iter = meta->_meta_data->find(from);
+    value_database::iterator iter = meta->_meta_data->find(from);
     if (iter != meta->_meta_data->end())
       (*_meta_data)[to] = iter->second;
   }

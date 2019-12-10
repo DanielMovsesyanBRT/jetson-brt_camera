@@ -13,7 +13,7 @@
 #include <mutex>
 #include <vector>
 
-#include "../metadata.hpp"
+#include <metadata.hpp>
 
 namespace brt
 {

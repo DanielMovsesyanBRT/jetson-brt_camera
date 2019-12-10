@@ -5,10 +5,12 @@
 #ifndef EXPRESSIONS_EXPRESSION_HPP
 #define EXPRESSIONS_EXPRESSION_HPP
 
-#include "Value.hpp"
-
 #include <map>
 #include <vector>
+
+
+#include <metadata.hpp>
+#include "value.hpp"
 
 
 namespace brt {
@@ -30,7 +32,7 @@ public:
 /**
  *
  */
-class Session
+class Session : public Metadata
 {
 public:
   Session() {}
@@ -44,24 +46,12 @@ public:
     }
   }
 
-  virtual ValueData&              var(std::string name) { return _variables[name]; }
-
+  virtual ValueData&              var(std::string name) { return value(name.c_str()); }
   virtual SessionObject*&         object(std::string name) { return _objects[name]; }
 
-  virtual bool                    var_exist(std::string name) const { return _variables.find(name) != _variables.end(); }
   virtual bool                    object_exist(std::string name) const { return _objects.find(name) != _objects.end(); }
 
-  template<typename __f> void     for_each(__f func)
-  {
-    value_database::iterator iter;
-    for (iter = _variables.begin();iter != _variables.end();++iter)
-    {
-      func(iter->first,iter->second);
-    }
-  }
-
 private:
-  value_database                  _variables;
   std::map<std::string,SessionObject*>
                                   _objects;
 };

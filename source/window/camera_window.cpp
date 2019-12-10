@@ -7,14 +7,16 @@
 
 #include "camera_window.hpp"
 #include "window_manager.hpp"
-#include "cuda_debayering.h"
+// #include "cuda_debayering.h"
 
 #include <iostream>
 #include <algorithm>
 #include <chrono>
 #include <cmath>
 #include <fstream>
-#include "../utils.hpp"
+
+#include <utils.hpp>
+#include <cuda_utils.hpp>
 
 
 namespace brt

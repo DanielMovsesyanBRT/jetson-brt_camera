@@ -5,11 +5,11 @@
 #ifndef EXPRESSIONS_PARSER_HPP
 #define EXPRESSIONS_PARSER_HPP
 
-#include "Expression.hpp"
-#include "ParserString.hpp"
 #include <string>
 #include <deque>
 #include <utility>
+#include "expression.hpp"
+#include "parser_string.hpp"
 
 namespace brt {
 

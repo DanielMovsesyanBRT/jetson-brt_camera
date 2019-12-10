@@ -5,12 +5,12 @@
  *      Author: daniel
  */
 
-#include "Function.hpp"
-#include "ParserString.hpp"
+#include "function.hpp"
 
 #include <string.h>
 #include <iostream>
 #include <iomanip>
+#include "parser_string.hpp"
 
 namespace brt
 {

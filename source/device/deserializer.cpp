@@ -9,7 +9,7 @@
 
 #include <iostream>
 
-#include "../utils.hpp"
+#include <utils.hpp>
 #include "camera.hpp"
 #include "device_manager.hpp"
 

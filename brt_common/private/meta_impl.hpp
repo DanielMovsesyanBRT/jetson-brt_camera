@@ -15,8 +15,8 @@
 #include <unordered_map>
 #include <typeinfo>
 
-#include <ValueData.hpp>
 #include <regex>
+#include "value_data.hpp"
 
 namespace brt
 {
@@ -39,7 +39,7 @@ public:
   : _meta_data(nullptr)
   , _own_data(false)
   {
-    _meta_data = new script::value_database;
+    _meta_data = new value_database;
     _own_data = true;
   }
 
@@ -54,7 +54,7 @@ public:
   : _meta_data(nullptr)
   , _own_data(false)
   {
-    _meta_data = new script::value_database;
+    _meta_data = new value_database;
     _own_data = true;
 
     add(semicolon_separated_list);
@@ -89,6 +89,26 @@ public:
   }
 
   /*
+   * \\fn Metadata& add
+   *
+   * created on: Jul 30, 2019
+   * author: daniel
+   *
+   */
+  template<typename T>
+  void                      add(const char* key,T value)
+  {
+    if (_meta_data != nullptr)
+    {
+      value_database::iterator iter = _meta_data->find(key);
+      if (iter == _meta_data->end())
+        (*_meta_data)[key].set<T>(value);
+      else
+        iter->second.at(iter->second.length() - 1).set<T>(value);
+    }
+  }
+
+  /*
    * \\fn T get
    *
    * created on: Jul 30, 2019
@@ -101,7 +121,7 @@ public:
     if (_meta_data == nullptr)
       return default_value;
 
-    script::value_database::const_iterator iter = _meta_data->find(key);
+    value_database::const_iterator iter = _meta_data->find(key);
     if (iter == _meta_data->end())
       return default_value;
 
@@ -115,7 +135,7 @@ public:
    * author: daniel
    *
    */
-  script::ValueData&          value(const char* key)
+  ValueData&          value(const char* key)
   {
     return (*_meta_data)[key];
   }
@@ -140,7 +160,7 @@ public:
     return result;
   }
 
-        void                      parse(int argc,char** argv);
+        void                      parse(int argc,char** argv,const char* default_arg_name);
         bool                      exist(const char *key) const { return (_meta_data != nullptr) ? (_meta_data->find(key) != _meta_data->end()) : false; }
         void                      erase(const char *key) { if (_meta_data != nullptr) _meta_data->erase(key); }
 
@@ -157,7 +177,7 @@ public:
         std::string               to_json(bool nicely_formatted = true) const;
 
 private:
- script::value_database*          _meta_data;
+ value_database*                  _meta_data;
  bool                             _own_data;
 };
 

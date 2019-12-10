@@ -5,19 +5,16 @@
  *      Author: daniel
  */
 
-#include "ValueData.hpp"
-#include "ParserString.hpp"
-
 #include <string.h>
 
 #include <typeinfo>
 #include <locale>
+#include "value_data.hpp"
+#include "utils.hpp"
 
 namespace brt
 {
 namespace jupiter
-{
-namespace script
 {
 
 #undef _lengthof
@@ -137,6 +134,8 @@ template<> ValueData& ValueData::set<float>(float value,size_t size) { return se
 template<> ValueData& ValueData::set<uint64_t>(uint64_t value,size_t size) { return set_ull(value,size); }
 template<> ValueData& ValueData::set<void*>(void* value,size_t size) { return set_ptr(value,size); }
 template<> ValueData& ValueData::set<const char*>(const char* value,size_t size) { return set_string(value,size); }
+template<> ValueData& ValueData::set<char*>(char* value,size_t size) { return set_string(value,size); }
+template<> ValueData& ValueData::set<std::string>(std::string value,size_t size) { return set_string(value.c_str(),size); }
 
 template<> bool ValueData::get<bool>() const { return get_bool(); }
 template<> int ValueData::get<int>() const { return get_int(); }
@@ -145,6 +144,7 @@ template<> float ValueData::get<float>() const { return get_float(); }
 template<> uint64_t ValueData::get<uint64_t>() const { return get_ull(); }
 template<> void* ValueData::get<void*>() const { return get_ptr(); }
 template<> std::string ValueData::get<std::string>() const { return get_string(); }
+template<> const char* ValueData::get<const char*>() const { return get_string().c_str(); }
 template<> ValueData::byte_buffer ValueData::get<ValueData::byte_buffer>() const { return get_byte_array(); }
 
 
@@ -682,19 +682,19 @@ std::string ValueData::get_string() const
     break;
 
   case INT:
-    result = string_format("%d", get_int());
+    result = Utils::string_format("%d", get_int());
     break;
 
   case FLOAT:
-    result = string_format("%g", get_float());
+    result = Utils::string_format("%g", get_float());
     break;
 
   case ULONGLONG:
-    result = string_format("%llu", get_ull());
+    result = Utils::string_format("%llu", get_ull());
     break;
 
   case PTR:
-    result = string_format("%p", get_ptr());
+    result = Utils::string_format("%p", get_ptr());
     break;
 
   case STRING:
@@ -757,6 +757,5 @@ void ValueData::extract(ValueData& where, int start, int length) const
   }
 }
 
-} /* namespace script */
 } /* namespace jupiter */
 } /* namespace brt */

@@ -18,7 +18,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 add_subdirectory(script)
+add_subdirectory(brt_common)
 
+
+message(STATUS "INCLUDE = ${INCLUDE_DIRECTORIES}")
 #
 # ---------- Define Project
 #
@@ -64,7 +67,7 @@ find_library(GL REQUIRED
           )
 
 set(SOURCES 
-  source/cuda_debayering/src/cuda_debayering.cu
+  # source/cuda_debayering/src/cuda_debayering.cu
  
   source/device/camera.cpp
   source/device/deserializer.cpp
@@ -84,9 +87,9 @@ set(SOURCES
   source/window/window.cpp
   source/window/window_manager.cpp
   
-  source/metadata.cpp
-  source/meta_impl.cpp
-  source/utils.cpp
+#  source/metadata.cpp
+#  source/meta_impl.cpp
+#  source/utils.cpp
 )
 
 
@@ -99,8 +102,9 @@ else()
   message(STATUS "Compiling Library version")
 endif()
 
-include_directories( "source/cuda_debayering/include" "source" "source/image")
-# cuda_include_directories( "source/cuda" )
+include_directories("brt_common")
+# include_directories( "source/cuda_debayering/include" "source" "source/image" "script/brt_common")
+# cuda_include_directories("brt_common")
 
 if(EXECUTABLE)
   cuda_add_executable(${PROJECT_NAME} ${SOURCES})

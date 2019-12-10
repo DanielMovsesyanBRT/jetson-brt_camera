@@ -9,12 +9,13 @@
 #define SOURCE_IMAGE_IMAGE_PROCESSOR_HPP_
 
 #include <stdint.h>
-#include <cuda_runtime.h>
+// #include <cuda_runtime.h>
 
 #include <vector>
 #include <atomic>
 
-#include "../utils.hpp"
+#include <cuda_utils.hpp>
+
 #include "image.hpp"
 
 #define DEFAULT_NUMBER_OF_THREADS           (64)

@@ -2,7 +2,7 @@
 // Created by Daniel Movsesyan on 2019-04-06.
 //
 
-#include "Value.hpp"
+#include "value.hpp"
 
 #include <iostream>
 #include <iomanip>

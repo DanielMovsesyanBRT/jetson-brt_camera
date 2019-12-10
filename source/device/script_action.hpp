@@ -14,9 +14,10 @@
 #include <map>
 #include <cstring>
 
-#include "../metadata.hpp"
-#include "Expression.hpp"
-#include "ParserString.hpp"
+#include <expression.hpp>
+#include <parser_string.hpp>
+#include <metadata.hpp>
+#include <value_data.hpp>
 
 namespace brt {
 
@@ -32,13 +33,11 @@ class ScriptAction;
  *
  */
 class Session : public script::Session
-              , public Metadata
 {
 public:
   Session(Session* global_session,
           bool verbose = false)
-  : Metadata()
-  , _verbose(verbose)
+  : _verbose(verbose)
   , _global_session(global_session)
   { }
 
@@ -60,8 +59,7 @@ public:
           void                    initialize(std::vector<ScriptAction*>& action_array);
           void                    run(std::vector<ScriptAction*>&);
 
-  virtual script::ValueData&      var(std::string name);
-  virtual bool                    var_exist(std::string name);
+  virtual ValueData&              var(std::string name);
           void                    to_meta(std::string name);
 
 private:
@@ -287,7 +285,7 @@ public:
   };
 
           std::string             name() const { return _name; }
-          bool                    run_macro(Session&,const std::vector<script::ValueData>&);
+          bool                    run_macro(Session&,const std::vector<ValueData>&);
 
   virtual bool                    do_action(Session&) { return true; }
 

@@ -9,7 +9,7 @@
 #include <dirent.h>
 #include <unistd.h>
 #include <iostream>
-#include "../utils.hpp"
+#include <utils.hpp>
 
 #define _PATH_PROCNET_X11                   "/tmp/.X11-unix"
 #define _PATH_PROCNET_TCP                   "/proc/net/tcp"

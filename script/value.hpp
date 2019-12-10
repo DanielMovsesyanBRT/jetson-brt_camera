@@ -9,7 +9,7 @@
 #include <vector>
 #include <cassert>
 
-#include "ValueData.hpp"
+#include <value_data.hpp>
 
 namespace brt {
 

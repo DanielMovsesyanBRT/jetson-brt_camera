@@ -114,7 +114,7 @@ template<> bool Metadata::get_at<bool>(const char* key,size_t index, const bool&
   if (!_impl->exist(key))
     return default_value;
 
-  script::ValueData val = _impl->value(key).at(index);
+  ValueData& val = _impl->value(key).at(index);
   return val.get<bool>();
 }
 
@@ -130,7 +130,7 @@ template<> int Metadata::get_at<int>(const char* key,size_t index, const int& de
   if (!_impl->exist(key))
     return default_value;
 
-  script::ValueData val = _impl->value(key).at(index);
+  ValueData& val = _impl->value(key).at(index);
   return val.get<int>();
 }
 
@@ -146,7 +146,7 @@ template<> unsigned long Metadata::get_at<unsigned long>(const char* key,size_t 
   if (!_impl->exist(key))
     return default_value;
 
-  script::ValueData val = _impl->value(key).at(index);
+  ValueData& val = _impl->value(key).at(index);
   return val.get<unsigned long>();
 }
 
@@ -162,7 +162,7 @@ template<> double Metadata::get_at<double>(const char* key,size_t index, const d
   if (!_impl->exist(key))
     return default_value;
 
-  script::ValueData val = _impl->value(key).at(index);
+  ValueData& val = _impl->value(key).at(index);
   return val.get<double>();
 }
 
@@ -178,7 +178,7 @@ template<> std::string Metadata::get_at<std::string>(const char* key,size_t inde
   if (!_impl->exist(key))
     return default_value;
 
-  script::ValueData val = _impl->value(key).at(index);
+  ValueData& val = _impl->value(key).at(index);
   return val.get<std::string>();
 }
 
@@ -194,9 +194,37 @@ template<> Metadata::byte_buffer Metadata::get_at<Metadata::byte_buffer>(const c
   if (!_impl->exist(key))
     return default_value;
 
-  script::ValueData val = _impl->value(key).at(index);
+  ValueData& val = _impl->value(key).at(index);
   return val.get<Metadata::byte_buffer>();
 }
+
+/*
+ * \\fn size_t Metadata::size
+ *
+ * created on: Dec 9, 2019
+ * author: daniel
+ *
+ */
+size_t Metadata::size(const char* key) const
+{
+  if (!_impl->exist(key))
+    return 0;
+
+  return _impl->value(key).length();
+}
+
+/*
+ * \\fn ValueData& Metadata::value_at
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+ValueData& Metadata::value_at(const char* key,size_t index)
+{
+  return _impl->value(key).at(index);
+}
+
 
 /*
  * \\fn void Metadata::parse
@@ -205,9 +233,9 @@ template<> Metadata::byte_buffer Metadata::get_at<Metadata::byte_buffer>(const c
  * author: daniel
  *
  */
-void Metadata::parse(int argc,char** argv)
+void Metadata::parse(int argc,char** argv,const char* default_arg_name /*= "<default>"*/)
 {
-  _impl->parse(argc,argv);
+  _impl->parse(argc,argv,default_arg_name);
 }
 
 /*

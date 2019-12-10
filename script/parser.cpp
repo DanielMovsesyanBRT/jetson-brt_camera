@@ -2,8 +2,11 @@
 // Created by Daniel Movsesyan on 2019-04-06.
 //
 
-#include "Parser.hpp"
-#include "Function.hpp"
+#include "parser.hpp"
+#include "function.hpp"
+
+#include <utils.hpp>
+
 #include <ctype.h>
 
 
@@ -433,7 +436,7 @@ Expression* Parser::get_value(const char *&text)
     result = new Constant(str.c_str(),true);
   }
   else
-    throw ParserException::create((string_format("Invalid token \"%s\"",token.c_str())).c_str());
+    throw ParserException::create((Utils::string_format("Invalid token \"%s\"",token.c_str())).c_str());
 
   return result;
 }
@@ -449,7 +452,7 @@ Expression* Parser::get_function(const std::string& name, const char *&text)
 {
   Function* fn = Function::create_function(name.c_str());
   if (fn == nullptr)
-    throw ParserException::create((string_format("Invalid function \"%s\"",name)).c_str());
+    throw ParserException::create((Utils::string_format("Invalid function \"%s\"",name)).c_str());
 
   const char *local_text = text;
   std::string token = get_token(local_text);

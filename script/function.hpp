@@ -8,7 +8,7 @@
 #ifndef SCRIPT_FUNCTION_HPP_
 #define SCRIPT_FUNCTION_HPP_
 
-#include "Expression.hpp"
+#include "expression.hpp"
 
 
 namespace brt

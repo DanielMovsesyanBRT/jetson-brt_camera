@@ -20,8 +20,6 @@ namespace brt
 {
 namespace jupiter
 {
-namespace script
-{
 
 /*
  * \\class RealUtil
@@ -46,6 +44,25 @@ class ValueData
 {
 public:
   typedef std::vector<uint8_t>    byte_buffer;
+
+  template<class T> class Iter
+  {
+  public:
+    Iter(T *data, size_t index = 0) : _data(data), _index(index) {}
+    virtual ~Iter() {}
+
+    T& operator*()                { return _data->at(_index); }
+
+    Iter& operator++()            { _index++; return *this; }
+    bool operator==(const Iter& rval) { return _index == rval._index; }
+
+  private:
+    T*                            _data;
+    size_t                        _index;
+  };
+
+  typedef Iter<ValueData>         iterator;
+  typedef Iter<const ValueData>   const_iterator;
 
   enum value_type
   {
@@ -74,6 +91,8 @@ public:
           ValueData&              operator=(const ValueData& data);
           value_type              type() const { return _type; }
           size_t                  size() const { return _size; }
+          size_t                  length() const { return _array.size() + 1; }
+
 
           ValueData&              set_bool(bool value,size_t size = sizeof(bool));
           ValueData&              set_int(int value,size_t size = sizeof(int));
@@ -100,11 +119,21 @@ public:
 
           ValueData&              at(size_t index)
           {
+            if (index == 0)
+              return *this;
+
+            index -= 1;
             if (_array.size() <= index)
               _array.resize(index + 1);
 
             return _array.at(index);
           }
+
+          iterator                begin() { return iterator(this); }
+          iterator                end()   { return iterator(this,length()); }
+
+          const_iterator          begin() const { return const_iterator(this); }
+          const_iterator          end() const { return   const_iterator(this,length()); }
 
           void                    extract(ValueData& where, int start, int length) const;
 
@@ -122,7 +151,9 @@ private:
 };
 
 typedef std::unordered_map<std::string,ValueData>     value_database;
+
 template<> struct ValueData::default_arg<const char*> { static size_t get() { return (size_t)-1; } };
+template<> struct ValueData::default_arg<char*> { static size_t get() { return (size_t)-1; } };
 
 template<> ValueData& ValueData::set<bool>(bool value,size_t size);
 template<> ValueData& ValueData::set<int>(int value,size_t size);
@@ -141,7 +172,6 @@ template<> void* ValueData::get<void*>() const;
 template<> std::string ValueData::get<std::string>() const;
 template<> ValueData::byte_buffer ValueData::get<ValueData::byte_buffer>() const;
 
-} /* namespace script */
 } /* namespace jupiter */
 } /* namespace brt */
 
