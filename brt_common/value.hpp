@@ -15,8 +15,6 @@ namespace brt {
 
 namespace jupiter {
 
-namespace script {
-
 /**
  *
  */
@@ -137,7 +135,6 @@ private:
   ValueData*                      _data;
 };
 
-} // script
 } // jupiter
 } // brt
 

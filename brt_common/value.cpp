@@ -12,8 +12,6 @@ namespace brt {
 
 namespace jupiter {
 
-namespace script {
-
 /**
  *
  * @return
@@ -1285,6 +1283,5 @@ Value Value::sub_array(int start, int length)
   return result;
 }
 
-} // script
 } // jupiter
 } // brt
