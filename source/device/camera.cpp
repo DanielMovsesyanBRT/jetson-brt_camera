@@ -161,9 +161,9 @@ bool Camera::stop_streaming()
  */
 void Camera::set_exposure(double ms)
 {
-  std::vector<script::Value> args;
-  args.push_back(script::Value().set<int>(_id));
-  args.push_back(script::Value().set(ms));
+  std::vector<Value> args;
+  args.push_back(Value().set<int>(_id));
+  args.push_back(Value().set(ms));
 
   _skip_frames = 4;
   _owner->run_macro("set_exposure", args);
@@ -178,10 +178,10 @@ void Camera::set_exposure(double ms)
  */
 double Camera::get_exposure()
 {
-  std::vector<script::Value> args;
-  args.push_back(script::Value().set<int>(_id));
+  std::vector<Value> args;
+  args.push_back(Value().set<int>(_id));
 
-  script::Value result;
+  Value result;
   _owner->run_macro("get_exposure", result, args);
 
   return result;
@@ -196,11 +196,11 @@ double Camera::get_exposure()
  */
 double Camera::get_temperature(int temp_sensor_id)
 {
-  std::vector<script::Value> args;
-  args.push_back(script::Value().set<int>(_id));
-  args.push_back(script::Value().set<int>(temp_sensor_id));
+  std::vector<Value> args;
+  args.push_back(Value().set<int>(_id));
+  args.push_back(Value().set<int>(temp_sensor_id));
 
-  script::Value result;
+  Value result;
   _owner->run_macro("get_temperature", result, args);
 
   return result;
@@ -216,8 +216,8 @@ double Camera::get_temperature(int temp_sensor_id)
  */
 void Camera::read_exposure()
 {
-  std::vector<script::Value> args;
-  args.push_back(script::Value().set<int>(_id));
+  std::vector<Value> args;
+  args.push_back(Value().set<int>(_id));
 
   _owner->run_macro("read_exposure", args);
 }
@@ -232,9 +232,9 @@ void Camera::read_exposure()
  */
 void Camera::set_gain(eCameraGain gain)
 {
-  std::vector<script::Value> args;
-  args.push_back(script::Value().set<int>(_id));
-  args.push_back(script::Value().set<int>(gain, 2));
+  std::vector<Value> args;
+  args.push_back(Value().set<int>(_id));
+  args.push_back(Value().set<int>(gain, 2));
 
   _skip_frames = 4;
   _owner->run_macro("set_gain", args);

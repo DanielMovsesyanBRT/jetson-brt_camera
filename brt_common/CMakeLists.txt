@@ -16,9 +16,10 @@ project(brt_common C CXX)
 
 set(SOURCES 
   private/meta_impl.cpp
+  private/value_data.cpp
   metadata.cpp
   utils.cpp
-  value_data.cpp
+  value.cpp
 )
   
 add_library(${PROJECT_NAME} STATIC ${SOURCES})

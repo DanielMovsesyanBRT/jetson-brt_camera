@@ -140,7 +140,7 @@ Value FunctionConvertToBuff::evaluate(Session* session)
 {
   if (num_args() > 0)
   {
-    ValueData::byte_buffer buff = arg(0,session);
+    Value::byte_buffer buff = arg(0,session);
     _result.set(buff);
   }
 

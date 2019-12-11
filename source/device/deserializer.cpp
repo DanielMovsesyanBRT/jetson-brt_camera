@@ -159,12 +159,12 @@ bool Deserializer::run_script(const char *text)
  * author: daniel
  *
  */
-bool Deserializer::run_macro(const char *macro_name,std::vector<script::Value> arguments /*= std::vector<script::Value>()*/)
+bool Deserializer::run_macro(const char *macro_name,std::vector<Value> arguments /*= std::vector<Value>()*/)
 {
   if (!_script)
     return false;
 
-  script::Value dummy_result;
+  Value dummy_result;
   return _script->run_macro(macro_name,dummy_result,arguments);
 }
 
@@ -175,8 +175,8 @@ bool Deserializer::run_macro(const char *macro_name,std::vector<script::Value> a
  * author: daniel
  *
  */
-bool Deserializer::run_macro(const char *macro_name,script::Value& result,
-                          std::vector<script::Value> arguments /*= std::vector<script::Value>()*/)
+bool Deserializer::run_macro(const char *macro_name,Value& result,
+                          std::vector<Value> arguments /*= std::vector<Value>()*/)
 {
   if (!_script)
     return false;

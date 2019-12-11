@@ -172,7 +172,7 @@ bool ScriptFile::run(const char *text)
  * author: daniel
  *
  */
-bool ScriptFile::run_macro(const char *macro_name, script::Value& val, std::vector<script::Value> arguments /*= std::vector<script::Value>()*/)
+bool ScriptFile::run_macro(const char *macro_name, Value& val, std::vector<Value> arguments /*= std::vector<script::Value>()*/)
 {
   bool expected = false;
   if (!_busy.compare_exchange_strong(expected, true))
@@ -182,7 +182,7 @@ bool ScriptFile::run_macro(const char *macro_name, script::Value& val, std::vect
   if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
     return false;
 
-  std::vector<ValueData> values;
+  std::vector<Value> values;
   for (size_t index = 0; index < arguments.size(); index++)
     values.push_back(arguments[index]);
 

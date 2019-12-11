@@ -37,7 +37,7 @@ public:
         bool                      run();
         bool                      run(const char *text);
 
-        bool                      run_macro(const char *macro_name,script::Value& val, std::vector<script::Value> arguments = std::vector<script::Value>());
+        bool                      run_macro(const char *macro_name,Value& val, std::vector<Value> arguments = std::vector<Value>());
 private:
   std::vector<ScriptAction*>      _action_list;
   std::string                     _file_path;

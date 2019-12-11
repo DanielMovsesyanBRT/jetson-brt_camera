@@ -17,7 +17,6 @@
 
 #include <parser.hpp>
 #include <utils.hpp>
-//#include "../meta_impl.hpp"
 
 namespace brt {
 
@@ -35,7 +34,7 @@ size_t ScriptAction::_line_number = 0;
  * author: daniel
  *
  */
-ValueData& Session::var(std::string name)
+Value Session::var(std::string name)
 {
   // check local
   if (exist(name.c_str()))
@@ -282,7 +281,7 @@ bool ActionRead::do_action(Session& session)
 
   int num_bytes = _num_bytes->evaluate(&session);
   int address = _device_address->evaluate(&session);
-  script::Value offset = _offset->evaluate(&session);
+  Value offset = _offset->evaluate(&session);
 
   uint8_t* buffer = new uint8_t[num_bytes];
 
@@ -297,7 +296,7 @@ bool ActionRead::do_action(Session& session)
 #endif
   if (result)
   {
-    script::Value val = _target->evaluate(&session);
+    Value val = _target->evaluate(&session);
     val.set_byte_array(buffer, num_bytes, false);
 
     if (session.verbose())
@@ -356,12 +355,12 @@ bool ActionRead::extract(ParserEnv& ps)
 bool ActionWrite::do_action(Session& session)
 {
   int address = _device_address->evaluate(&session);
-  script::Value offset = _offset->evaluate(&session);
+  Value offset = _offset->evaluate(&session);
 
   std::vector<uint8_t>  buffer;
   for (size_t index = 0; index < _bytes.size(); index++)
   {
-    script::Value byte = _bytes[index]->evaluate(&session);
+    Value byte = _bytes[index]->evaluate(&session);
 
     int size = byte.size();
     int byteValue = byte;
@@ -438,7 +437,7 @@ bool ActionEcho::do_action(Session& session)
   if (_text == nullptr)
     return false;
 
-  script::Value text = _text->evaluate(&session);
+  Value text = _text->evaluate(&session);
 
   std::cout << (std::string)text;
   std::cout << std::endl;
@@ -493,7 +492,7 @@ bool ActionExpression::extract(ParserEnv& ps)
  * @param val_array
  * @return
  */
-bool ActionMacro::run_macro(Session& session,const std::vector<ValueData>& val_array)
+bool ActionMacro::run_macro(Session& session,const std::vector<Value>& val_array)
 {
   Session stackSession(session.global() != nullptr ? session.global() : &session,
                         session.verbose());
@@ -724,10 +723,9 @@ bool ActionRunMacro::do_action(Session& session)
   if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
     return false;
 
-  std::vector<ValueData> values;
+  std::vector<Value> values;
   for (size_t index = 0; index < _arguments.size(); index++)
     values.push_back(_arguments[index]->evaluate(&session));
-
 
   return macro_obj->get()->run_macro(session,values);
 }

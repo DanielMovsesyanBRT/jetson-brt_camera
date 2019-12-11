@@ -3,6 +3,7 @@
 //
 
 #include "value.hpp"
+#include "value_data.hpp"
 
 #include <iostream>
 #include <iomanip>
@@ -11,6 +12,171 @@
 namespace brt {
 
 namespace jupiter {
+
+template<> Value& Value::set<bool>(bool value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<int>(int value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<double>(double value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<float>(float value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<uint64_t>(uint64_t value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<void*>(void* value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<const char*>(const char* value,size_t size) { return _set(value,size); }
+template<> Value& Value::set<Value::byte_buffer>(Value::byte_buffer value,size_t size) { return _set(value,size); }
+
+/*
+ * \\fn Constructor Value::Value
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::Value()
+: _data(new ValueData)
+{
+}
+
+/*
+ * \\fn Constructor Value::Value
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::Value(const Value& val)
+: _data(val._data)
+{
+  assert(_data != nullptr);
+  _data->add_ref();
+}
+
+/*
+ * \\fn Constructor Value::Value
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::Value(ValueData& vd)
+: _data(&vd)
+{
+  _data->add_ref();
+}
+
+/*
+ * \\fn Destructor Value::~Value
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::~Value()
+{
+  if (_data != nullptr)
+    _data->release();
+}
+
+/*
+ * \\fn Value::operator bool
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::operator bool() const
+{
+  return _data->get_bool();
+}
+
+/*
+ * \\fn Value::operator int
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::operator int() const
+{
+  return _data->get_int();
+}
+
+/*
+ * \\fn Value::operator double
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::operator double() const
+{
+  return _data->get_float();
+}
+
+/*
+ * \\fn Value::operator std::string
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::operator std::string() const
+{
+  return _data->get_string();
+}
+
+
+/*
+ * \\fn Value::operator byte_buffer
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+Value::operator Value::byte_buffer() const
+{
+  return _data->get_byte_array();
+}
+
+/*
+ * \\fn set
+ *
+ * created on: Jul 30, 2019
+ * author: daniel
+ *
+ */
+template<typename T>
+Value& Value::_set(T value,size_t size /*= (size_t)-1*/)
+{
+  assert(_data != nullptr);
+  if (size == (size_t)-1)
+    _data->set<T>(value);
+  else
+    _data->set<T>(value,size);
+
+  return *this;
+}
+
+/*
+ *
+ */
+Value& Value::set_byte_array(const uint8_t* value,size_t size,bool little_endian /*= true*/)
+{
+  assert(_data != nullptr);
+  _data->set_byte_array(value,size,little_endian);
+
+  return *this;
+}
+
+
+/*
+ * \\fn size_t Value::size
+ *
+ * created on: Dec 10, 2019
+ * author: daniel
+ *
+ */
+size_t Value::size() const
+{
+  return _data->size();
+}
 
 /**
  *

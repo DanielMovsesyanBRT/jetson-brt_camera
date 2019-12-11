@@ -82,8 +82,8 @@ public:
   template<typename T> T          get_at(const char* key,size_t index, const T& default_value = default_arg<T>::get());
         size_t                    size(const char* key) const;
 
-        Value&                    value(const char* key) { return value_at(key,0); }
-        Value&                    value_at(const char* key,size_t index);
+        Value                     value(const char* key) { return value_at(key,0); }
+        Value                     value_at(const char* key,size_t index);
 
         void                      parse(int argc,char** argv,const char* default_arg_name = "<default>");
         bool                      exist(const char *key) const;

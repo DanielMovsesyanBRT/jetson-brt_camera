@@ -40,8 +40,8 @@ public:
           bool                    load_script(const char *file_path,const Metadata& extra_args = Metadata());
 
           bool                    run_script(const char *text);
-          bool                    run_macro(const char *macro_name,std::vector<script::Value> arguments = std::vector<script::Value>());
-          bool                    run_macro(const char *macro_name,script::Value& result,std::vector<script::Value> arguments = std::vector<script::Value>());
+          bool                    run_macro(const char *macro_name,std::vector<Value> arguments = std::vector<Value>());
+          bool                    run_macro(const char *macro_name,Value& result,std::vector<Value> arguments = std::vector<Value>());
 
           size_t                  num_cameras() const { return _cameras.size(); }
           Camera*                 get_camera(size_t index) const { return ((index >= num_cameras())?nullptr:_cameras[index]); }

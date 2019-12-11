@@ -17,7 +17,7 @@
 #include <expression.hpp>
 #include <parser_string.hpp>
 #include <metadata.hpp>
-#include <value_data.hpp>
+#include <value.hpp>
 
 namespace brt {
 
@@ -59,7 +59,7 @@ public:
           void                    initialize(std::vector<ScriptAction*>& action_array);
           void                    run(std::vector<ScriptAction*>&);
 
-  virtual ValueData&              var(std::string name);
+  virtual Value                   var(std::string name);
           void                    to_meta(std::string name);
 
 private:
@@ -285,7 +285,7 @@ public:
   };
 
           std::string             name() const { return _name; }
-          bool                    run_macro(Session&,const std::vector<ValueData>&);
+          bool                    run_macro(Session&,const std::vector<Value>&);
 
   virtual bool                    do_action(Session&) { return true; }
 

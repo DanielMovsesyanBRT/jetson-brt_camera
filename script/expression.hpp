@@ -10,7 +10,7 @@
 
 
 #include <metadata.hpp>
-#include "value.hpp"
+#include <value.hpp>
 
 
 namespace brt {
@@ -46,7 +46,7 @@ public:
     }
   }
 
-  virtual ValueData&              var(std::string name) { return value(name.c_str()); }
+  virtual Value                   var(std::string name) { return value(name.c_str()); }
   virtual SessionObject*&         object(std::string name) { return _objects[name]; }
 
   virtual bool                    object_exist(std::string name) const { return _objects.find(name) != _objects.end(); }

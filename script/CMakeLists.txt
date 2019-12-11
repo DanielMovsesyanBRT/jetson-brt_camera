@@ -24,7 +24,6 @@ set(SOURCES
   function.cpp
   parser.cpp
   parser_string.cpp
-  value.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})

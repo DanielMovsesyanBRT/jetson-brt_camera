@@ -9,11 +9,12 @@
 #include <vector>
 #include <cassert>
 
-#include <value_data.hpp>
-
 namespace brt {
 
 namespace jupiter {
+
+
+class ValueData;
 
 /**
  *
@@ -21,35 +22,18 @@ namespace jupiter {
 class Value
 {
 public:
-  Value()
-  : _data(new ValueData)
-  {   }
+  typedef std::vector<uint8_t>    byte_buffer;
 
-  Value(const Value& val)
-  : _data(val._data)
-  {
-    assert(_data != nullptr);
-    _data->add_ref();
-  }
+  Value();
+  Value(const Value& val);
+  Value(ValueData& vd);
+  virtual ~Value();
 
-  Value(ValueData& vd)
-  : _data(&vd)
-  {
-    _data->add_ref();
-  }
-
-  virtual ~Value()
-  {
-    if (_data != nullptr)
-      _data->release();
-  }
-
-  operator bool() const { return _data->get_bool(); }
-  operator int() const  { return _data->get_int(); }
-  operator double() const { return _data->get_float(); }
-  operator std::string() const { return _data->get_string(); }
-  operator ValueData::byte_buffer() const { return _data->get_byte_array(); }
-  operator ValueData&() { return *_data; }
+          operator bool() const;
+          operator int() const;
+          operator double() const;
+          operator std::string() const;
+          operator byte_buffer() const;
 
 
           /*
@@ -60,30 +44,14 @@ public:
            *
            */
           template<typename T>
-          Value&                 set(T value,size_t size = (size_t)-1)
-          {
-            assert(_data != nullptr);
-            if (size == (size_t)-1)
-              _data->set<T>(value);
-            else
-              _data->set<T>(value,size);
-
-            return *this;
-          }
+          Value&                 set(T value,size_t size = (size_t)-1);// { return *this; }
 
           /*
            *
            */
-          Value&                  set_byte_array(const uint8_t* value,size_t size,bool little_endian = true)
-          {
-            assert(_data != nullptr);
-            _data->set_byte_array(value,size,little_endian);
+          Value&                  set_byte_array(const uint8_t* value,size_t size,bool little_endian = true);
 
-            return *this;
-          }
-
-
-          size_t                  size() const { return _data->size(); }
+          size_t                  size() const;
 
           // Unary Operators
           Value&                  operator++();
@@ -131,6 +99,9 @@ public:
           Value                   at(size_t index);
           Value                   sub_array(int start, int length);
 
+private:
+          template<typename T>
+          Value&                  _set(T value,size_t size = (size_t)-1);
 private:
   ValueData*                      _data;
 };

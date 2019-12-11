@@ -220,9 +220,9 @@ size_t Metadata::size(const char* key) const
  * author: daniel
  *
  */
-ValueData& Metadata::value_at(const char* key,size_t index)
+Value Metadata::value_at(const char* key,size_t index)
 {
-  return _impl->value(key).at(index);
+  return Value(_impl->value(key).at(index));
 }
 
 
