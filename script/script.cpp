@@ -72,7 +72,7 @@ Script::Script()
 Script::Script(const Script& list)
 : _data(list._data)
 {
-  addref();
+
 }
 
 /*
@@ -84,41 +84,7 @@ Script::Script(const Script& list)
  */
 Script::~Script()
 {
-  release();
-}
 
-/*
- * \\fn void ScriptActionList::addref
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-void Script::addref()
-{
-  if (_data != nullptr)
-    _data->_reference++;
-}
-
-/*
- * \\fn void ScriptActionList::release
- *
- * created on: Dec 10, 2019
- * author: daniel
- *
- */
-void Script::release()
-{
-  if ((_data != nullptr) && (--_data->_reference == 0))
-  {
-    while (_data->_array.size() != 0)
-    {
-      delete (_data->_array.front());
-      _data->_array.erase(_data->_array.begin());
-    }
-    delete _data;
-  }
-  _data = nullptr;
 }
 
 /*
@@ -172,13 +138,10 @@ bool Script::load(const char* text,CreatorContainer cc /*= CreatorContainer*/)
  * author: daniel
  *
  */
-void Script::add(ScriptAction* sa)
+void Script::add(ActionPtr sa)
 {
-  if (_data == nullptr)
-  {
-    _data = new SAData;
-    addref();
-  }
+  if (!_data)
+    _data.reset(new SAData);
 
   std::unique_lock<std::mutex> l(_data->_mutex);
   _data->_array.push_back(sa);
@@ -194,17 +157,18 @@ void Script::add(ScriptAction* sa)
  */
 void Script::load_objects()
 {
-  if (_data == nullptr)
+  if (!_data)
     return;
 
   std::unique_lock<std::mutex> l(_data->_mutex);
   for (auto action : _data->_array)
   {
-    ActionMacro* macro = dynamic_cast<ActionMacro*>(action);
-    if (macro != nullptr)
-      _data->_session.object(macro->name()) = new ActionMacro::SessionObject(macro);
+    ActionMacro::MacroPtr macro = std::dynamic_pointer_cast<ActionMacro>(action);
+    if (macro)
+      _data->_session.object(macro->name()).reset(new ActionMacro::SessionObject(macro));
   }
 }
+
 
 /*
  * \\fn void Script::run
@@ -215,15 +179,15 @@ void Script::load_objects()
  */
 void Script::run(Metadata meta /*= Metadata()*/)
 {
-  if (_data == nullptr)
+  if (!_data)
     return;
 
   std::unique_lock<std::mutex> l(_data->_mutex);
-  Session sess(&_data->_session);
-  sess += meta;
 
+  _data->_session += meta;
   for (auto action : _data->_array)
-    action->do_action(sess);
+    action->do_action(_data->_session);
+
 }
 
 /*
@@ -235,18 +199,16 @@ void Script::run(Metadata meta /*= Metadata()*/)
  */
 void Script::run(Script other_script,Metadata meta /*= Metadata()*/)
 {
-  if ((_data == nullptr) || (other_script._data == nullptr))
+  if (!_data || !other_script._data)
     return;
 
   std::lock(_data->_mutex, other_script._data->_mutex);
   std::lock_guard<std::mutex> lk1(_data->_mutex, std::adopt_lock);
   std::lock_guard<std::mutex> lk2(other_script._data->_mutex, std::adopt_lock);
 
-  Session sess(&_data->_session);
-  sess += meta;
-
+  _data->_session += meta;
   for (auto action : other_script._data->_array)
-    action->do_action(sess);
+    action->do_action(_data->_session);
 }
 
 
@@ -259,13 +221,15 @@ void Script::run(Script other_script,Metadata meta /*= Metadata()*/)
  */
 Value Script::run_macro(const char* macro_name,std::vector<Value> arguments,Metadata meta /*= Metadata()*/)
 {
-  if (_data == nullptr)
+  if (!_data)
     return Value();
 
   std::lock_guard<std::mutex> lk1(_data->_mutex);
 
-  ActionMacro::SessionObject* macro_obj = dynamic_cast<ActionMacro::SessionObject*>(_data->_session.object(macro_name));
-  if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
+  std::shared_ptr<ActionMacro::SessionObject> macro_obj =
+      std::dynamic_pointer_cast<ActionMacro::SessionObject>(_data->_session.object(macro_name));
+
+  if (!macro_obj)
     return Value();
 
   Session sess(&_data->_session);
@@ -287,7 +251,7 @@ Value Script::run_macro(const char* macro_name,std::vector<Value> arguments,Meta
  */
 Value Script::get(const char* var_name)
 {
-  if (_data == nullptr)
+  if (!_data)
     return Value();
 
   std::lock_guard<std::mutex> lk1(_data->_mutex);
@@ -306,7 +270,7 @@ Value Script::get(const char* var_name)
  */
 void Script::set(Metadata meta)
 {
-  if (_data == nullptr)
+  if (!_data)
     return;
 
   std::lock_guard<std::mutex> lk1(_data->_mutex);
@@ -322,31 +286,11 @@ void Script::set(Metadata meta)
  */
 void Script::set(const char* var_name,Value val)
 {
-  if (_data == nullptr)
+  if (!_data)
     return;
 
   std::lock_guard<std::mutex> lk1(_data->_mutex);
   _data->_session.value(var_name) = val;
-}
-
-
-
-/*
- * \\fn ScriptActionList& ScriptActionList::operator=
- *
- * created on: Dec 10, 2019
- * author: daniel
- *
- */
-Script& Script::operator=(const Script& list)
-{
-  if (_data != list._data)
-  {
-    release();
-    _data = list._data;
-    addref();
-  }
-  return *this;
 }
 
 /*
@@ -358,21 +302,18 @@ Script& Script::operator=(const Script& list)
  */
 Script& Script::operator+=(const Script& script)
 {
-  if (script._data == nullptr)
+  if (!script._data)
     return *this;
 
-  if (_data == nullptr)
-  {
-    _data = new SAData;
-    addref();
-  }
+  if (!_data)
+    _data.reset(new SAData);
 
   std::lock(_data->_mutex, script._data->_mutex);
   std::lock_guard<std::mutex> lk1(_data->_mutex, std::adopt_lock);
   std::lock_guard<std::mutex> lk2(script._data->_mutex, std::adopt_lock);
 
   for (auto action : script._data->_array)
-    _data->_array.push_back(action->get_copy());
+    _data->_array.push_back(action);
 
   _data->_session += script._data->_session;
   return *this;
@@ -411,16 +352,16 @@ bool Script::empty() const
 }
 
 /*
- * \\fn ScriptAction* ScriptActionList::operator
+ * \\fn ActionPtr ScriptActionList::operator
  *
  * created on: Dec 10, 2019
  * author: daniel
  *
  */
-ScriptAction* Script::operator[](size_t index)
+Script::ActionPtr Script::operator[](size_t index)
 {
   if (index >= size())
-    return nullptr;
+    return Script::ActionPtr();
 
   std::unique_lock<std::mutex> l(_data->_mutex);
   return _data->_array[index];
@@ -482,23 +423,6 @@ bool ActionDelay::extract(ParserEnv& ps)
 }
 
 /*
- * \\fn ScriptAction* ActionDelay::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionDelay::get_copy()
-{
-  ActionDelay* result = new ActionDelay;
-  result->_useconds = (_useconds != nullptr) ? _useconds->create_copy() : nullptr;
-  result->_multiplier = _multiplier;
-
-  return result;
-}
-
-
-/*
  * \\fn bool ActionEcho::do_action
  *
  * created on: Dec 11, 2019
@@ -534,22 +458,6 @@ bool ActionEcho::extract(ParserEnv& ps)
 }
 
 /*
- * \\fn ScriptAction* ActionEcho::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionEcho::get_copy()
-{
-  ActionEcho* copy = new ActionEcho;
-  copy->_text = (_text != nullptr) ? _text->create_copy() : nullptr;
-
-  return copy;
-}
-
-
-/*
  * \\fn bool ActionExpression::do_action
  *
  * created on: Dec 11, 2019
@@ -577,21 +485,6 @@ bool ActionExpression::extract(ParserEnv& ps)
   return true;
 }
 
-/*
- * \\fn ScriptAction* ActionExpression::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionExpression::get_copy()
-{
-  ActionExpression* copy = new ActionExpression;
-  copy->_expr = (_expr != nullptr) ? _expr->create_copy() : nullptr;
-
-  return copy;
-}
-
 /**
  *
  * @param session
@@ -600,14 +493,12 @@ ScriptAction* ActionExpression::get_copy()
  */
 bool ActionMacro::run_macro(Session& session,const std::vector<Value>& val_array)
 {
-  Session stackSession(&session);
-
-//  stackSession.copy_metadata(&session);
+  Session stackSession(session.global());
 
   for (size_t index = 0; index < std::min(val_array.size(),_arguments.size()); index++)
     stackSession.var(_arguments[index]) = val_array[index];
 
-  for (ScriptAction* action : _block)
+  for (auto action : _block)
     action->do_action(stackSession);
 
   if (stackSession.exist("_return"))
@@ -658,30 +549,11 @@ bool ActionMacro::extract(ParserEnv& ps)
       return true;
     }
 
-    _block.add(action);
+    _block.add(Script::ActionPtr(action));
   }
 
   throw ParserException::create("Endless macro");
 }
-
-/*
- * \\fn ScriptAction* ActionMacro::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionMacro::get_copy()
-{
-  ActionMacro* copy = new ActionMacro;
-  copy->_block += _block;
-  copy->_arguments = _arguments;
-  copy->_name = _name;
-
-  return copy;
-}
-
-
 
 /*
  * \\fn bool ISCActionLoop::do_action
@@ -697,7 +569,7 @@ bool ActionLoop::do_action(Session& session)
 
   while ((bool)_condition->evaluate(&session))
   {
-    for (ScriptAction* action : _block)
+    for (auto action : _block)
     {
       if (!action->do_action(session))
         return false;
@@ -738,27 +610,10 @@ bool ActionLoop::extract(ParserEnv& ps)
       return true;
     }
 
-    _block.add(action);
+    _block.add(Script::ActionPtr(action));
   }
   throw ParserException::create("Endless loop");
 }
-
-/*
- * \\fn ScriptAction* ActionLoop::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionLoop::get_copy()
-{
-  ActionLoop* copy = new ActionLoop;
-  copy->_block += _block;
-  copy->_condition = (_condition != nullptr)?_condition->create_copy() : nullptr;
-
-  return copy;
-}
-
 
 /*
  * \\fn ActionIf::do_action
@@ -774,7 +629,7 @@ bool ActionIf::do_action(Session& session)
     if ((_statement[index]->_condition == nullptr) ||
         ((bool)_statement[index]->_condition->evaluate(&session)))
     {
-      for (ScriptAction* action : _statement[index]->_block)
+      for (auto action : _statement[index]->_block)
         action->do_action(session);
 
       break;
@@ -840,28 +695,11 @@ bool ActionIf::extract(ParserEnv& ps)
         throw ParserException::create("Undefined if statement");
     }
 
-    ca->_block.add(action);
+    ca->_block.add(Script::ActionPtr(action));
   }
 
   throw ParserException::create("Endless if statement");
 }
-
-/*
- * \\fn ScriptAction* ActionIf::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionIf::get_copy()
-{
-  ActionIf* copy = new ActionIf;
-  for (auto ca : _statement)
-    copy->_statement.push_back(new ConditionAction(*ca));
-
-  return copy;
-}
-
 
 /**
  *
@@ -870,8 +708,10 @@ ScriptAction* ActionIf::get_copy()
  */
 bool ActionRunMacro::do_action(Session& session)
 {
-  ActionMacro::SessionObject* macro_obj = dynamic_cast<ActionMacro::SessionObject*>(session.object(_name));
-  if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
+  std::shared_ptr<ActionMacro::SessionObject> macro_obj =
+      std::dynamic_pointer_cast<ActionMacro::SessionObject>(session.object(_name));
+
+  if (!macro_obj)
     return false;
 
   if (_arguments == nullptr)
@@ -910,23 +750,6 @@ bool ActionRunMacro::extract(ParserEnv& ps)
 }
 
 /*
- * \\fn ScriptAction* ActionRunMacro::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionRunMacro::get_copy()
-{
-  ActionRunMacro* copy = new ActionRunMacro;
-  copy->_arguments = (_arguments != nullptr)? (ExpressionArray*)_arguments->create_copy() : nullptr;
-  copy->_name = _name;
-
-  return copy;
-}
-
-
-/*
  * \\fn bool ISCActionBreak::do_action
  *
  * created on: Jul 29, 2019
@@ -961,22 +784,6 @@ bool ActionBreak::extract(ParserEnv& ps)
 
   return true;
 }
-
-/*
- * \\fn ScriptAction* ActionBreak::get_copy
- *
- * created on: Dec 11, 2019
- * author: daniel
- *
- */
-ScriptAction* ActionBreak::get_copy()
-{
-  ActionBreak* copy = new ActionBreak;
-  copy->_condition = (_condition != nullptr) ? _condition->create_copy() : nullptr;
-
-  return copy;
-}
-
 
 } /* namespace script */
 } /* namespace jupiter */

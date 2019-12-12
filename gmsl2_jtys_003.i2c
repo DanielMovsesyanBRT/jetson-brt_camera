@@ -116,7 +116,7 @@ macro get_exposure(id)
     s $address = $sensor_addr[$id]
     r 2,$address,0x3012,$exp_value
     
-    s $_return = 1000.0 * int($exp_value) * $hts / $fvco
+    s $get_exposure = 1000.0 * int($exp_value) * $hts / $fvco
 endm
 
 ###
@@ -126,10 +126,10 @@ macro get_temperature(id,temp_sensor)
     s $address = $sensor_addr[$id]
     if $temp_sensor == 0
       r 2,$address,0x20B0,$_return
-      s $_return = $temperature0_slope[$id] * int($_return) + $temperature0_T0[$id]
+      s $get_temperature = $temperature0_slope[$id] * int($_return) + $temperature0_T0[$id]
    else
       r 2,$address,0x20B2,$_return
-      s $_return = $temperature1_slope[$id] * int($_return) + $temperature1_T0[$id]
+      s $get_temperature = $temperature1_slope[$id] * int($_return) + $temperature1_T0[$id]
    endif
 endm
 
@@ -140,7 +140,10 @@ macro set_exposure(id,exposure_ms)
     s $address = $sensor_addr[$id]
     s $exp_value = $exposure_ms / (1000.0 * $hts) * $fvco
 
-    # e "Set Exposure for sensor " + $address + " to " + $exposure_ms + "ms : " + int($exp_value)
+    # Debug Only
+    # if $id != 0
+    #   e "EXP(" + $id + ")=" + dec($exp_value)
+    # endif
 
     w $address,0x3012,int($exp_value,2) # COARSE_INTEGRATION_TIME_
     w $address,0x3212,int($exp_value / 8,2) # COARSE_INTEGRATION_TIME_2
@@ -551,6 +554,7 @@ macro config_sensor(id)
 
   #w $address, 0x301A, 0x001C    # RESET_REGISTER
   #w $address, 0x301A, 0x001C    # RESET_REGISTER
+  e "Finish sensor " + hex($address) + "\n"
 endm
 
 
@@ -831,6 +835,7 @@ loop $global_loop_cntr < $num_cameras
    
    s $global_loop_cntr = $global_loop_cntr + 1
 endloop
+e "Finished global loop \n\n"
  
 x activate_link $deser_address, (0x01 << $num_cameras) - 1
 x config_deser $deser_address

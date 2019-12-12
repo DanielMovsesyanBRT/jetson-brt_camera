@@ -136,6 +136,17 @@ Value::operator Value::byte_buffer() const
 }
 
 /*
+ * \\fn Value::operator Value::Value::pointer
+ *
+ * created on: Dec 12, 2019
+ * author: daniel
+ *
+ */
+Value::operator Value::Value::pointer() const
+{
+  return _data->get_ptr();
+}
+/*
  * \\fn set
  *
  * created on: Jul 30, 2019

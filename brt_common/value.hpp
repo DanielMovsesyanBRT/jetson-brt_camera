@@ -23,6 +23,7 @@ class Value
 {
 public:
   typedef std::vector<uint8_t>    byte_buffer;
+  typedef void *                  pointer;
 
   Value();
   Value(const Value& val);
@@ -34,6 +35,7 @@ public:
           operator double() const;
           operator std::string() const;
           operator byte_buffer() const;
+          operator pointer() const;
 
 
           /*

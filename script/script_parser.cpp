@@ -49,16 +49,16 @@ ScriptParser::~ScriptParser()
  */
 Script ScriptParser::parse_script(const char* text,CreatorContainer cc /*= CreatorContainer()*/)
 {
-  ParserEnv ps(text, this);
+  ParserEnv ps(text, this, cc);
   Script al;
 
   try
   {
     while (ps.next_token("\n") != nullptr)
     {
-      ScriptAction* action = read_line(ps,cc);
+      ScriptAction* action = read_line(ps);
       if (action != nullptr)
-        al.add(action);
+        al.add(Script::ActionPtr(action));
     }
 
     al.load_objects();
@@ -80,7 +80,7 @@ Script ScriptParser::parse_script(const char* text,CreatorContainer cc /*= Creat
  * author: daniel
  *
  */
-ScriptAction* ScriptParser::read_line(ParserEnv& ps,CreatorContainer cc /*= CreatorContainer()*/)
+ScriptAction* ScriptParser::read_line(ParserEnv& ps)
 {
   // Remove comments
   size_t hash_tag = ps.find('#');
@@ -149,16 +149,6 @@ ScriptAction* ScriptParser::read_line(ParserEnv& ps,CreatorContainer cc /*= Crea
     case 'D':
       result = new ActionDelay();
       break;
-//
-//    case 'r':
-//    case 'R':
-//      result = new ActionRead();
-//      break;
-//
-//    case 'w':
-//    case 'W':
-//      result = new ActionWrite();
-//      break;
 
     case 'e':
     case 'E':
@@ -185,7 +175,7 @@ ScriptAction* ScriptParser::read_line(ParserEnv& ps,CreatorContainer cc /*= Crea
     }
 
     if (result == nullptr)
-      result = cc.create_action(ps);
+      result = ps.cc().create_action(ps);
 
     if (result != nullptr)
       ps.word_right();

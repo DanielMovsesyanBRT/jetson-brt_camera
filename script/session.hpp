@@ -10,8 +10,10 @@
 
 
 #include <metadata.hpp>
+
 #include <map>
 #include <string>
+#include <memory>
 
 namespace brt {
 namespace jupiter {
@@ -34,23 +36,20 @@ class Session : public Metadata
 {
 public:
   Session(Session* parent = nullptr): _parent(parent) {}
+  virtual ~Session() {}
 
-  virtual ~Session()
-  {
-    while (!_objects.empty())
-    {
-      delete (*_objects.begin()).second;
-      _objects.erase(_objects.begin());
-    }
-  }
-
-  virtual Value                   var(std::string name);// { return value(name.c_str()); }
-  virtual SessionObject*&         object(std::string name);// { return _objects[name]; }
+  virtual Value                   var(std::string name);
+  virtual std::shared_ptr<SessionObject>&
+                                  object(std::string name);
 
   virtual bool                    object_exist(std::string name) const { return _objects.find(name) != _objects.end(); }
+          Session&                operator+=(const Metadata& meta) { Metadata::operator+=(meta); return *this; }
+          Session&                operator+=(const Session&);
+
+          Session*                global();
 
 private:
-  std::map<std::string,SessionObject*>
+  std::map<std::string,std::shared_ptr<SessionObject>>
                                   _objects;
   Session*                        _parent;
 };

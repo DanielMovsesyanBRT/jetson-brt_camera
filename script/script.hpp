@@ -40,7 +40,6 @@ public:
 
   virtual bool                    do_action(Session&) = 0;
   virtual bool                    extract(ParserEnv&) = 0;
-  virtual ScriptAction*           get_copy() = 0;
 };
 
 /*
@@ -102,12 +101,13 @@ private:
  */
 class Script
 {
+public:
+  typedef std::shared_ptr<ScriptAction>   ActionPtr;
 private:
   struct SAData
   {
     mutable std::mutex              _mutex;
-    std::vector<ScriptAction*>      _array;
-    std::atomic_int_fast32_t        _reference;
+    std::vector<ActionPtr>          _array;
     Session                         _session;
   };
 
@@ -118,14 +118,10 @@ public:
   {
   public:
     Iter(Script *owner, size_t index = 0) : _owner(owner), _index(index)
-    {
-      _owner->addref();
-    }
+    {  }
 
     virtual ~Iter()
-    {
-      _owner->release();
-    }
+    {  }
 
     T operator*()
     {
@@ -144,7 +140,7 @@ public:
     size_t                          _index;
   };
 
-  typedef Iter<ScriptAction*>     iterator;
+  typedef Iter<ActionPtr>         iterator;
 
   Script();
   Script(const Script&);
@@ -153,7 +149,7 @@ public:
           bool                    load_from_file(const char* file_name,CreatorContainer = CreatorContainer());
           bool                    load(const char* text,CreatorContainer = CreatorContainer());
 
-          void                    add(ScriptAction*);
+          void                    add(ActionPtr);
           void                    load_objects();
 
           void                    run(Metadata meta = Metadata());
@@ -164,9 +160,8 @@ public:
           void                    set(Metadata meta);
           void                    set(const char* var_name,Value val);
 
-          Script&                 operator=(const Script&);
           Script&                 operator+=(const Script&);
-          ScriptAction*           operator[](size_t index);
+          ActionPtr               operator[](size_t index);
 
           size_t                  size() const;
           bool                    empty() const;
@@ -175,10 +170,7 @@ public:
           iterator                end() { return iterator(this, size()); }
 
 private:
-          void                    release();
-          void                    addref();
-
-  SAData*                         _data;
+  std::shared_ptr<SAData>         _data;
 };
 
 
@@ -205,7 +197,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   Expression*                     _useconds;
@@ -231,7 +222,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   Expression*                     _text;
@@ -256,7 +246,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   Expression*                     _expr;
@@ -275,19 +264,20 @@ public:
   ActionMacro() : _block() {}
   virtual ~ActionMacro() {}
 
+  typedef std::shared_ptr<ActionMacro> MacroPtr;
   /**
    *
    */
   class SessionObject : public script::SessionObject
   {
   public:
-    SessionObject(ActionMacro* macro) : _macro(macro) {}
+    SessionObject(MacroPtr macro) : _macro(macro) {}
     virtual ~SessionObject() {}
 
-            ActionMacro*        get() const { return _macro; }
+                MacroPtr            get() const { return _macro; }
 
   private:
-    ActionMacro*                 _macro;
+    MacroPtr                    _macro;
   };
 
           std::string             name() const { return _name; }
@@ -295,7 +285,6 @@ public:
 
   virtual bool                    do_action(Session&) { return true; }
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   Script                          _block;
@@ -322,7 +311,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   Script                          _block;
@@ -350,7 +338,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   struct ConditionAction
@@ -390,7 +377,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   ExpressionArray*                _arguments;
@@ -416,7 +402,6 @@ public:
 
   virtual bool                    do_action(Session&);
   virtual bool                    extract(ParserEnv&);
-  virtual ScriptAction*           get_copy();
 
 private:
   Expression*                     _condition;

@@ -32,17 +32,30 @@ class ScriptParser;
 class ParserEnv : public ParserString
 {
 public:
-  ParserEnv(char* buffer,ScriptParser* parser) : ParserString(buffer), _env(), _parser(parser) {}
-  ParserEnv(const char* buffer,ScriptParser* parser) : ParserString(buffer), _env(), _parser(parser) {}
+  ParserEnv(char* buffer,ScriptParser* parser,CreatorContainer cc = CreatorContainer())
+  : ParserString(buffer)
+  , _env()
+  , _parser(parser)
+  , _cc(cc)
+  {   }
+
+  ParserEnv(const char* buffer,ScriptParser* parser,CreatorContainer cc = CreatorContainer())
+  : ParserString(buffer)
+  , _env()
+  , _parser(parser)
+  , _cc(cc)
+  {   }
 
   virtual ~ParserEnv() {}
 
           Metadata&               env() { return _env; }
           ScriptParser*           parser() const { return _parser; }
+          CreatorContainer&       cc() { return _cc; }
 
 private:
   Metadata                        _env;
   ScriptParser*                   _parser;
+  CreatorContainer                _cc;
 };
 
 /*
@@ -58,7 +71,7 @@ public:
   virtual ~ScriptParser();
 
           Script                  parse_script(const char* text,CreatorContainer = CreatorContainer());
-          ScriptAction*           read_line(ParserEnv&,CreatorContainer = CreatorContainer());
+          ScriptAction*           read_line(ParserEnv&);
 };
 
 } /* namespace script */

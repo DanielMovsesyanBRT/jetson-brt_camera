@@ -47,7 +47,7 @@ Value Session::var(std::string name)
  * author: daniel
  *
  */
-SessionObject*& Session::object(std::string name)
+std::shared_ptr<SessionObject>& Session::object(std::string name)
 {
   // Check if local object exist
   if (object_exist(name))
@@ -67,6 +67,42 @@ SessionObject*& Session::object(std::string name)
   return _objects[name];
 }
 
+
+/*
+ * \\fn Session& Session::operator+=
+ *
+ * created on: Dec 12, 2019
+ * author: daniel
+ *
+ */
+Session& Session::operator+=(const Session& session)
+{
+  Metadata::operator+=(session);
+
+#if __cplusplus > 201402L // C++17
+  _objects.merge(session._objects);
+#else
+  _objects.insert(session._objects.begin(),session._objects.end());
+#endif
+
+  return *this;
+}
+
+/*
+ * \\fn Session* Session::global
+ *
+ * created on: Dec 12, 2019
+ * author: daniel
+ *
+ */
+Session* Session::global()
+{
+  Session* result = this;
+  while (result->_parent != nullptr)
+    result = result->_parent;
+
+  return result;
+}
 
 } // script
 } // jupiter
