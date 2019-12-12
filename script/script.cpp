@@ -233,7 +233,7 @@ Value Script::run_macro(const char* macro_name,std::vector<Value> arguments,Meta
     return Value();
 
   Session sess(&_data->_session);
-  sess += meta;
+  _data->_session += meta;
 
   bool result = macro_obj->get()->run_macro(sess,arguments);
   if (sess.exist(macro_name))
@@ -501,8 +501,8 @@ bool ActionMacro::run_macro(Session& session,const std::vector<Value>& val_array
   for (auto action : _block)
     action->do_action(stackSession);
 
-  if (stackSession.exist("_return"))
-    session.var(_name.c_str()) = stackSession.var("_return");
+  if (stackSession.exist(_name.c_str()))
+    session.var(_name.c_str()) = stackSession.var(_name.c_str());
 
   return true;
 }

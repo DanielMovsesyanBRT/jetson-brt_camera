@@ -142,7 +142,10 @@ int main(int argc, char **argv)
           if (cam != nullptr)
           {
             if (exposure == 0.0)
-              cam->read_exposure();
+            {
+              double read = cam->get_exposure();
+              std::cout << "Exposure = " << read << std::endl;
+            }
             else
               cam->set_exposure(exposure);
           }
