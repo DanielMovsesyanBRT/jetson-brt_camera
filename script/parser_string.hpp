@@ -72,6 +72,9 @@ public:
           const char*             operator--() { _offset--; return c_str(); }
           const char*             operator--(int) { const char* res = c_str(); _offset--; return res; }
 
+          const char*             operator+=(int);
+          const char*             operator-=(int);
+
           size_t                  find(char);
           size_t                  find(const char *);
 
@@ -83,6 +86,8 @@ public:
 
           void                    trim_l(const char* caracters = nullptr);
           void                    trim_r(const char* caracters = nullptr);
+
+          void                    word_right(size_t num_words = 1);
 
           size_t                  line_num() const { return _line_counter; }
 
@@ -101,15 +106,6 @@ private:
 
   bool                            _own_buffer;
 };
-
-//template<typename ... Args>
-//static std::string              string_format( const std::string& format, Args ... arguments )
-//{
-//  size_t size = snprintf( nullptr, 0, format.c_str(), arguments ... ) + 1; // Extra space for '\0'
-//  std::unique_ptr<char[]> buf( new char[ size ] );
-//  snprintf( buf.get(), size, format.c_str(), arguments ... );
-//  return std::string( buf.get(), buf.get() + size - 1 ); // We don't want the '\0' inside
-//}
 
 
 } // script

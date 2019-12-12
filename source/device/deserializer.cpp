@@ -6,17 +6,51 @@
  */
 
 #include "deserializer.hpp"
+#include "camera.hpp"
+#include "device_manager.hpp"
+#include "device_action.hpp"
 
 #include <iostream>
 
 #include <utils.hpp>
-#include "camera.hpp"
-#include "device_manager.hpp"
+
 
 namespace brt
 {
 namespace jupiter
 {
+
+
+
+/*
+ * \\fn script::ScriptAction* Deserializer::ActionCreator::get_action
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+script::ScriptAction* Deserializer::ActionCreator::create_action(const char* action)
+{
+  if (action == nullptr)
+    return nullptr;
+
+  switch (action[0])
+  {
+  case 'r':
+  case 'R':
+    return new ActionRead();
+
+  case 'w':
+  case 'W':
+    return new ActionWrite();
+
+  default:
+    break;
+  }
+
+  return nullptr;
+}
+
 
 /*
  * \\fn Constructor I2CDevice::I2CDevice
@@ -115,21 +149,15 @@ bool Deserializer::write(uint8_t address, uint16_t offset, size_t offset_size, c
  */
 bool Deserializer::load_script(const char *file_path,const Metadata& extra_args/* = Metadata()*/)
 {
-  _script = ScriptPtr(file_path);
-  if (!_script)
+  ActionCreator ac;
+  if (!_script.load_from_file(file_path,script::CreatorContainer(&ac)))
     return false;
 
-  if (!_script->load())
-    return false;
-
-  *(_script) += extra_args;
-  _script->set<void*>("device", this);
-
-  if (!_script->run())
-    return false;
+  _script.set(Metadata(extra_args).set<void*>("device", this));
+  _script.run();
 
   // Activate Cameras
-  size_t number_of_cameras = _script->get<int>("num_cameras", 0);
+  size_t number_of_cameras = static_cast<int>(_script.get("num_cameras"));
   for (size_t index = 0; index < number_of_cameras; index++)
     _cameras.push_back(new Camera(this, index));
 
@@ -145,10 +173,16 @@ bool Deserializer::load_script(const char *file_path,const Metadata& extra_args/
  */
 bool Deserializer::run_script(const char *text)
 {
-  if (!_script)
+  if (_script.empty())
     return false;
 
-  return _script->run(text);
+  ActionCreator ac;
+  script::Script sc;
+  if (!sc.load(text,script::CreatorContainer(&ac)))
+    return false;
+
+  _script.run(sc);
+  return true;
 }
 
 
@@ -159,29 +193,12 @@ bool Deserializer::run_script(const char *text)
  * author: daniel
  *
  */
-bool Deserializer::run_macro(const char *macro_name,std::vector<Value> arguments /*= std::vector<Value>()*/)
+Value Deserializer::run_macro(const char *macro_name,std::vector<Value> arguments /*= std::vector<Value>()*/)
 {
-  if (!_script)
-    return false;
+  if (_script.empty())
+    return Value();
 
-  Value dummy_result;
-  return _script->run_macro(macro_name,dummy_result,arguments);
-}
-
-/*
- * \\fn bool Deserializer::run_macro
- *
- * created on: Nov 26, 2019
- * author: daniel
- *
- */
-bool Deserializer::run_macro(const char *macro_name,Value& result,
-                          std::vector<Value> arguments /*= std::vector<Value>()*/)
-{
-  if (!_script)
-    return false;
-
-  return _script->run_macro(macro_name,result, arguments);
+  return _script.run_macro(macro_name,arguments);
 }
 
 

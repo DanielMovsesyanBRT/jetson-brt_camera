@@ -71,9 +71,9 @@ set(SOURCES
  
   source/device/camera.cpp
   source/device/deserializer.cpp
+  source/device/device_action.cpp
   source/device/device_manager.cpp
-  source/device/script_action.cpp
-  source/device/script_file.cpp
+  # source/device/script_file.cpp
   
   source/fltk/fltk_manager.cpp  
   

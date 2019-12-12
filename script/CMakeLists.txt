@@ -22,8 +22,11 @@ project(script C CXX)
 set(SOURCES 
   expression.cpp
   function.cpp
-  parser.cpp
   parser_string.cpp
+  parser.cpp
+  script_parser.cpp
+  script.cpp
+  session.cpp
 )
 
 add_library(${PROJECT_NAME} STATIC ${SOURCES})

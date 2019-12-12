@@ -75,6 +75,20 @@ Value FunctionConvertToBool::evaluate(Session* session)
 }
 
 /*
+ * \\fn Expression* FunctionConvertToBool::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionConvertToBool::create_copy()
+{
+  FunctionConvertToBool* copy = new FunctionConvertToBool;
+  *copy = *this;
+  return copy;
+}
+
+/*
  * \\fn Value& FunctionConvertToInt::evaluate
  *
  * created on: Jul 29, 2019
@@ -96,6 +110,21 @@ Value FunctionConvertToInt::evaluate(Session* session)
   return _result;
 }
 
+
+/*
+ * \\fn Expression* FunctionConvertToInt::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionConvertToInt::create_copy()
+{
+  FunctionConvertToInt* copy = new FunctionConvertToInt;
+  *copy = *this;
+  return copy;
+}
+
 /*
  * \\fn Value& FunctionConvertToReal::evaluate
  *
@@ -115,6 +144,20 @@ Value FunctionConvertToReal::evaluate(Session* session)
 }
 
 /*
+ * \\fn Expression* FunctionConvertToReal::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionConvertToReal::create_copy()
+{
+  FunctionConvertToReal* copy = new FunctionConvertToReal;
+  *copy = *this;
+  return copy;
+}
+
+/*
  * \\fn Value& FunctionConvertToString::evaluate
  *
  * created on: Jul 29, 2019
@@ -127,6 +170,20 @@ Value FunctionConvertToString::evaluate(Session* session)
     _result.set( ((std::string)arg(0,session)).c_str());
 
   return _result;
+}
+
+/*
+ * \\fn Expression* FunctionConvertToString::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionConvertToString::create_copy()
+{
+  FunctionConvertToString* copy = new FunctionConvertToString;
+  *copy = *this;
+  return copy;
 }
 
 /*
@@ -145,6 +202,21 @@ Value FunctionConvertToBuff::evaluate(Session* session)
   }
 
   return _result;
+}
+
+
+/*
+ * \\fn Expression* FunctionConvertToBuff::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionConvertToBuff::create_copy()
+{
+  FunctionConvertToBuff* copy = new FunctionConvertToBuff;
+  *copy = *this;
+  return copy;
 }
 
 /*
@@ -168,6 +240,20 @@ Value FunctionDec::evaluate(Session* session)
 }
 
 /*
+ * \\fn Expression* FunctionDec::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionDec::create_copy()
+{
+  FunctionDec* copy = new FunctionDec;
+  *copy = *this;
+  return copy;
+}
+
+/*
  * \\fn Value& FunctionHex::evaluate
  *
  * created on: Jul 29, 2019
@@ -185,6 +271,20 @@ Value FunctionHex::evaluate(Session* session)
   }
 
   return _result;
+}
+
+/*
+ * \\fn Expression* FunctionHex::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionHex::create_copy()
+{
+  FunctionHex* copy = new FunctionHex;
+  *copy = *this;
+  return copy;
 }
 
 /*
@@ -212,6 +312,21 @@ Value FunctionSubArray::evaluate(Session* session)
 
   return _result;
 }
+
+/*
+ * \\fn Expression* FunctionSubArray::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* FunctionSubArray::create_copy()
+{
+  FunctionSubArray* copy = new FunctionSubArray;
+  *copy = *this;
+  return copy;
+}
+
 
 
 } /* namespace script */

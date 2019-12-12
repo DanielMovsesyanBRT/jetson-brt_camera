@@ -37,7 +37,7 @@ using namespace brt::jupiter;
 int main(int argc, char **argv)
 {
   wm::get()->init();
-  fm::get()->init();
+  //fm::get()->init();
 
   image::ISPManager isp_manager;
 

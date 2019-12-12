@@ -181,10 +181,7 @@ double Camera::get_exposure()
   std::vector<Value> args;
   args.push_back(Value().set<int>(_id));
 
-  Value result;
-  _owner->run_macro("get_exposure", result, args);
-
-  return result;
+  return _owner->run_macro("get_exposure", args);
 }
 
 /*
@@ -200,10 +197,7 @@ double Camera::get_temperature(int temp_sensor_id)
   args.push_back(Value().set<int>(_id));
   args.push_back(Value().set<int>(temp_sensor_id));
 
-  Value result;
-  _owner->run_macro("get_temperature", result, args);
-
-  return result;
+  return _owner->run_macro("get_temperature", args);
 }
 
 

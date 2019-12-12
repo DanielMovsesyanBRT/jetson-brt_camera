@@ -5,7 +5,9 @@
 #include "expression.hpp"
 
 #include <string.h>
+
 #include "parser.hpp"
+#include "session.hpp"
 
 #undef _lengthof
 #define _lengthof(x)    (sizeof(x)/sizeof(x[0]))
@@ -15,6 +17,36 @@ namespace brt {
 namespace jupiter {
 
 namespace script {
+
+/**
+ *
+ * @param session
+ * @return
+ */
+Value ExpressionArray::evaluate(Session* session)
+{
+  for (Expression* expr : _expressions)
+    _result = expr->evaluate(session);
+
+  return _result;
+}
+
+/*
+ * \\fn Expression* ExpressionArray::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* ExpressionArray::create_copy()
+{
+  ExpressionArray* copy = new ExpressionArray;
+
+  for (Expression* expr : _expressions)
+    copy->add_expression(expr->create_copy());
+
+  return copy;
+}
 
 /**
  *
@@ -69,20 +101,17 @@ Constant::Constant (const char *text,bool string /*= false*/)
     _value.set(text);
 }
 
-/**
+/*
+ * \\fn Constant::
  *
- * @param session
- * @return
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
  */
-Value ExpressionArray::evaluate(Session* session)
+Expression* Constant::create_copy()
 {
-  for (Expression* expr : _expressions)
-    _result = expr->evaluate(session);
-
-  return _result;
+  return new Constant(_value);
 }
-
-
 
 /**
  *
@@ -105,6 +134,19 @@ Value Variable::evaluate(Session* session)
 {
   return Value(session->var(_varname));
 }
+
+/*
+ * \\fn Expression* Variable::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* Variable::create_copy()
+{
+  return new Variable(_varname.c_str());
+}
+
 
 /**
  *
@@ -135,6 +177,18 @@ Value UnaryExpression::evaluate(Session* session)
   return _result;
 }
 
+/*
+ * \\fn Expression* UnaryExpression::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* UnaryExpression::create_copy()
+{
+  return new UnaryExpression(_op,(_expr != nullptr)?_expr->create_copy() : nullptr);
+}
+
 /**
  *
  * @param session
@@ -163,6 +217,17 @@ Value IncrDecrExpression::evaluate(Session* session)
   return _result;
 }
 
+/*
+ * \\fn Expression* IncrDecrExpression::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* IncrDecrExpression::create_copy()
+{
+  return new IncrDecrExpression(_op,(_expr != nullptr)?_expr->create_copy() : nullptr );
+}
 
 
 const BinaryExpression::Operation opers[] =
@@ -324,6 +389,21 @@ Value BinaryExpression::evaluate(Session* session)
   return _result;
 }
 
+/*
+ * \\fn Expression* BinaryExpression::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* BinaryExpression::create_copy()
+{
+  return new BinaryExpression(
+          (_lvalue != nullptr) ? _lvalue->create_copy() : nullptr,
+          (_rvalue != nullptr) ? _rvalue->create_copy() : nullptr, _op);
+}
+
+
 
 /*
  * \\fn Value& IndexExpression::evaluate
@@ -335,6 +415,20 @@ Value BinaryExpression::evaluate(Session* session)
 Value IndexExpression::evaluate(Session* session)
 {
   return _value->evaluate(session).at((int)_index->evaluate(session));
+}
+
+/*
+ * \\fn Expression* IndexExpression::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* IndexExpression::create_copy()
+{
+  return new IndexExpression(
+      (_value != nullptr) ? _value->create_copy() : nullptr,
+      (_index != nullptr) ? _index->create_copy() : nullptr);
 }
 
 
@@ -363,6 +457,21 @@ Value LogicalExpression::evaluate(Session* session)
   }
 
   return _result;
+}
+
+/*
+ * \\fn Expression* LogicalExpression::create_copy
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+Expression* LogicalExpression::create_copy()
+{
+  return new LogicalExpression(
+      (_condition != nullptr) ? _condition->create_copy() : nullptr,
+      (_positive != nullptr) ? _positive->create_copy() : nullptr,
+      (_negative != nullptr) ? _negative->create_copy() : nullptr );
 }
 
 } // script

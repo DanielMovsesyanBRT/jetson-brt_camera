@@ -113,6 +113,50 @@ const char* ParserString::next_token(const char *delimeters)
   return _cur_line;
 }
 
+/*
+ * \\fn const char* ParserString::operator
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+const char* ParserString::operator+=(int num)
+{
+  if (_cur_line == nullptr)
+    return nullptr;
+
+  size_t full_length = strlen(c_str());
+  _offset += num;
+  if (_offset > static_cast<int>(full_length))
+    _offset = static_cast<int>(full_length);
+  else if (_offset < 0)
+    _offset = 0;
+
+  return c_str();
+}
+
+/*
+ * \\fn const char* ParserString::operator-=
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+const char* ParserString::operator-=(int num)
+{
+  if (_cur_line == nullptr)
+    return nullptr;
+
+  size_t full_length = strlen(c_str());
+  _offset -= num;
+  if (_offset > static_cast<int>(full_length))
+    _offset = static_cast<int>(full_length);
+  else if (_offset < 0)
+    _offset = 0;
+
+  return c_str();
+}
+
 /**
  *
  * @return
@@ -289,6 +333,32 @@ void ParserString::trim_r(const char* characters /*= nullptr*/)
 
   *(last_char + 1) = '\0';
 }
+
+/*
+ * \\fn void ParserString::word_right
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+void ParserString::word_right(size_t num_words /*= 1*/)
+{
+  while (num_words-- != 0)
+  {
+    // remove spaces
+    while ((_cur_line[_offset] != '\0') && isspace(_cur_line[_offset]))
+      _offset++;
+
+    if ((_cur_line[_offset] != '\0') && !isalnum(_cur_line[_offset]))
+      _offset++;
+    else
+    {
+      while ((_cur_line[_offset] != '\0') && isalnum(_cur_line[_offset]))
+        _offset++;
+    }
+  }
+}
+
 
 } // script
 } // jupiter

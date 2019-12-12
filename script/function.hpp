@@ -41,6 +41,19 @@ public:
           size_t                  num_args() const { return _arguments.size(); }
 
           void                    add_argument(Expression* expr) { _arguments.push_back(expr); }
+          Function*               operator=(const Function& func)
+          {
+            while (_arguments.size() > 0)
+            {
+              delete (_arguments.front());
+              _arguments.erase(_arguments.begin());
+            }
+
+            for (auto expr : func._arguments)
+              _arguments.push_back(expr->create_copy());
+
+            return this;
+          }
 
   static  Function*               create_function(const char*);
 
@@ -62,6 +75,7 @@ public:
   virtual ~FunctionConvertToBool() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -77,6 +91,7 @@ public:
   virtual ~FunctionConvertToInt() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -92,6 +107,7 @@ public:
   virtual ~FunctionConvertToReal() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -107,6 +123,7 @@ public:
   virtual ~FunctionConvertToString() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -122,6 +139,7 @@ public:
   virtual ~FunctionConvertToBuff() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -137,6 +155,7 @@ public:
   virtual ~FunctionDec() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -152,6 +171,7 @@ public:
   virtual ~FunctionHex() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 /*
@@ -167,6 +187,7 @@ public:
   virtual ~FunctionSubArray() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 };
 
 } /* namespace script */

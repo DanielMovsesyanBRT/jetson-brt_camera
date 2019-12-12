@@ -9,7 +9,7 @@
 
 #include <parser_string.hpp>
 #include <utils.hpp>
-#include "script_action.hpp"
+#include "device_action.hpp"
 
 namespace brt {
 
@@ -20,8 +20,7 @@ namespace jupiter {
  * @param file_name
  */
 ScriptFile::ScriptFile(const char *file_name)
-: Session(nullptr)
-, _file_path(file_name)
+: _file_path(file_name)
 , _busy(false)
 {
 }
@@ -33,11 +32,6 @@ ScriptFile::ScriptFile(const char *file_name)
  */
 ScriptFile::~ScriptFile()
 {
-  while (_action_list.size() > 0)
-  {
-    delete _action_list.front();
-    _action_list.erase(_action_list.begin());
-  }
 }
 
 
@@ -64,35 +58,42 @@ bool ScriptFile::load()
   istr.read(file_buffer, length);
   file_buffer[length] = '\0';
 
-  // Parse
-  ParserEnv ps(file_buffer);
+  script::ScriptParser parser;
+  _script = parser.parse_script(file_buffer);
 
-  try
-  {
-    while (ps.next_token("\n") != nullptr)
-    {
-      ScriptAction* action = ScriptAction::read_line(ps);
-      if (action != nullptr)
-        _action_list.push_back(action);
-    }
-
-    Session::initialize(_action_list);
-  }
-  catch(script::ParserException* pe)
-  {
-    std::cerr << Utils::string_format("%s at line:%d", pe->text(), ps.line_num()) << std::endl;
-    pe->release();
-
-    while (_action_list.size() > 0)
-    {
-      delete _action_list.front();
-      _action_list.erase(_action_list.begin());
-    }
-  }
-  delete[] file_buffer;
-
-  return !_action_list.empty();
+  return !_script.empty();
 }
+
+
+/*
+ * \\fn script::ScriptAction* ScriptFile::ActionCreator::get_action
+ *
+ * created on: Dec 11, 2019
+ * author: daniel
+ *
+ */
+script::ScriptAction* ScriptFile::ActionCreator::get_action(const char* action)
+{
+  if (action == nullptr)
+    return nullptr;
+
+  switch (action[0])
+  {
+  case 'r':
+  case 'R':
+    return new ActionRead();
+
+  case 'w':
+  case 'W':
+    return new ActionWrite();
+
+  default:
+    break;
+  }
+
+  return nullptr;
+}
+
 
 /*
  * \\fn bool ScriptFile::run
@@ -101,7 +102,7 @@ bool ScriptFile::load()
  * author: daniel
  *
  */
-bool ScriptFile::run()
+bool ScriptFile::run(Metadata mt /*= Metadata()*/)
 {
   if (!is_loaded())
     return false;
@@ -110,58 +111,34 @@ bool ScriptFile::run()
   if (!_busy.compare_exchange_strong(expected, true))
     return false;
 
-  Session::run(_action_list);
+  _script.run(mt);
 
   _busy.store(false);
   return true;
 }
 
 /*
- * \\fn bool ScriptFile::run(const char *text)
+ * \\fn bool ScriptFile::run
  *
  * created on: Oct 30, 2019
  * author: daniel
  *
  */
-bool ScriptFile::run(const char *text)
+bool ScriptFile::run(const char *text,Metadata mt /*= Metadata()*/)
 {
-  ParserEnv ps(text);
+  script::ScriptParser parser;
+  script::Script commands = parser.parse_script(text);
 
-  std::vector<ScriptAction*> action_list;
-
-  try
-  {
-    while (ps.next_token("\n") != nullptr)
-    {
-      ScriptAction* action = ScriptAction::read_line(ps);
-      if (action != nullptr)
-        action_list.push_back(action);
-    }
-  }
-  catch(script::ParserException* pe)
-  {
-    std::cerr << Utils::string_format("%s at line:%d", pe->text(), ps.line_num()) << std::endl;
-    pe->release();
-
-    while (action_list.size() > 0)
-    {
-      delete action_list.front();
-      action_list.erase(action_list.begin());
-    }
-
+  if (commands.empty())
     return false;
-  }
 
   bool expected = false;
   if (!_busy.compare_exchange_strong(expected, true))
     return false;
 
-  set_verbose(true);
-  Session::run(action_list);
-  set_verbose(false);
+  _script.run(commands, mt);
 
   _busy.store(false);
-
   return true;
 }
 
@@ -172,26 +149,14 @@ bool ScriptFile::run(const char *text)
  * author: daniel
  *
  */
-bool ScriptFile::run_macro(const char *macro_name, Value& val, std::vector<Value> arguments /*= std::vector<script::Value>()*/)
+Value ScriptFile::run_macro(const char *macro_name, std::vector<Value> arguments, Metadata mt /*= Metadata()*/)
 {
   bool expected = false;
   if (!_busy.compare_exchange_strong(expected, true))
     return false;
 
-  ActionMacro::SessionObject* macro_obj = dynamic_cast<ActionMacro::SessionObject*>(object(macro_name));
-  if ((macro_obj == nullptr) || (macro_obj->get() == nullptr))
-    return false;
-
-  std::vector<Value> values;
-  for (size_t index = 0; index < arguments.size(); index++)
-    values.push_back(arguments[index]);
-
-  bool result = macro_obj->get()->run_macro(*this,values);
-  if (exist(macro_name))
-    val = var(macro_name);
-
+  Value result = _script.run_macro(macro_name, arguments, mt);
   _busy.store(false);
-
 
   return result;
 }

@@ -12,7 +12,8 @@
 #include <string>
 #include <atomic>
 
-#include "script_action.hpp"
+#include "device_action.hpp"
+#include <script_parser.hpp>
 
 namespace brt {
 
@@ -23,25 +24,43 @@ class ScriptPtr;
 /**
  * class ScriptFile
  */
-class ScriptFile : public Session
+class ScriptFile
 {
 friend ScriptPtr;
-
   ScriptFile(const char *file_name);
 public:
   virtual ~ScriptFile();
 
         bool                      load();
-        bool                      is_loaded() const { return !_action_list.empty(); }
+        bool                      is_loaded() const { return !_script.empty(); }
 
-        bool                      run();
-        bool                      run(const char *text);
+        bool                      run(Metadata mt = Metadata());
+        bool                      run(const char *text, Metadata mt = Metadata());
 
-        bool                      run_macro(const char *macro_name,Value& val, std::vector<Value> arguments = std::vector<Value>());
+        Value                     run_macro(const char *macro_name,std::vector<Value> arguments, Metadata mt = Metadata());
 private:
-  std::vector<ScriptAction*>      _action_list;
+
+  /*
+   * \\class ActionCreator
+   *
+   * created on: Dec 11, 2019
+   *
+   */
+  class ActionCreator : public script::iActionSource
+  {
+  public:
+    ActionCreator() {}
+    virtual ~ActionCreator() {}
+
+    virtual script::ScriptAction*   get_action(const char* action);
+  };
+
+  script::Script                  _script;
+
+  //std::vector<DeviceAction*>      _action_list;
   std::string                     _file_path;
   std::atomic_bool                _busy;
+  ActionCreator                   _ac;
 };
 
 

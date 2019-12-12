@@ -14,47 +14,10 @@
 
 
 namespace brt {
-
 namespace jupiter {
-
 namespace script {
 
-/**
- *
- */
-class SessionObject
-{
-public:
-  SessionObject() {}
-  virtual ~SessionObject() {}
-};
-
-/**
- *
- */
-class Session : public Metadata
-{
-public:
-  Session() {}
-
-  virtual ~Session()
-  {
-    while (!_objects.empty())
-    {
-      delete (*_objects.begin()).second;
-      _objects.erase(_objects.begin());
-    }
-  }
-
-  virtual Value                   var(std::string name) { return value(name.c_str()); }
-  virtual SessionObject*&         object(std::string name) { return _objects[name]; }
-
-  virtual bool                    object_exist(std::string name) const { return _objects.find(name) != _objects.end(); }
-
-private:
-  std::map<std::string,SessionObject*>
-                                  _objects;
-};
+class Session;
 
 
 /**
@@ -67,6 +30,7 @@ public:
   virtual ~Expression() {}
 
   virtual Value                   evaluate(Session*) { return _result; }
+  virtual Expression*             create_copy() = 0;
 
 protected:
   Value                           _result;
@@ -89,6 +53,7 @@ public:
   }
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
           void                    add_expression(Expression* expr)  { _expressions.push_back(expr); }
 
@@ -107,6 +72,7 @@ public:
             }
           }
 
+
 protected:
   std::vector<Expression*>        _expressions;
 };
@@ -118,10 +84,12 @@ protected:
 class Constant : public Expression
 {
 public:
+  Constant(Value val) : _value(val) {}
   Constant (const char *text,bool string = false);
   virtual ~Constant() {}
 
   virtual Value                   evaluate(Session*) { _result = _value; return _result; }
+  virtual Expression*             create_copy();
 
 private:
   Value                           _value;
@@ -138,6 +106,7 @@ public:
   virtual ~Variable() {}
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
 private:
   std::string                     _varname;
@@ -157,6 +126,7 @@ public:
   }
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
 private:
   char                            _op;
@@ -187,6 +157,7 @@ public:
   }
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
 private:
   OP                              _op;
@@ -200,6 +171,12 @@ class BinaryExpression : public Expression
 {
 public:
   BinaryExpression(Expression* lvalue,Expression* rvalue,std::string op);
+  BinaryExpression(Expression* lvalue,Expression* rvalue,int op)
+  : _lvalue(lvalue)
+  , _rvalue(rvalue)
+  , _op(op)
+  {  }
+
   virtual ~BinaryExpression()
   {
     if (_lvalue != nullptr)
@@ -222,6 +199,7 @@ public:
   };
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
 public:
   static const Operation          get_operation(std::string token);
@@ -256,6 +234,7 @@ public:
   }
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
 private:
   Expression*                     _value;
@@ -292,6 +271,7 @@ public:
   }
 
   virtual Value                   evaluate(Session*);
+  virtual Expression*             create_copy();
 
 private:
   Expression*                     _condition;
