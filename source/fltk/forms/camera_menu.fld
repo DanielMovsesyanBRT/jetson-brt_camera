@@ -1,0 +1,72 @@
+# data file for the Fltk User Interface Designer (fluid)
+version 1.0400
+header_name {.h}
+code_name {.cxx}
+class CameraWindow {open
+} {
+  Function {make_window()} {open
+  } {
+    Fl_Window {} {
+      label Camera open
+      xywh {210 64 660 205} type Double visible
+    } {
+      Fl_Box {} {
+        label {Camera 1}
+        xywh {110 25 100 22}
+      }
+      Fl_Box {} {
+        image {Camera_icon.png} xywh {50 10 65 50}
+      }
+      Fl_Box {} {
+        label {Camera 2}
+        xywh {110 75 100 22}
+      }
+      Fl_Box {} {
+        image {Camera_icon.png} xywh {50 60 65 50}
+      }
+      Fl_Box {} {
+        label {Camera 3}
+        xywh {110 125 100 22}
+      }
+      Fl_Box {} {
+        image {Camera_icon.png} xywh {50 110 65 50}
+      }
+      Fl_Input m_camera1_script {
+        xywh {210 23 260 25}
+      }
+      Fl_Input m_camera2_script {
+        xywh {210 73 260 25}
+      }
+      Fl_Input m_camera3_script {
+        xywh {210 123 260 25}
+      }
+      Fl_Button m_run1 {
+        callback {run1()}
+        xywh {592 23 25 25}
+      }
+      Fl_Button m_run2 {
+        callback {run2()}
+        xywh {592 73 25 25}
+      }
+      Fl_Button m_run3 {
+        callback {run3()}
+        xywh {592 123 25 25}
+      }
+      Fl_Button m_Browse1 {
+        label Browse
+        callback {browse1()}
+        xywh {485 23 75 25}
+      }
+      Fl_Button m_Browse2 {
+        label Browse
+        callback {browse2()}
+        xywh {485 75 75 25}
+      }
+      Fl_Button m_Browse3 {
+        label Browse
+        callback {browse3()} selected
+        xywh {485 125 75 25}
+      }
+    }
+  }
+}

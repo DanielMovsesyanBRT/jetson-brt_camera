@@ -72,7 +72,7 @@ WindowManager::~WindowManager()
 void WindowManager::init()
 {
   XInitThreads();
-  _default_display = Utils::aquire_display();
+  _default_display = Utils::aquire_display("videos");
 }
 
 /*

@@ -172,7 +172,7 @@ std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
  * author: daniel
  *
  */
-std::string Utils::aquire_display()
+std::string Utils::aquire_display(const char* extra_string)
 {
   std::string result;
   char* display_name = getenv("DISPLAY");
@@ -196,7 +196,7 @@ std::string Utils::aquire_display()
 
     do
     {
-      std::cout << "Please select default display " << std::endl;
+      std::cout << "Please select default display for " << extra_string << std::endl;
 
       for (size_t index = 0; index < displays.size(); index++)
       {

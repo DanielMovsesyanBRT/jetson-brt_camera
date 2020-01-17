@@ -155,7 +155,7 @@ public:
 
   static  std::vector<std::string>
                                   enumerate_displays(DisplayType = eAllDisplays);
-  static  std::string             aquire_display();
+  static  std::string             aquire_display(const char* extra_string);
 
 };
 

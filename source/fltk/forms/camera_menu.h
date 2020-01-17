@@ -8,19 +8,9 @@
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Button.H>
 
-struct CallbackInterface
-{
-  virtual ~CallbackInterface() {}
-
-  virtual void                    run(int) = 0;
-  virtual void                    dir(int,const char*) = 0;
-  virtual const char*             destination(int) = 0;
-};
-
-
 class CameraWindow {
 public:
-  Fl_Double_Window* make_window(CallbackInterface* ci = nullptr);
+  Fl_Double_Window* make_window();
   Fl_Input *m_camera1_script;
   Fl_Input *m_camera2_script;
   Fl_Input *m_camera3_script;
@@ -53,8 +43,5 @@ public:
 private:
   inline void cb_m_Browse3_i(Fl_Button*, void*);
   static void cb_m_Browse3(Fl_Button*, void*);
-
-private:
-  CallbackInterface*              _callback;
 };
 #endif

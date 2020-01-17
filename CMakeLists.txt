@@ -76,6 +76,7 @@ set(SOURCES
   # source/device/script_file.cpp
   
   source/fltk/fltk_manager.cpp  
+  source/fltk/camera_menu.cxx  
   
   source/image/image_processor.cpp
   source/image/image_processor.cu

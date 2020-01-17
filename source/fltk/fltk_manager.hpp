@@ -40,6 +40,7 @@ class FLTKManager
 public:
   static  FLTKManager*            get() { return &_object; }
           void                    init();
+          void                    run();
 
 
 private:
