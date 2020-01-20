@@ -722,7 +722,7 @@ bool Camera::read_frame()
 
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
-      image::RawRGBPtr raw12(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
+      image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height));
       image::RawRGBPtr result = _ip.debayer(raw12);
       if (result)
       {
@@ -765,7 +765,7 @@ bool Camera::read_frame()
 
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
-      image::RawRGBPtr raw12(image::RawRGBPtr(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height)));
+      image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height));
       image::RawRGBPtr result = _ip.debayer(raw12);
       if (result)
       {

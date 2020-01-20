@@ -56,33 +56,31 @@ public:
     if ((id == -1) || (id > 1))
       return;
 
-    _images[id] = box[0];
+    _images[id] = box[0]->get_bits();
     if (_images[0] && _images[1])
     {
       bool expected = true;
       if (_flag.compare_exchange_strong(expected, false))
       {
         std::string file_name = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
-        image::RawRGBPtr bits = _images[0]->get_bits();
-        uint32_t w = bits->width(), h = bits->height(), bytes = 2 /* RAW12*/;
+        uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
 
         std::ofstream raw_file (file_name, std::ios::out | std::ios::binary);
         raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
         raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
         raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-        raw_file.write(reinterpret_cast<const char*>(bits->bytes()),w * h * bytes);
+        raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
 
         file_name = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
 
-        bits = _images[1]->get_bits();
-        w = bits->width(), h = bits->height(), bytes = 2 /* RAW12*/;
+        w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
 
         raw_file = std::ofstream(file_name, std::ios::out | std::ios::binary);
         raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
         raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
         raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
 
-        raw_file.write(reinterpret_cast<const char*>(bits->bytes()),w * h * bytes);
+        raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
 
         _unique++;
       }
@@ -115,7 +113,7 @@ private:
   std::atomic_bool                _flag;
   uint32_t                        _unique;
 
-  image::ImagePtr                 _images[2];
+  image::RawRGBPtr                _images[2];
 };
 
 Consumer camera[3] = { "camera1", "camera2", "camera3" };
