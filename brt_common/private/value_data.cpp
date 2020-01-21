@@ -735,7 +735,7 @@ ValueData::byte_buffer ValueData::get_byte_array() const
 void ValueData::extract(ValueData& where, int start, int length) const
 {
   where._type = _type;
-  if (start >= size() || (length == 0))
+  if (start >= static_cast<int>(size()) || (length == 0))
   {
     where._size = 0;
     if (where._buffer != nullptr)
@@ -745,7 +745,7 @@ void ValueData::extract(ValueData& where, int start, int length) const
   }
   else
   {
-    if ((start + length) > size())
+    if ((start + length) > static_cast<int>(size()))
       length = size() - start;
 
     where._size = length;

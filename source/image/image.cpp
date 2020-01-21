@@ -104,7 +104,7 @@ RawRGB::RawRGB(const char *raw_image_file)
       _buffer = new uint8_t[w * h * bytes];
 
       if (image_file.read(reinterpret_cast<char*>(_buffer), w * h * bytes).rdstate() &
-          (std::ios_base::badbit | std::ios_base::failbit) != 0)
+          ((std::ios_base::badbit | std::ios_base::failbit) != 0))
         throw;
 
       _width = w;

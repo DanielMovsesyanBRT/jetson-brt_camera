@@ -285,7 +285,7 @@ bool Camera::init_device()
   struct v4l2_crop crop;
   unsigned int min;
 
-  if (-1 == xioctl(_handle, VIDIOC_QUERYCAP, &cap))
+  if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_QUERYCAP), &cap))
   {
     if (EINVAL == errno)
     {
@@ -322,7 +322,7 @@ bool Camera::init_device()
 
   cropcap.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-  if (0 == xioctl(_handle, VIDIOC_CROPCAP, &cropcap))
+  if (0 == xioctl(_handle, static_cast<int>(VIDIOC_CROPCAP), &cropcap))
   {
     crop.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     crop.c = cropcap.defrect; /* reset to default */
@@ -348,7 +348,7 @@ bool Camera::init_device()
   memset(&_fmt, 0, sizeof(_fmt));
 
   _fmt.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-  if (-1 == xioctl(_handle, VIDIOC_G_FMT, &_fmt))
+  if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_G_FMT), &_fmt))
   {
     std::cerr << "VIDIOC_G_FMT error:" << errno << ", "
         << strerror(errno) << std::endl;
@@ -400,7 +400,7 @@ bool Camera::uninit_device()
     break;
 
   case IO_METHOD_MMAP:
-    for (int i = 0; i < _n_buffers; ++i)
+    for (unsigned int i = 0; i < _n_buffers; ++i)
       if (-1 == munmap(_buffers[i].start, _buffers[i].length))
       {
         std::cerr << "munmap error:" << errno << ", "
@@ -463,7 +463,7 @@ bool Camera::init_mmap()
   req.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
   req.memory = V4L2_MEMORY_MMAP;
 
-  if (-1 == xioctl(_handle, VIDIOC_REQBUFS, &req))
+  if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_REQBUFS), &req))
   {
     if (EINVAL == errno)
     {
@@ -501,7 +501,7 @@ bool Camera::init_mmap()
     buf.memory = V4L2_MEMORY_MMAP;
     buf.index = _n_buffers;
 
-    if (-1 == xioctl(_handle, VIDIOC_QUERYBUF, &buf))
+    if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_QUERYBUF), &buf))
     {
       std::cerr << "VIDIOC_QUERYBUF error:" << errno << ", "
           << strerror(errno) << std::endl;
@@ -548,7 +548,7 @@ bool Camera::start_capturing()
     break;
 
   case IO_METHOD_MMAP:
-    for (int i = 0; i < _n_buffers; ++i)
+    for (unsigned int i = 0; i < _n_buffers; ++i)
     {
       v4l2_buffer buf;
       memset(&buf, 0, sizeof(buf));
@@ -557,7 +557,7 @@ bool Camera::start_capturing()
       buf.memory = V4L2_MEMORY_MMAP;
       buf.index = i;
 
-      if (-1 == xioctl(_handle, VIDIOC_QBUF, &buf))
+      if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_QBUF), &buf))
       {
         std::cerr << "VIDIOC_QBUF error:" << errno << ", "
             << strerror(errno) << std::endl;
@@ -569,7 +569,7 @@ bool Camera::start_capturing()
     }
 
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (-1 == xioctl(_handle, VIDIOC_STREAMON, &type))
+    if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_STREAMON), &type))
     {
       std::cerr << "VIDIOC_STREAMON error:" << errno << ", "
           << strerror(errno) << std::endl;
@@ -605,7 +605,7 @@ bool Camera::stop_capturing()
 
   case IO_METHOD_MMAP:
     type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
-    if (-1 == xioctl(_handle, VIDIOC_STREAMOFF, &type))
+    if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_STREAMOFF), &type))
     {
       std::cerr << "VIDIOC_STREAMOFF error:" << errno << ", "
           << strerror(errno) << std::endl;
@@ -696,7 +696,6 @@ void Camera::main_loop()
 bool Camera::read_frame()
 {
   v4l2_buffer buf;
-  unsigned int i;
 
   switch (_io_method)
   {
@@ -742,7 +741,7 @@ bool Camera::read_frame()
     buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
     buf.memory = V4L2_MEMORY_MMAP;
 
-    if (-1 == xioctl(_handle, VIDIOC_DQBUF, &buf))
+    if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_DQBUF), &buf))
     {
       switch (errno)
       {
@@ -777,7 +776,7 @@ bool Camera::read_frame()
       }
     }
 
-    if (-1 == xioctl(_handle, VIDIOC_QBUF, &buf))
+    if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_QBUF), &buf))
     {
       std::cerr << "VIDIOC_QBUF error:" << errno << ", "
           << strerror(errno) << std::endl;

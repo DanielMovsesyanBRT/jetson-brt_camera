@@ -66,21 +66,21 @@ void ISP::consume(ImageBox box)
     return;
 
   // Line fitting function
-  auto line_interpolation = [](CameraBlock& block,uint32_t total_pixels)->double
-  {
-    double mean_x = block._histogram.size() / 2;
-    double mean_y = (double)total_pixels / block._histogram.size();
-    double numerator = 0.0, denumerator = 0.0;
-    for (size_t index = 0; index < block._histogram.size(); index++)
-    {
-      numerator += (index - mean_x) * (block._histogram[index] - mean_y);
-      denumerator += (index - mean_x) * (index - mean_x);
-    }
-
-    double coeff = numerator / denumerator;
-    coeff = 10.0 * coeff / total_pixels;
-    return coeff * coeff * coeff;
-  };
+//  auto line_interpolation = [](CameraBlock& block,uint32_t total_pixels)->double
+//  {
+//    double mean_x = block._histogram.size() / 2;
+//    double mean_y = (double)total_pixels / block._histogram.size();
+//    double numerator = 0.0, denumerator = 0.0;
+//    for (size_t index = 0; index < block._histogram.size(); index++)
+//    {
+//      numerator += (index - mean_x) * (block._histogram[index] - mean_y);
+//      denumerator += (index - mean_x) * (index - mean_x);
+//    }
+//
+//    double coeff = numerator / denumerator;
+//    coeff = 10.0 * coeff / total_pixels;
+//    return coeff * coeff * coeff;
+//  };
 
   auto expected_value = [](CameraBlock& block,uint32_t total_pixels)->double
   {
@@ -103,7 +103,7 @@ void ISP::consume(ImageBox box)
     return;
 
   std::lock_guard<std::mutex> l(_mutex);
-  if (id < _cameras.size())
+  if (static_cast<size_t>(id) < _cameras.size())
   {
     uint32_t total_pixels = 0;
     CameraBlock  &block = _cameras[id];

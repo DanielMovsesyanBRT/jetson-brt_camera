@@ -91,8 +91,6 @@ ScriptAction* ScriptParser::read_line(ParserEnv& ps)
 
   // Trim left space
   ps.trim_l();
-
-  const char* helper = ps;
   if (Utils::stristr(ps,"macro") == ps.c_str())
   {
     if (ps.env().exist("macro"))

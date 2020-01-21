@@ -235,7 +235,7 @@ Value Script::run_macro(const char* macro_name,std::vector<Value> arguments,Meta
   Session sess(&_data->_session);
   _data->_session += meta;
 
-  bool result = macro_obj->get()->run_macro(sess,arguments);
+  macro_obj->get()->run_macro(sess,arguments);
   if (sess.exist(macro_name))
     return sess.var(macro_name);
 

@@ -383,7 +383,7 @@ Value Value::operator~()
   switch (_data->type())
   {
   case ValueData::BOOL:
-    result._data->set_bool(~_data->get_bool(),_data->size());
+    result._data->set_bool(!_data->get_bool(),_data->size());
     break;
 
   case ValueData::ULONGLONG:

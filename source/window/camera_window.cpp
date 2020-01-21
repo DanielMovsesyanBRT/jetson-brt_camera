@@ -40,8 +40,8 @@ CameraWindow::CameraWindow(const char* title, int x, int y,
 , _video_height(height)
 , _actual_width(width)
 , _actual_height(height)
-, _cols(0)
 , _rows(0)
+, _cols(0)
 , _glc(0)
 , _texture(0)
 , _click(-1)
@@ -110,7 +110,7 @@ bool CameraWindow::x_event(Context ctx,const XEvent &event)
       _mutex.lock();
       for (size_t index = 0; index < _gl_map.size(); index++)
       {
-        if ((_gl_map[index]._col == col) && (_gl_map[index]._row == row))
+        if ((_gl_map[index]._col == static_cast<size_t>(col)) && (_gl_map[index]._row == static_cast<size_t>(row)))
         {
           id = index;
           break;
@@ -238,7 +238,7 @@ void CameraWindow::consume(image::ImageBox box)
     return;
 
   std::unique_lock<std::mutex> l(_mutex);
-  if (id >= _gl_map.size())
+  if (id >= static_cast<int>(_gl_map.size()))
     return;
 
   if (_gl_map[id]._image)
@@ -398,7 +398,7 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   if (!wnd._image)
     return;
 
-  if (_click.load() == evt->_id)
+  if (_click.load() == static_cast<int>(evt->_id))
   {
     std::string file_name = Utils::string_format("image_%04d_%04d.raw", evt->_id, _global_number++);
     uint32_t w = wnd._image->width(), h = wnd._image->height(), bytes = 2 /* RAW12*/;

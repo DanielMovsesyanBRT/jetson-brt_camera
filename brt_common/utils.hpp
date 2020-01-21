@@ -115,8 +115,6 @@ private:
   T                               _elem[S];
 };
 
-/*
-
 
 /*
  * \\enum DisplayType

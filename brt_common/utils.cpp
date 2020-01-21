@@ -137,15 +137,16 @@ std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
       setvbuf(fd, buf, _IOFBF, pagesz);
 
       char buffer[8192];
-      int num, local_port, rem_port, d, state, uid, timer_run, timeout;
-      char rem_addr[128], local_addr[128], timers[64];
+      int d, timeout, uid;
+      unsigned int local_port, rem_port, state, timer_run;
+      char rem_addr[128], local_addr[128];
       unsigned long rxq, txq, time_len, retr, inode;
 
       do
       {
         if (fgets(buffer, sizeof(buffer), fd))
         {
-          num = sscanf(buffer,
+          sscanf(buffer,
                           "%d: %64[0-9A-Fa-f]:%X %64[0-9A-Fa-f]:%X %X %lX:%lX %X:%lX %lX %d %d %lu %*s\n",
                           &d, local_addr, &local_port, rem_addr, &rem_port, &state,
                           &txq, &rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode);
@@ -190,9 +191,8 @@ std::string Utils::aquire_display(const char* extra_string)
   }
   else
   {
-    char buffer[1024];
     std::string line;
-    int id;
+    size_t id;
 
     do
     {

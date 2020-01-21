@@ -17,6 +17,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(CMAKE_C_FLAGS_DEBUG       "-O0 -g -DDEBUG -D_DEBUG" CACHE STRING "c Debug flags" )
 endif()
 
+add_compile_options(-Wall -Wno-long-long -pedantic) 
+
 add_subdirectory(script)
 add_subdirectory(brt_common)
 

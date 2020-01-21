@@ -41,16 +41,16 @@ class CameraWindow {open
         xywh {210 123 260 25}
       }
       Fl_Button m_run1 {
-        callback {run1()}
-        xywh {592 23 25 25}
+        callback {run1()} selected
+        image {shot_small.png} xywh {592 23 25 25}
       }
       Fl_Button m_run2 {
         callback {run2()}
-        xywh {592 73 25 25}
+        image {shot_small.png} xywh {592 73 25 25}
       }
       Fl_Button m_run3 {
         callback {run3()}
-        xywh {592 123 25 25}
+        image {shot_small.png} xywh {592 123 25 25}
       }
       Fl_Button m_Browse1 {
         label Browse
@@ -64,7 +64,7 @@ class CameraWindow {open
       }
       Fl_Button m_Browse3 {
         label Browse
-        callback {browse3()} selected
+        callback {browse3()}
         xywh {485 125 75 25}
       }
     }

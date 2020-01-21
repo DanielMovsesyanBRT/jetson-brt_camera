@@ -37,7 +37,6 @@ public:
   template <typename T>
   bytestream& operator<<(const T& data)
   {
-    const uint8_t* ptr = reinterpret_cast<const uint8_t*>(&data);
     size_t cur_size = size();
     resize(cur_size + sizeof(T));
     memcpy(&at(cur_size),&data,sizeof(T));

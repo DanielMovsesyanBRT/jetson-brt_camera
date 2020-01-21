@@ -99,7 +99,7 @@ private:
   char*                           _saveptr;
 
   char*                           _cur_line;
-  size_t                          _offset;
+  int                             _offset;
 
   bool                            _eos; // end of string
   size_t                          _line_counter;
