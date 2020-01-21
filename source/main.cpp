@@ -38,14 +38,20 @@ using namespace brt::jupiter;
 class Consumer : public image::ImageConsumer
 {
 public:
-  Consumer(const char* prefix) : _prefix(prefix), _directory(), _flag(false), _unique(0) {}
+  Consumer(const char* prefix) : _prefix(prefix), _directory(), _flag(false), _unique(0), _terminate(false) {}
 
   Consumer(const Consumer& cons)
   : _prefix(cons._prefix)
   , _directory(cons._directory)
   , _flag(cons._flag.load())
   , _unique(cons._unique)
+  , _terminate(cons._terminate.load())
   {}
+
+  virtual ~Consumer()
+  {
+    stop();
+  }
 
   virtual void                    consume(image::ImageBox box)
   {
@@ -56,37 +62,62 @@ public:
     if ((id == -1) || (id > 1))
       return;
 
-    _images[id] = box[0]->get_bits();
-    if (_images[0] && _images[1])
+    if (!_images[id])
     {
-      bool expected = true;
-      if (_flag.compare_exchange_strong(expected, false))
+      _images[id] = box[0]->get_bits();
+      _event.notify_all();
+    }
+//    if (_images[0] && _images[1])
+//    {
+//      bool expected = true;
+//      if (_flag.compare_exchange_strong(expected, false))
+//      {
+//        std::string file_name = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
+//        uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
+//
+//        std::ofstream raw_file (file_name, std::ios::out | std::ios::binary);
+//        raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
+//        raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
+//        raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+//        raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
+//
+//        file_name = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
+//
+//        w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
+//
+//        raw_file = std::ofstream(file_name, std::ios::out | std::ios::binary);
+//        raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
+//        raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
+//        raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+//
+//        raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
+//
+//        _unique++;
+//      }
+//
+//      _images[0].reset();
+//      _images[1].reset();
+//    }
+  }
+
+  void                            start()
+  {
+    if (!_thread.joinable())
+    {
+      _thread = std::thread([](Consumer *cons)
       {
-        std::string file_name = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
-        uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
+        cons->thread_loop();
+      },this);
+    }
+  }
 
-        std::ofstream raw_file (file_name, std::ios::out | std::ios::binary);
-        raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
-        raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
-        raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-        raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
-
-        file_name = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
-
-        w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
-
-        raw_file = std::ofstream(file_name, std::ios::out | std::ios::binary);
-        raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
-        raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
-        raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-
-        raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
-
-        _unique++;
-      }
-
-      _images[0].reset();
-      _images[1].reset();
+  void                            stop()
+  {
+    if (_thread.joinable())
+    {
+      _terminate.store(true);
+      _event.notify_all();
+      _thread.join();
     }
   }
 
@@ -107,6 +138,49 @@ public:
   }
 
 private:
+  void                            thread_loop()
+  {
+    while(!_terminate)
+    {
+      {
+        std::unique_lock<std::mutex> l(_mutex);
+        _event.wait(l);
+      }
+
+      if (_images[0] && _images[1])
+      {
+        bool expected = true;
+        if (_flag.compare_exchange_strong(expected, false))
+        {
+          std::string file_name = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
+          uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
+
+          std::ofstream raw_file (file_name, std::ios::out | std::ios::binary);
+          raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
+          raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
+          raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+          raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
+
+          file_name = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
+
+          w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
+
+          raw_file = std::ofstream(file_name, std::ios::out | std::ios::binary);
+          raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
+          raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
+          raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+
+          raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
+
+          _unique++;
+        }
+        _images[0].reset();
+        _images[1].reset();
+      }
+    }
+  }
+
+private:
   std::string                     _prefix;
   std::string                     _directory;
 
@@ -114,6 +188,11 @@ private:
   uint32_t                        _unique;
 
   image::RawRGBPtr                _images[2];
+
+  std::mutex                      _mutex;
+  std::thread                     _thread;
+  std::atomic_bool                _terminate;
+  std::condition_variable         _event;
 };
 
 Consumer camera[3] = { "camera1", "camera2", "camera3" };
@@ -240,6 +319,7 @@ int main(int argc, char **argv)
           camera[id].set_destination(cwd);
         }
       }
+      camera[id].start();
     }
   }
 
@@ -251,79 +331,6 @@ int main(int argc, char **argv)
   cm->make_window(&aa)->show();
   Fl::run();
   delete cm;
-
-    
-//
-//  char buffer[1024];
-//  std::string line;
-//  do
-//  {
-//    std::cout << "T.... :" << line << ":" << std::endl;
-//    std::cin.getline(buffer, sizeof(buffer));
-//    line = buffer;
-//
-//    if (Utils::stristr(line, "exp") == 0)
-//    {
-//      line = line.substr(3);
-//      double exposure = strtod(line.c_str(), nullptr);
-//
-//      for (auto id : cam_des)
-//      {
-//        Deserializer *des = DeviceManager::get()->get_device(id >> 8);
-//        if (des != nullptr)
-//        {
-//          Camera *cam = des->get_camera(id & 0xff);
-//          if (cam != nullptr)
-//          {
-//            if (exposure == 0.0)
-//            {
-//              double read = cam->get_exposure();
-//              std::cout << "Exposure = " << read << std::endl;
-//            }
-//            else
-//              cam->set_exposure(exposure);
-//          }
-//        }
-//      }
-//    }
-//    else if (Utils::stristr(line, "gain") == 0)
-//    {
-//      line = line.substr(4);
-//      long gain = strtol(line.c_str(), nullptr, 0);
-//
-//      for (auto id : cam_des)
-//      {
-//        Deserializer *des = DeviceManager::get()->get_device(id >> 8);
-//        if (des != nullptr)
-//        {
-//          Camera *cam = des->get_camera(id & 0xff);
-//          if (cam != nullptr)
-//            cam->set_gain((eCameraGain)gain);
-//        }
-//      }
-//    }
-//    else if (Utils::stristr(line, "temp") == 0)
-//    {
-//      line = line.substr(4);
-//      long gain = strtol(line.c_str(), nullptr, 0);
-//
-//      for (auto id : cam_des)
-//      {
-//        Deserializer *des = DeviceManager::get()->get_device(id >> 8);
-//        if (des != nullptr)
-//        {
-//          Camera *cam = des->get_camera(id & 0xff);
-//          if (cam != nullptr)
-//          {
-//            double t0 = cam->get_temperature(0);
-//            double t1 = cam->get_temperature(1);
-//            std::cout << "Camera (" << cam->name() << ") T0 = " << t0 << ", T1 = " << t1 << std::endl;
-//          }
-//        }
-//      }
-//    }
-//
-//  } while (line != "q");
 
   isp_manager.release();
   wm::get()->release();

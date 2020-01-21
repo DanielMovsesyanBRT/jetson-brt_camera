@@ -38,12 +38,13 @@ bool ActionRead::do_action(script::Session& session)
   }
 
   int num_bytes = _num_bytes->evaluate(&session);
-  int address = _device_address->evaluate(&session);
   Value offset = _offset->evaluate(&session);
 
   uint8_t* buffer = new uint8_t[num_bytes];
 
 #ifdef HARDWARE
+  int address = _device_address->evaluate(&session);
+
   Deserializer* device = static_cast<Deserializer*>((void*)session.var("device"));
   if (device == nullptr)
     return false;
@@ -102,7 +103,6 @@ bool ActionRead::extract(script::ParserEnv& ps)
  */
 bool ActionWrite::do_action(script::Session& session)
 {
-  int address = _device_address->evaluate(&session);
   Value offset = _offset->evaluate(&session);
 
   if (_bytes == nullptr)
@@ -125,6 +125,7 @@ bool ActionWrite::do_action(script::Session& session)
   }
 
 #ifdef HARDWARE
+  int address = _device_address->evaluate(&session);
 
   Deserializer* device = static_cast<Deserializer*>((void*)session.var("device"));
   if (device == nullptr)
