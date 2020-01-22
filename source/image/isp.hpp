@@ -35,7 +35,7 @@ public:
 
   virtual void                    consume(ImageBox);
 
-          void                    add_camera(Camera*);
+          void                    add_camera(Camera*,ImageProducer*);
           void                    stop();
 
 private:
@@ -43,6 +43,7 @@ private:
   struct CameraBlock
   {
     Camera*                         _cam;
+    ImageProducer*                  _ip;
     uint32_t                        _num_captured;
     std::vector<uint32_t>           _histogram;
 

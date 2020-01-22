@@ -21,39 +21,41 @@ struct CallbackInterface
 class CameraWindow {
 public:
   Fl_Double_Window* make_window(CallbackInterface* ci = nullptr);
-  Fl_Input *m_camera1_script;
-  Fl_Input *m_camera2_script;
-  Fl_Input *m_camera3_script;
-  Fl_Button *m_run1;
+  struct Row
+  {
+    Row() : m_camera_script(nullptr), m_run(nullptr), m_Browse(nullptr) {}
+    Fl_Input *m_camera_script;
+    Fl_Button *m_run;
+    Fl_Button *m_Browse;
+
+    void      enable(bool);
+  }      	 						            m_row[3];
+  Fl_Button*				              m_close;
+  Fl_Double_Window*               m_window;
+
 private:
   inline void cb_m_run1_i(Fl_Button*, void*);
   static void cb_m_run1(Fl_Button*, void*);
-public:
-  Fl_Button *m_run2;
+
 private:
   inline void cb_m_run2_i(Fl_Button*, void*);
   static void cb_m_run2(Fl_Button*, void*);
-public:
-  Fl_Button *m_run3;
-private:
+
   inline void cb_m_run3_i(Fl_Button*, void*);
   static void cb_m_run3(Fl_Button*, void*);
-public:
-  Fl_Button *m_Browse1;
-private:
+
   inline void cb_m_Browse1_i(Fl_Button*, void*);
   static void cb_m_Browse1(Fl_Button*, void*);
-public:
-  Fl_Button *m_Browse2;
-private:
+
   inline void cb_m_Browse2_i(Fl_Button*, void*);
   static void cb_m_Browse2(Fl_Button*, void*);
-public:
-  Fl_Button *m_Browse3;
-private:
+
   inline void cb_m_Browse3_i(Fl_Button*, void*);
   static void cb_m_Browse3(Fl_Button*, void*);
-
+  
+  inline void cb_m_close_i(Fl_Button*, void*);
+  static void cb_m_close(Fl_Button*, void*);
+  
 private:
   CallbackInterface*              _callback;
 };

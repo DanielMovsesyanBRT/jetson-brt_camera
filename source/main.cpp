@@ -67,37 +67,6 @@ public:
       _images[id] = box[0]->get_bits();
       _event.notify_all();
     }
-//    if (_images[0] && _images[1])
-//    {
-//      bool expected = true;
-//      if (_flag.compare_exchange_strong(expected, false))
-//      {
-//        std::string file_name = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
-//        uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
-//
-//        std::ofstream raw_file (file_name, std::ios::out | std::ios::binary);
-//        raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
-//        raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
-//        raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-//        raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
-//
-//        file_name = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
-//
-//        w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
-//
-//        raw_file = std::ofstream(file_name, std::ios::out | std::ios::binary);
-//        raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
-//        raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
-//        raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-//
-//        raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
-//
-//        _unique++;
-//      }
-//
-//      _images[0].reset();
-//      _images[1].reset();
-//    }
   }
 
   void                            start()
@@ -280,6 +249,7 @@ int main(int argc, char **argv)
   window::CameraWindow *wnd = nullptr;
   std::vector<uint16_t> cam_des;
 
+  image::IP  ip[6];
   image::ISP* current_isp = nullptr;
   if (devices.size() != 0 && !meta_args.get<bool>("group_isp") && !meta_args.get<bool>("no_isp"))
     current_isp = isp_manager.new_isp();
@@ -302,18 +272,22 @@ int main(int argc, char **argv)
         {
           if (cam->start_streaming())
           {
+            cam->register_consumer(&ip[index + id * 2]);
+
             if (wnd == nullptr)
             {
               wnd = window::CameraWindow::create("Video Streaming", nullptr,
                   cam->format()->fmt.pix.width,
                   cam->format()->fmt.pix.height);
             }
-            wnd->add_subwnd(cam);
+            //wnd->add_subwnd(cam);
+            wnd->add_subwnd(&ip[index + id * 2]);
           }
+
 
           cam_des.push_back(id << 8 | index);
           if (current_isp != nullptr)
-            current_isp->add_camera(cam);
+            current_isp->add_camera(cam,&ip[index + id * 2]);
 
           cam->register_consumer(&camera[id],Metadata().set("<id>", index));
           camera[id].set_destination(cwd);

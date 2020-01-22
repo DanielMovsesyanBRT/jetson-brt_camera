@@ -212,9 +212,16 @@ void CameraWindow::cb_m_Browse3(Fl_Button* o, void* v) {
   ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse3_i(o,v);
 }
 
+void CameraWindow::cb_m_close_i(Fl_Button*, void*) {
+  close_window();
+}
+void CameraWindow::cb_m_close(Fl_Button* o, void* v) {
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_close_i(o,v);
+}
+
 Fl_Double_Window* CameraWindow::make_window() {
   Fl_Double_Window* w;
-  { Fl_Double_Window* o = new Fl_Double_Window(660, 205, "Camera");
+  { Fl_Double_Window* o = new Fl_Double_Window(655, 230, "Camera");
     w = o; if (w) {/* empty */}
     o->user_data((void*)(this));
     { new Fl_Box(110, 25, 100, 22, "Camera 1");
@@ -259,6 +266,9 @@ Fl_Double_Window* CameraWindow::make_window() {
     { m_Browse3 = new Fl_Button(485, 125, 75, 25, "Browse");
       m_Browse3->callback((Fl_Callback*)cb_m_Browse3);
     } // Fl_Button* m_Browse3
+    { m_close = new Fl_Button(530, 190, 100, 30, "Close");
+      m_close->callback((Fl_Callback*)cb_m_close);
+    } // Fl_Button* m_close
     o->end();
   } // Fl_Double_Window* o
   return w;

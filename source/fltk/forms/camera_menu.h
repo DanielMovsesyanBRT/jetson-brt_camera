@@ -43,5 +43,10 @@ public:
 private:
   inline void cb_m_Browse3_i(Fl_Button*, void*);
   static void cb_m_Browse3(Fl_Button*, void*);
+public:
+  Fl_Button *m_close;
+private:
+  inline void cb_m_close_i(Fl_Button*, void*);
+  static void cb_m_close(Fl_Button*, void*);
 };
 #endif

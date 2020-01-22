@@ -134,7 +134,7 @@ private:
   }                               *_buffers;
   unsigned int                    _n_buffers;
 
-  image::ImageProcessor           _ip;
+//  image::ImageProcessor           _ip;
 };
 
 } /* namespace jupiter */

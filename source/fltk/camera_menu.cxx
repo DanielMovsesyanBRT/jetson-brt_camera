@@ -198,7 +198,7 @@ void CameraWindow::cb_m_run3(Fl_Button* o, void* v) {
 
 void CameraWindow::cb_m_Browse1_i(Fl_Button*, void*)
 {
-  Fl_File_Chooser fnfc(m_camera1_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
+  Fl_File_Chooser fnfc(m_row[0].m_camera_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
   fnfc.show();
 
   while (fnfc.shown())
@@ -206,7 +206,7 @@ void CameraWindow::cb_m_Browse1_i(Fl_Button*, void*)
 
   if (fnfc.value() != nullptr)
   {
-    m_camera1_script->value(fnfc.directory());
+    m_row[0].m_camera_script->value(fnfc.directory());
     if (_callback != nullptr)
       _callback->dir(0,fnfc.directory());
   }
@@ -218,7 +218,7 @@ void CameraWindow::cb_m_Browse1(Fl_Button* o, void* v) {
 
 void CameraWindow::cb_m_Browse2_i(Fl_Button*, void*)
 {
-  Fl_File_Chooser fnfc(m_camera2_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
+  Fl_File_Chooser fnfc(m_row[1].m_camera_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
   fnfc.show();
 
   while (fnfc.shown())
@@ -226,7 +226,7 @@ void CameraWindow::cb_m_Browse2_i(Fl_Button*, void*)
 
   if (fnfc.value() != nullptr)
   {
-    m_camera2_script->value(fnfc.directory());
+    m_row[1].m_camera_script->value(fnfc.directory());
     if (_callback != nullptr)
       _callback->dir(1,fnfc.directory());
   }
@@ -237,7 +237,7 @@ void CameraWindow::cb_m_Browse2(Fl_Button* o, void* v) {
 
 void CameraWindow::cb_m_Browse3_i(Fl_Button*, void*)
 {
-  Fl_File_Chooser fnfc(m_camera3_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
+  Fl_File_Chooser fnfc(m_row[2].m_camera_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
   fnfc.show();
 
   while (fnfc.shown())
@@ -245,7 +245,7 @@ void CameraWindow::cb_m_Browse3_i(Fl_Button*, void*)
 
   if (fnfc.value() != nullptr)
   {
-    m_camera3_script->value(fnfc.directory());
+    m_row[2].m_camera_script->value(fnfc.directory());
     if (_callback != nullptr)
       _callback->dir(2,fnfc.directory());
   }
@@ -255,11 +255,19 @@ void CameraWindow::cb_m_Browse3(Fl_Button* o, void* v) {
   ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse3_i(o,v);
 }
 
+void CameraWindow::cb_m_close_i(Fl_Button*, void*) {
+  if (m_window != nullptr)
+    m_window->hide();
+}
+void CameraWindow::cb_m_close(Fl_Button* o, void* v) {
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_close_i(o,v);
+}
+
 Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
   _callback = ci;
 
   Fl_Double_Window* w;
-  { Fl_Double_Window* o = new Fl_Double_Window(660, 205, "Camera");
+  { Fl_Double_Window* o = new Fl_Double_Window(655, 230, "Camera");
     w = o; if (w) {/* empty */}
     o->user_data((void*)(this));
     { new Fl_Box(110, 25, 100, 22, "Camera 1");
@@ -277,42 +285,80 @@ Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
     { Fl_Box* o = new Fl_Box(50, 110, 65, 50);
       o->image( image_Camera_icon() );
     } // Fl_Box* o
-    { m_camera1_script = new Fl_Input(210, 23, 260, 25);
+    { m_row[0].m_camera_script = new Fl_Input(210, 23, 260, 25);
     } // Fl_Input* m_camera1_script
-    { m_camera2_script = new Fl_Input(210, 73, 260, 25);
+    { m_row[1].m_camera_script = new Fl_Input(210, 73, 260, 25);
     } // Fl_Input* m_camera2_script
-    { m_camera3_script = new Fl_Input(210, 123, 260, 25);
+    { m_row[2].m_camera_script = new Fl_Input(210, 123, 260, 25);
     } // Fl_Input* m_camera3_script
-    { m_run1 = new Fl_Button(592, 23, 25, 25);
-      m_run1->image( image_shot_small() );
-      m_run1->callback((Fl_Callback*)cb_m_run1);
+    { m_row[0].m_run = new Fl_Button(592, 23, 25, 25);
+      m_row[0].m_run->image( image_shot_small() );
+      m_row[0].m_run->callback((Fl_Callback*)cb_m_run1);
     } // Fl_Button* m_run1
-    { m_run2 = new Fl_Button(592, 73, 25, 25);
-      m_run2->image( image_shot_small() );
-      m_run2->callback((Fl_Callback*)cb_m_run2);
+    { m_row[1].m_run = new Fl_Button(592, 73, 25, 25);
+      m_row[1].m_run->image( image_shot_small() );
+      m_row[1].m_run->callback((Fl_Callback*)cb_m_run2);
     } // Fl_Button* m_run2
-    { m_run3 = new Fl_Button(592, 123, 25, 25);
-      m_run3->image( image_shot_small() );
-      m_run3->callback((Fl_Callback*)cb_m_run3);
+    { m_row[2].m_run = new Fl_Button(592, 123, 25, 25);
+      m_row[2].m_run->image( image_shot_small() );
+      m_row[2].m_run->callback((Fl_Callback*)cb_m_run3);
     } // Fl_Button* m_run3
-    { m_Browse1 = new Fl_Button(485, 23, 75, 25, "Browse");
-      m_Browse1->callback((Fl_Callback*)cb_m_Browse1);
+    { m_row[0].m_Browse = new Fl_Button(485, 23, 75, 25, "Browse");
+      m_row[0].m_Browse->callback((Fl_Callback*)cb_m_Browse1);
     } // Fl_Button* m_Browse1
-    { m_Browse2 = new Fl_Button(485, 75, 75, 25, "Browse");
-      m_Browse2->callback((Fl_Callback*)cb_m_Browse2);
+    { m_row[1].m_Browse = new Fl_Button(485, 75, 75, 25, "Browse");
+      m_row[1].m_Browse->callback((Fl_Callback*)cb_m_Browse2);
     } // Fl_Button* m_Browse2
-    { m_Browse3 = new Fl_Button(485, 125, 75, 25, "Browse");
-      m_Browse3->callback((Fl_Callback*)cb_m_Browse3);
+    { m_row[2].m_Browse = new Fl_Button(485, 125, 75, 25, "Browse");
+      m_row[2].m_Browse->callback((Fl_Callback*)cb_m_Browse3);
     } // Fl_Button* m_Browse3
+    { m_close = new Fl_Button(530, 190, 100, 30, "Close");
+      m_close->callback((Fl_Callback*)cb_m_close);
+    } // Fl_Button* m_close
     o->end();
   } // Fl_Double_Window* o
 
   if (_callback != nullptr)
   {
-    m_camera1_script->value(_callback->destination(0));
-    m_camera2_script->value(_callback->destination(1));
-    m_camera3_script->value(_callback->destination(2));
+    for (size_t index = 0; index < 3; index++)
+    {
+      const char* path = _callback->destination(index);
+      if ((path == nullptr) || (strlen(path) == 0))
+        m_row[index].enable(false);
+      else
+      {
+        m_row[index].enable(true);
+        m_row[index].m_camera_script->value(_callback->destination(index));
+      }
+    }
   }
-
+  m_window = w;
   return w;
+}
+
+
+void CameraWindow::Row::enable(bool enb)
+{
+  if (enb)
+  {
+    if (m_camera_script != nullptr)
+      m_camera_script->activate();
+
+    if (m_run != nullptr)
+      m_run->activate();
+
+    if (m_Browse != nullptr)
+      m_Browse->activate();
+  }
+  else
+  {
+    if (m_camera_script != nullptr)
+      m_camera_script->deactivate();
+
+    if (m_run != nullptr)
+      m_run->deactivate();
+
+    if (m_Browse != nullptr)
+      m_Browse->deactivate();
+  }
 }

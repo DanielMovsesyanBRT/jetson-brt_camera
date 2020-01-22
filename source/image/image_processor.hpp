@@ -63,6 +63,26 @@ private:
 };
 
 
+
+/*
+ * \\class IP
+ *
+ * created on: Jan 21, 2020
+ *
+ */
+class IP : public ImageConsumer
+         , public ImageProducer
+{
+public:
+  IP() : _ip() {}
+  virtual ~IP() {}
+
+  virtual void                    consume(ImageBox);
+
+private:
+  ImageProcessor                  _ip;
+};
+
 } /* namespace image */
 } /* namespace jupiter */
 } /* namespace brt */

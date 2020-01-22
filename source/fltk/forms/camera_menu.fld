@@ -8,7 +8,7 @@ class CameraWindow {open
   } {
     Fl_Window {} {
       label Camera open
-      xywh {210 64 660 205} type Double visible
+      xywh {210 64 655 230} type Double visible
     } {
       Fl_Box {} {
         label {Camera 1}
@@ -41,7 +41,7 @@ class CameraWindow {open
         xywh {210 123 260 25}
       }
       Fl_Button m_run1 {
-        callback {run1()} selected
+        callback {run1()}
         image {shot_small.png} xywh {592 23 25 25}
       }
       Fl_Button m_run2 {
@@ -66,6 +66,11 @@ class CameraWindow {open
         label Browse
         callback {browse3()}
         xywh {485 125 75 25}
+      }
+      Fl_Button m_close {
+        label Close
+        callback {close_window()} selected
+        xywh {530 190 100 30}
       }
     }
   }

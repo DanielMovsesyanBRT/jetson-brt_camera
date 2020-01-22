@@ -722,15 +722,23 @@ bool Camera::read_frame()
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
       image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height));
-      image::RawRGBPtr result = _ip.debayer(raw12);
-      if (result)
+      if (_skip_frames-- == 0)
       {
-        if (_skip_frames-- == 0)
-        {
-          consume(image::ImageBox(result));
-          _skip_frames = 0;
-        }
+        consume(image::ImageBox(raw12));
+        _skip_frames = 0;
       }
+
+//      image::RawRGBPtr result = _ip.debayer(raw12);
+//      if (result)
+//      {
+//        if (_skip_frames-- == 0)
+//        {
+//          consume(image::ImageBox(result));
+//          _skip_frames = 0;
+//        }
+//      }
+
+
     }
     //process_image(buffers[0].start, buffers[0].length);
     break;
@@ -765,15 +773,21 @@ bool Camera::read_frame()
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
       image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height));
-      image::RawRGBPtr result = _ip.debayer(raw12);
-      if (result)
+      if (_skip_frames-- == 0)
       {
-        if (_skip_frames-- == 0)
-        {
-          consume(image::ImageBox(result));
-          _skip_frames = 0;
-        }
+        consume(image::ImageBox(raw12));
+        _skip_frames = 0;
       }
+
+//      image::RawRGBPtr result = _ip.debayer(raw12);
+//      if (result)
+//      {
+//        if (_skip_frames-- == 0)
+//        {
+//          consume(image::ImageBox(result));
+//          _skip_frames = 0;
+//        }
+//      }
     }
 
     if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_QBUF), &buf))
