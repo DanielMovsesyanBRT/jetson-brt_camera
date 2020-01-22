@@ -213,7 +213,7 @@ void ISP::consume(ImageBox box)
  * author: daniel
  *
  */
-void ISP::add_camera(Camera* camera,ImageProducer* ip)
+void ISP::add_camera(Camera* camera)
 {
   std::lock_guard<std::mutex> l(_mutex);
   std::vector<CameraBlock>::iterator iter =
@@ -227,7 +227,6 @@ void ISP::add_camera(Camera* camera,ImageProducer* ip)
 
   CameraBlock block;
   block._cam = camera;
-  block._ip = ip;
   block._num_captured = 0;
 
   block._k0 = 1.0;
@@ -237,7 +236,7 @@ void ISP::add_camera(Camera* camera,ImageProducer* ip)
   block._id = camera->id();
 
   _cameras.push_back(block);
-  ip->register_consumer(this,Metadata().set<int>("camera_id",_cameras.size() - 1));
+  camera->debayer_producer()->register_consumer(this,Metadata().set<int>("camera_id",_cameras.size() - 1));
 }
 
 /*
@@ -252,7 +251,7 @@ void ISP::stop()
   _mutex.lock();
   for (auto block : _cameras)
   {
-    block._ip->unregister_consumer(this);
+    block._cam->debayer_producer()->unregister_consumer(this);
   }
   _cameras.clear();
   _mutex.unlock();

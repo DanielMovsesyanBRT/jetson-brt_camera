@@ -60,6 +60,8 @@ Camera::Camera(Deserializer* owner,int id)
     if (strlen(video_name._name) > 0)
       _device_name = Utils::string_format("/dev/%s", video_name._name);
   }
+
+  register_consumer(&_ip);
 }
 
 /*
@@ -71,6 +73,7 @@ Camera::Camera(Deserializer* owner,int id)
  */
 Camera::~Camera()
 {
+  unregister_consumer(&_ip);
   stop_streaming();
 }
 

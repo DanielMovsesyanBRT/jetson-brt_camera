@@ -12,6 +12,7 @@
 #include <unistd.h>
 #include <iostream>
 #include <utils.hpp>
+#include <stdlib.h>
 #include <thread>
 
 #define _PATH_PROCNET_X11                   "/tmp/.X11-unix"
@@ -67,6 +68,7 @@ void FLTKManager::init()
   // Check for default display
   _default_display = Utils::aquire_display("controls");
   fl_display_name = _default_display._name.c_str();
+  setenv("DISPLAY",fl_display_name,1);
 }
 
 /*

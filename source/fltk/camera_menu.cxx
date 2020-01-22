@@ -195,42 +195,24 @@ void CameraWindow::cb_m_run(Fl_Button*, void*, size_t id)
  */
 void CameraWindow::cb_m_Browse(Fl_Button*, void*, size_t id)
 {
-  if (fm::get()->display()._dt == brt::jupiter::eLocalDisplay)
+  Fl_Native_File_Chooser fnf;
+  fnf.title("Browse");
+  fnf.type(Fl_Native_File_Chooser::BROWSE_DIRECTORY);
+  fnf.directory(m_row[id].m_camera_script->value());
+
+  switch(fnf.show())
   {
-    Fl_Native_File_Chooser fnf;
-    fnf.title("Browse");
-    fnf.type(Fl_Native_File_Chooser::BROWSE_DIRECTORY);
-    fnf.directory(m_row[id].m_camera_script->value());
-
-    switch(fnf.show())
+  case -1:
+  case 1:
+    break;
+  default:
+    if (fnf.filename() != nullptr)
     {
-    case -1:
-    case 1:
-      break;
-    default:
-      if (fnf.filename() != nullptr)
-      {
-        m_row[id].m_camera_script->value(fnf.filename());
-        if (_callback != nullptr)
-          _callback->dir(id,fnf.filename());
-      }
-      break;
-    }
-  }
-  else
-  {
-    Fl_File_Chooser fnfc(m_row[id].m_camera_script->value(),"",Fl_File_Chooser::DIRECTORY,"Browse");
-    fnfc.show();
-
-    while (fnfc.shown())
-      Fl::wait();
-
-    if (fnfc.value() != nullptr)
-    {
-      m_row[id].m_camera_script->value(fnfc.directory());
+      m_row[id].m_camera_script->value(fnf.filename());
       if (_callback != nullptr)
-        _callback->dir(id,fnfc.directory());
+        _callback->dir(id,fnf.filename());
     }
+    break;
   }
 }
 

@@ -249,7 +249,6 @@ int main(int argc, char **argv)
   window::CameraWindow *wnd = nullptr;
   std::vector<uint16_t> cam_des;
 
-  image::IP  ip[6];
   image::ISP* current_isp = nullptr;
   if (devices.size() != 0 && !meta_args.get<bool>("group_isp") && !meta_args.get<bool>("no_isp"))
     current_isp = isp_manager.new_isp();
@@ -272,22 +271,18 @@ int main(int argc, char **argv)
         {
           if (cam->start_streaming())
           {
-            cam->register_consumer(&ip[index + id * 2]);
-
             if (wnd == nullptr)
             {
               wnd = window::CameraWindow::create("Video Streaming", nullptr,
                   cam->format()->fmt.pix.width,
                   cam->format()->fmt.pix.height);
             }
-            //wnd->add_subwnd(cam);
-            wnd->add_subwnd(&ip[index + id * 2]);
+            wnd->add_subwnd(cam->debayer_producer());
           }
-
 
           cam_des.push_back(id << 8 | index);
           if (current_isp != nullptr)
-            current_isp->add_camera(cam,&ip[index + id * 2]);
+            current_isp->add_camera(cam);
 
           cam->register_consumer(&camera[id],Metadata().set("<id>", index));
           camera[id].set_destination(cwd);

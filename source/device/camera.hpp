@@ -81,6 +81,7 @@ public:
 
           std::string             name() const { return _device_name; }
 
+          image::ImageProducer*   debayer_producer() { return &_ip; }
 private:
           bool                    open_device();
 
@@ -134,7 +135,7 @@ private:
   }                               *_buffers;
   unsigned int                    _n_buffers;
 
-//  image::ImageProcessor           _ip;
+  image::ImageProcessor           _ip;
 };
 
 } /* namespace jupiter */

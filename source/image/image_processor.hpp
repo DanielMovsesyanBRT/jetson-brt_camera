@@ -9,8 +9,6 @@
 #define SOURCE_IMAGE_IMAGE_PROCESSOR_HPP_
 
 #include <stdint.h>
-// #include <cuda_runtime.h>
-
 #include <vector>
 #include <atomic>
 
@@ -33,7 +31,8 @@ namespace image
  * created on: Nov 25, 2019
  *
  */
-class ImageProcessor
+class ImageProcessor : public ImageConsumer
+                     , public ImageProducer
 {
 public:
   ImageProcessor();
@@ -43,6 +42,8 @@ public:
           bool                    get_histogram(HistPtr& histogram);
 
           void                    set_overexp_flag(bool flag) { _overexposure_flag = flag; }
+
+  virtual void                    consume(ImageBox);
 
 private:
           bool                    runDebayer(bool outputBGR);
@@ -60,27 +61,6 @@ private:
   int                             _blkx,_blky;
 
   std::atomic_bool                _overexposure_flag;
-};
-
-
-
-/*
- * \\class IP
- *
- * created on: Jan 21, 2020
- *
- */
-class IP : public ImageConsumer
-         , public ImageProducer
-{
-public:
-  IP() : _ip() {}
-  virtual ~IP() {}
-
-  virtual void                    consume(ImageBox);
-
-private:
-  ImageProcessor                  _ip;
 };
 
 } /* namespace image */

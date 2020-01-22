@@ -160,17 +160,17 @@ bool ImageProcessor::get_histogram(HistPtr& histogram)
 
 
 /*
- * \\fn void IP::consume
+ * \\fn void ImageProcessor::consume
  *
  * created on: Jan 21, 2020
  * author: daniel
  *
  */
-void IP::consume(ImageBox box)
+void ImageProcessor::consume(ImageBox box)
 {
   for (ImagePtr img : box)
   {
-    image::RawRGBPtr result = _ip.debayer(img->get_bits());
+    image::RawRGBPtr result = debayer(img->get_bits());
     if (result)
       ImageProducer::consume(image::ImageBox(result));
   }
