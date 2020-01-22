@@ -102,12 +102,12 @@ double Utils::frame_rate(const char* fr_string)
  * author: daniel
  *
  */
-std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
+std::vector<X11Display> Utils::enumerate_displays(DisplayType dt)
 {
-  std::vector<std::string> result;
+  std::vector<X11Display> result;
 
   // Check local displays
-  if ((dt & eLocalDisplays) != 0)
+  if ((dt & eLocalDisplay) != 0)
   {
     DIR* d = opendir(_PATH_PROCNET_X11);
 
@@ -119,7 +119,7 @@ std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
         if (dr->d_name[0] != 'X')
           continue;
 
-        result.push_back(Utils::string_format(":%s", dr->d_name + 1));
+        result.push_back(X11Display(eLocalDisplay,Utils::string_format(":%s", dr->d_name + 1)));
       }
       closedir(d);
     }
@@ -152,7 +152,7 @@ std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
                           &txq, &rxq, &timer_run, &time_len, &retr, &uid, &timeout, &inode);
 
           if ((local_port >= X11_PORT_MIN) && (local_port < X11_PORT_MAX))
-            result.push_back(Utils::string_format("localhost:%d.0", local_port - X11_PORT_MIN));
+            result.push_back(X11Display(eRemoteDisplay,Utils::string_format("localhost:%d.0", local_port - X11_PORT_MIN)));
 
         }
       }
@@ -173,16 +173,16 @@ std::vector<std::string> Utils::enumerate_displays(DisplayType dt)
  * author: daniel
  *
  */
-std::string Utils::aquire_display(const char* extra_string)
+X11Display Utils::aquire_display(const char* extra_string)
 {
-  std::string result;
+  X11Display result;
   char* display_name = getenv("DISPLAY");
 
-  std::vector<std::string> displays = enumerate_displays();
+  std::vector<X11Display> displays = enumerate_displays();
   if (displays.size() == 0)
   {
     if ((display_name == nullptr) || (strlen(display_name) == 0))
-      result = display_name;
+      result = X11Display(eLocalDisplay,display_name);
   }
 
   else if (displays.size() == 1)
@@ -200,8 +200,8 @@ std::string Utils::aquire_display(const char* extra_string)
 
       for (size_t index = 0; index < displays.size(); index++)
       {
-        std::cout << (index + 1) << ") " << displays[index];
-        if ((display_name != nullptr) && (displays[index].compare(display_name) == 0))
+        std::cout << (index + 1) << ") " << displays[index]._name;
+        if ((display_name != nullptr) && (displays[index]._name.compare(display_name) == 0))
           std::cout << "[default]";
 
         std::cout << std::endl;
@@ -212,7 +212,7 @@ std::string Utils::aquire_display(const char* extra_string)
       {
         if ((display_name == nullptr) || (strlen(display_name) == 0))
         {
-          result = display_name;
+          result = X11Display(eLocalDisplay,display_name);
           break;
         }
 

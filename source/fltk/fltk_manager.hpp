@@ -19,6 +19,8 @@
 #include <vector>
 #include <string>
 
+#include "utils.hpp"
+
 namespace brt
 {
 namespace jupiter
@@ -41,11 +43,11 @@ public:
   static  FLTKManager*            get() { return &_object; }
           void                    init();
           void                    run();
-
+  const X11Display&               display() const { return _default_display; }
 
 private:
   static FLTKManager              _object;
-  std::string                     _default_display;
+  X11Display                      _default_display;
 };
 
 } /* namespace fltk */

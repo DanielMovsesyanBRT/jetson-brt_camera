@@ -16,8 +16,6 @@
 #include "window.hpp"
 #include "window_manager.hpp"
 
-#include <utils.hpp>
-
 #define _PATH_PROCNET_X11                   "/tmp/.X11-unix"
 #define _PATH_PROCNET_TCP                   "/proc/net/tcp"
 #define _PATH_PROCNET_TCP6                  "/proc/net/tcp6"
@@ -85,7 +83,7 @@ void WindowManager::init()
 Context WindowManager::get_context(const char* display_name,bool create /*= false*/)
 {
   if (display_name == nullptr)
-    display_name = _default_display.c_str();
+    display_name = _default_display._name.c_str();
 
   std::unordered_set<_Context*>::iterator iter =
       std::find_if(_display_db.begin(), _display_db.end(),[display_name](_Context* db)

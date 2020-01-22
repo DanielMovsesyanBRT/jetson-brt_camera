@@ -34,23 +34,15 @@ public:
   Fl_Double_Window*               m_window;
 
 private:
-  inline void cb_m_run1_i(Fl_Button*, void*);
+         void                     cb_m_run(Fl_Button*, void*, size_t);
+         void                     cb_m_Browse(Fl_Button*, void*, size_t);
+
   static void cb_m_run1(Fl_Button*, void*);
-
-private:
-  inline void cb_m_run2_i(Fl_Button*, void*);
   static void cb_m_run2(Fl_Button*, void*);
-
-  inline void cb_m_run3_i(Fl_Button*, void*);
   static void cb_m_run3(Fl_Button*, void*);
 
-  inline void cb_m_Browse1_i(Fl_Button*, void*);
   static void cb_m_Browse1(Fl_Button*, void*);
-
-  inline void cb_m_Browse2_i(Fl_Button*, void*);
   static void cb_m_Browse2(Fl_Button*, void*);
-
-  inline void cb_m_Browse3_i(Fl_Button*, void*);
   static void cb_m_Browse3(Fl_Button*, void*);
   
   inline void cb_m_close_i(Fl_Button*, void*);

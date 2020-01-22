@@ -24,6 +24,7 @@
 #include <atomic>
 
 #include "win_structures.hpp"
+#include <utils.hpp>
 
 namespace brt
 {
@@ -99,7 +100,7 @@ private:
 
 private:
   static WindowManager            _object;
-  std::string                     _default_display;
+  X11Display                      _default_display;
 
   typedef std::unordered_set<Window*> window_set;
   window_set                      _wind_set;

@@ -124,9 +124,25 @@ private:
  */
 enum DisplayType
 {
-  eLocalDisplays = 1,
+  eNone = 0,
+  eLocalDisplay = 1,
   eRemoteDisplay = 2,
-  eAllDisplays = eLocalDisplays | eRemoteDisplay
+  eAllDisplays = eLocalDisplay | eRemoteDisplay
+};
+
+/*
+ * \\struct X11Display
+ *
+ * created on: Jan 22, 2020
+ *
+ */
+struct X11Display
+{
+  X11Display() : _dt(eNone), _name() {}
+  X11Display(DisplayType dt,const char* name) : _dt(dt), _name(name) {}
+  X11Display(DisplayType dt,std::string name) : _dt(dt), _name(name) {}
+  DisplayType                     _dt;
+  std::string                     _name;
 };
 
 /**
@@ -151,9 +167,8 @@ public:
   static size_t                   stristr(const std::string& src,const char* dst,size_t len = (size_t)-1);
   static double                   frame_rate(const char* fr_string);
 
-  static  std::vector<std::string>
-                                  enumerate_displays(DisplayType = eAllDisplays);
-  static  std::string             aquire_display(const char* extra_string);
+  static  std::vector<X11Display> enumerate_displays(DisplayType = eAllDisplays);
+  static  X11Display              aquire_display(const char* extra_string);
 
 };
 
