@@ -16,8 +16,6 @@
 #include <fstream>
 
 #include <utils.hpp>
-#include <cuda_utils.hpp>
-
 
 namespace brt
 {
@@ -417,16 +415,17 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, wnd._image->bytes());
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, wnd._image->bytes());
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  wnd._image->width(), wnd._image->height(), 0, GL_RGBA, GL_UNSIGNED_SHORT, wnd._image->bytes());
 
   glEnable(GL_TEXTURE_2D);
   glBindTexture(GL_TEXTURE_2D, _texture);
   //glEnable(GL_TEXTURE_2D);
   glBegin(GL_QUADS);
-    glTexCoord2f(1.0, 0.0); glVertex3f(wnd._left, wnd._top, 0.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
-    glTexCoord2f(0.0, 1.0); glVertex3f(wnd._right, wnd._bottom, 0.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f(wnd._right, wnd._top, 0.0);
+    glTexCoord2f(0.0, 1.0); glVertex3f(wnd._left, wnd._top, 0.0);
+    glTexCoord2f(0.0, 0.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
+    glTexCoord2f(1.0, 0.0); glVertex3f(wnd._right, wnd._bottom, 0.0);
+    glTexCoord2f(1.0, 1.0); glVertex3f(wnd._right, wnd._top, 0.0);
   glEnd();
 
   glDisable(GL_TEXTURE_2D);

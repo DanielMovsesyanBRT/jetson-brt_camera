@@ -8,7 +8,9 @@
 #include <string.h>
 #include <iostream>
 #include <fstream>
+
 #include "image.hpp"
+#include <utils.hpp>
 
 namespace brt
 {
@@ -24,12 +26,14 @@ namespace image
  * author: daniel
  *
  */
-RawRGB::RawRGB(size_t w, size_t h, int bytes_per_pixel /*= 2*/)
+RawRGB::RawRGB(size_t w, size_t h, size_t depth, PixelType type /*= eBayer*/)
 {
   _width = w;
   _height = h;
+  _depth = depth;
+  _type = type;
 
-  uint32_t srcPitch = _width * bytes_per_pixel;  // 2 bytes for RAW 12 format
+  uint32_t srcPitch = _width * BYTES_PER_PIXELS(_depth) * type_size(_type);
   uint32_t srcImageSize = srcPitch * _height;
 
   if (srcImageSize > 0)
@@ -45,31 +49,21 @@ RawRGB::RawRGB(size_t w, size_t h, int bytes_per_pixel /*= 2*/)
  * author: daniel
  *
  */
-RawRGB::RawRGB(const uint8_t* buffer, size_t w, size_t h, int bytes_per_pixel/* = 2*/)
+RawRGB::RawRGB(const uint8_t* buffer, size_t w, size_t h, size_t depth, PixelType type /*= eBayer*/)
 : _buffer(nullptr)
 {
   _width = w;
   _height = h;
+  _depth = depth;
+  _type = type;
 
-  uint32_t srcPitch = _width * bytes_per_pixel;  // 2 bytes for RAW 12 format
+  uint32_t srcPitch = _width * BYTES_PER_PIXELS(_depth) * type_size(_type);
   uint32_t srcImageSize = srcPitch * _height;
-
 
   if (srcImageSize > 0)
   {
     _buffer = (uint8_t*)::malloc(srcImageSize);
     memcpy(_buffer, buffer, srcImageSize);
-//
-//    uint16_t max = 0;
-//    uint16_t* buff = reinterpret_cast<uint16_t*>(_buffer);
-//    size_t ss = w * h;
-//    while (ss-- != 0)
-//    {
-//      //*buff++ <<= 4;
-//      max = (max < *buff) ? *buff : max;
-//      buff++;
-//    }
-//    buff = reinterpret_cast<uint16_t*>(_buffer);
   }
 }
 
@@ -83,6 +77,8 @@ RawRGB::RawRGB(const uint8_t* buffer, size_t w, size_t h, int bytes_per_pixel/* 
 RawRGB::RawRGB(const char *raw_image_file)
 : _width(0)
 , _height(0)
+, _depth(0)
+, _type(eBayer)
 , _buffer(nullptr)
 {
   std::ifstream image_file(raw_image_file, std::ios::in | std::ios::binary);
@@ -90,23 +86,27 @@ RawRGB::RawRGB(const char *raw_image_file)
   {
     try
     {
-      uint32_t w,h, bytes;
+      uint32_t w,h, depth;
       if (image_file.read(reinterpret_cast<char*>(&w), sizeof(w)).rdstate() != std::ios_base::goodbit)
         throw;
 
       if (image_file.read(reinterpret_cast<char*>(&h), sizeof(h)).rdstate() != std::ios_base::goodbit)
         throw;
 
-      if (image_file.read(reinterpret_cast<char*>(&bytes), sizeof(bytes)).rdstate() != std::ios_base::goodbit)
+      if (image_file.read(reinterpret_cast<char*>(&depth), sizeof(depth)).rdstate() != std::ios_base::goodbit)
         throw;
 
+      /// Backward compatibility
+      if (depth == 2)
+        depth = 16;
 
-      _buffer = new uint8_t[w * h * bytes];
+      _buffer = new uint8_t[w * h * BYTES_PER_PIXELS(depth)];
 
-      if (image_file.read(reinterpret_cast<char*>(_buffer), w * h * bytes).rdstate() &
+      if (image_file.read(reinterpret_cast<char*>(_buffer), w * h * BYTES_PER_PIXELS(depth)).rdstate() &
           ((std::ios_base::badbit | std::ios_base::failbit) != 0))
         throw;
 
+      _depth = depth;
       _width = w;
       _height = h;
     }
@@ -132,6 +132,107 @@ RawRGB::~RawRGB()
 {
   if (_buffer != nullptr)
     free(_buffer);
+}
+//
+///*
+// * \\fn Pixel RawRGB::pixel
+// *
+// * created on: Jan 23, 2020
+// * author: daniel
+// *
+// */
+//Pixel RawRGB::pixel(int x, int y)
+//{
+//  if ((_buffer == nullptr) ||
+//      (x >= static_cast<int>(_width)) ||
+//      (y >= static_cast<int>(_height)) ||
+//      (x < 0) || (y < 0))
+//    return Pixel();
+//
+//  size_t offset = (x + y * _width) * BYTES_PER_PIXELS(_depth) * type_size(_type);
+//  return Pixel(_buffer + offset,_type, _depth);
+//}
+
+/*
+ * \\fn RawRGBPtr RawRGB::clone
+ *
+ * created on: Jan 23, 2020
+ * author: daniel
+ *
+ */
+RawRGBPtr RawRGB::clone(size_t depth)
+{
+  if (depth == _depth)
+    return RawRGBPtr(new RawRGB(_buffer, _width, _height, _depth, _type));
+
+  RawRGB* result = new RawRGB(_width, _height, depth, _type);
+
+  uint8_t*  src = _buffer;
+  uint8_t*  dst = result->_buffer;
+
+  for (size_t h = 0; h < _height; h++)
+  {
+    for (size_t w = 0; w < _width; w++)
+    {
+      for (size_t byte = 0; byte < type_size(_type); byte++)
+      {
+        uint32_t pixel = 0;
+        switch (BYTES_PER_PIXELS(_depth))
+        {
+        case 1:
+          pixel = *src;
+          break;
+
+        case 2:
+          pixel = *reinterpret_cast<uint16_t*>(src);
+          break;
+
+        case 3:
+          pixel = *reinterpret_cast<uint32_t*>(src) & 0xFFFFFF;
+          break;
+
+        case 4:
+          pixel = *reinterpret_cast<uint32_t*>(src);
+          break;
+
+        default:
+          break;
+        }
+
+        if (_depth > depth)
+          pixel >>= (_depth - depth);
+        else
+          pixel <<= (depth - _depth);
+
+        switch (BYTES_PER_PIXELS(depth))
+        {
+        case 1:
+          *dst = static_cast<uint8_t>(pixel & 0xFF);
+          break;
+
+        case 2:
+          *reinterpret_cast<uint16_t*>(dst) = static_cast<uint16_t>(pixel & 0xFFFF);
+          break;
+
+        case 3:
+          *reinterpret_cast<uint32_t*>(dst) = pixel & 0xFFFFFF;
+          break;
+
+        case 4:
+          *reinterpret_cast<uint32_t*>(dst) = pixel;
+          break;
+
+        default:
+          break;
+        }
+
+        src += BYTES_PER_PIXELS(_depth);
+        dst += BYTES_PER_PIXELS(depth);
+      }
+    }
+  }
+
+  return RawRGBPtr(result);
 }
 
 /*

@@ -18,7 +18,7 @@
 #include <atomic>
 
 #include "image.hpp"
-#include "image_processor.hpp"
+//#include "image_processor.hpp"
 
 namespace brt
 {

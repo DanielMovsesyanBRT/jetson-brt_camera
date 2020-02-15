@@ -27,6 +27,18 @@ endif()
 set(CMAKE_CXX_COMPILER "${TOOLCHAIN_PATH}/${TOOLCHAIN_PREFIX}-g++")
 set(CMAKE_C_COMPILER "${TOOLCHAIN_PATH}/${TOOLCHAIN_PREFIX}-gcc")
 
+if(NOT DEFINED CUDA_COMPILER)
+  if(DEFINED ENV{CUDA_COMPILER})
+    set(CMAKE_CUDA_COMPILER $ENV{CUDA_COMPILER} CACHE STRING "Path to cuda compiler" FORCE)
+  else()
+    message(FATAL_ERROR "CUDA compiler path is missing")
+  endif()
+else()
+  set(CMAKE_CUDA_COMPILER ${CUDA_COMPILER} CACHE STRING "Path to cuda compiler" FORCE)
+endif()
+
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -ccbin ${CMAKE_CXX_COMPILER}")
+
 set(CMAKE_EXECUTABLE_RUNTIME_CXX_FLAG       "-Wl,-rpath-link,")       # -rpath
 set(CMAKE_EXECUTABLE_RUNTIME_C_FLAG         "-Wl,-rpath-link,")       # -rpath
 set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG     "-Wl,-rpath-link,")
@@ -50,29 +62,6 @@ if(NOT DEFINED OTHER_LIBS)
 elseif(NOT DEFINED ENV{OTHER_LIBS})
   set(ENV{OTHER_LIBS} ${OTHER_LIBS})
 endif()
-
-#if(NOT DEFINED ROOT_FS)
-#  if(DEFINED ENV{ROOT_FS})
-#    message(STATUS "ROOT_FS = ENV : $ENV{ROOT_FS}")
-#    set(ROOT_FS $ENV{ROOT_FS} CACHE STRING "Path to the toolchain path for cross-compilation" FORCE)
-#  else()
-#    message(FATAL_ERROR "NVidia Path is not defined through NVIDIA_DIR variable")
-#  endif()
-#elseif(NOT DEFINED ENV{ROOT_FS})
-#  set(ENV{ROOT_FS} ${ROOT_FS})
-#endif()
-
-#if(NOT DEFINED EXTRA_INCLUDE)
-#  if(DEFINED ENV{EXTRA_INCLUDE})
-#    message(STATUS "EXTRA_INCLUDE = ENV : $ENV{EXTRA_INCLUDE}")
-#    set(EXTRA_INCLUDE $ENV{EXTRA_INCLUDE} CACHE STRING "Path to the toolchain path for cross-compilation" FORCE)
-#  else()
-#    message(FATAL_ERROR "NVidia Path is not defined through NVIDIA_DIR variable")
-#  endif()
-#elseif(NOT DEFINED ENV{EXTRA_INCLUDE})
-#  set(ENV{EXTRA_INCLUDE} ${EXTRA_INCLUDE})
-#endif()
-#
 
 set(LD_PATH ${OTHER_LIBS}/lib)
 set(LD_PATH_EXTRA ${LD_PATH}/aarch64-linux-gnu)

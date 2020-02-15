@@ -1,5 +1,7 @@
 s $num_cameras = 2
 
+s $x = 4
+s $y = 0
 s $width = 1920s2
 s $height = 1208s2
 
@@ -474,10 +476,10 @@ macro config_sensor(id)
   w $address, 0x33E4, 0x0080    # RESERVED_MFR_33E4
   w $address, 0x33E0, 0x0C80    # TEST_ASIL_ROWS
   w $address, 0x33E0, 0x0C80    # TEST_ASIL_ROWS
-  w $address, 0x3004, 0x0000    # X_ADDR_START_
-  w $address, 0x3008, $width - 1 # X_ADDR_END_
-  w $address, 0x3002, 0x0000    # Y_ADDR_START_
-  w $address, 0x3006, $height - 1 # Y_ADDR_END_
+  w $address, 0x3004, $x        # X_ADDR_START_
+  w $address, 0x3008, $width + $x - 1 # X_ADDR_END_
+  w $address, 0x3002, $y    # Y_ADDR_START_
+  w $address, 0x3006, $height + $y - 1 # Y_ADDR_END_
   w $address, 0x3032, 0x0000    # SCALING_MODE
   w $address, 0x3400, 0x0010    # RESERVED_MFR_3400
   w $address, 0x3402, 0x0788    # X_OUTPUT_CONTROL
@@ -578,10 +580,10 @@ macro config_hdr_sensor(id)
   w $address, 0x100E,   0x07AF      # RESERVED_PARAM_100E
   w $address, 0x1010,   0x014F      # RESERVED_PARAM_1010
 
-  w $address, 0x3002,   0x0000      # Y_ADDR_START_
-  w $address, 0x3004,   0x0000      # X_ADDR_START_
-  w $address, 0x3006,   $height - 1 # Y_ADDR_END_
-  w $address, 0x3008,   $width - 1  # X_ADDR_END_
+  w $address, 0x3004, $x        # X_ADDR_START_
+  w $address, 0x3008, $width + $x - 1 # X_ADDR_END_
+  w $address, 0x3002, $y    # Y_ADDR_START_
+  w $address, 0x3006, $height + $y - 1 # Y_ADDR_END_
   w $address, 0x300A,   $vts        # 0x0ACE    # FRAME_LENGTH_LINES_
   w $address, 0x300C,   $hts        # 0x043E    # LINE_LENGTH_PCK_
 
@@ -705,10 +707,10 @@ macro config_hdr_x_sensor(id)
   w $address, 0x100E, 0x07B4    # FINE_INTEGRATION_TIME3_MIN
   w $address, 0x1010, 0x0154    # FINE_INTEGRATION_TIME4_MIN
   
-  w $address, 0x3002, 0x0000    # Y_ADDR_START_
-  w $address, 0x3004, 0x0000    # X_ADDR_START_
-  w $address, 0x3006, $height - 1   # Y_ADDR_END_
-  w $address, 0x3008, $width - 1    # X_ADDR_END_
+  w $address, 0x3004, $x        # X_ADDR_START_
+  w $address, 0x3008, $width + $x - 1 # X_ADDR_END_
+  w $address, 0x3002, $y    # Y_ADDR_START_
+  w $address, 0x3006, $height + $y - 1 # Y_ADDR_END_
   w $address, 0x300A, $vts      # FRAME_LENGTH_LINES_
   w $address, 0x300C, $hts      # LINE_LENGTH_PCK_
   w $address, 0x3012, 0x00C3    # COARSE_INTEGRATION_TIME_

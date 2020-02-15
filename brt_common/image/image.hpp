@@ -13,7 +13,10 @@
 #include <mutex>
 #include <vector>
 
-#include <metadata.hpp>
+#include "metadata.hpp"
+#include "utils.hpp"
+
+#define BYTES_PER_PIXELS(x)                 (((x - 1) >> 3) + 1)
 
 namespace brt
 {
@@ -41,6 +44,55 @@ struct Histogram
 
 typedef std::shared_ptr<Histogram> HistPtr;
 
+class RawRGB;
+typedef std::shared_ptr<RawRGB> RawRGBPtr;
+
+/*
+ * \\enum PixelType
+ *
+ * created on: Jan 23, 2020
+ *
+ */
+enum PixelType
+{
+  eNone =  0,
+  eBayer = 1,
+  eRGB =   2,
+  eBGR =   3,
+  eRGBA =  4,
+  eBGRA =  5,
+
+  eNumTypes
+};
+
+
+/*
+ * \\fn size_t type_size
+ *
+ * created on: Jan 31, 2020
+ * author: daniel
+ *
+ */
+inline size_t type_size(PixelType type)
+{
+  switch (type)
+  {
+  case eBayer:
+    return 1;
+
+  case eRGB:
+  case eBGR:
+    return 3;
+
+  case eRGBA:
+  case eBGRA:
+    return 4;
+
+  default:
+    break;
+  }
+  return 0;
+}
 
 /*
  * \\class RawRGB
@@ -51,28 +103,36 @@ typedef std::shared_ptr<Histogram> HistPtr;
 class RawRGB
 {
 public:
-  RawRGB(size_t w, size_t h, int bytes_per_pixel = 2);
-  RawRGB(const uint8_t*, size_t w, size_t h, int bytes_per_pixel = 2);
+  RawRGB(size_t w, size_t h, size_t depth, PixelType type = eBayer);
+  RawRGB(const uint8_t*, size_t w, size_t h, size_t depth, PixelType type = eBayer);
   RawRGB(const char *);
   virtual ~RawRGB();
 
           size_t                  width() const { return _width; }
           size_t                  height() const { return _height; }
+          size_t                  depth() const { return _depth; }
+          PixelType               type() const { return _type; }
+          size_t                  size() const { return _width * _height * BYTES_PER_PIXELS(_depth) * _type;}
 
           uint8_t*                bytes() { return _buffer; }
           const uint8_t*          bytes() const { return _buffer; }
           bool                    empty() const { return (_buffer == nullptr);}
 
+          //Pixel                   pixel(int x, int y);
+
           void                    set_histogram(HistPtr hist) { _hist = hist; }
           HistPtr                 get_histogram() const { return _hist; }
+
+          RawRGBPtr               clone(size_t depth);
+
 private:
   size_t                          _width;
   size_t                          _height;
+  size_t                          _depth;
+  PixelType                       _type;
   uint8_t*                        _buffer;
   HistPtr                         _hist;
 };
-
-typedef std::shared_ptr<RawRGB> RawRGBPtr;
 
 /*
  * \\class Image

@@ -17,7 +17,8 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
   set(CMAKE_C_FLAGS_DEBUG       "-O0 -g -DDEBUG -D_DEBUG" CACHE STRING "c Debug flags" )
 endif()
 
-add_compile_options(-Wall -Wno-long-long -pedantic) 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
+#add_compile_options(-Wall -Wno-long-long -pedantic) 
 
 add_subdirectory(script)
 add_subdirectory(brt_common)
@@ -27,7 +28,7 @@ message(STATUS "INCLUDE = ${INCLUDE_DIRECTORIES}")
 #
 # ---------- Define Project
 #
-project(jetson-brt_camera C CXX)
+project(jetson-brt_camera C CXX CUDA)
 
 if (NOT FLTK_PATH)
   if (DEFINED ENV{FLTK_PATH})
@@ -44,7 +45,7 @@ endif()
 find_package(FLTK REQUIRED NO_MODULE)
 
 #set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
-find_package(CUDA REQUIRED)
+# find_package(CUDA REQUIRED)
 
 #if (DEFINED OPENCV_PATH)
 #  find_package(OpenCV REQUIRED
@@ -80,9 +81,10 @@ set(SOURCES
   source/fltk/fltk_manager.cpp  
   source/fltk/camera_menu.cxx  
   
-  source/image/image_processor.cpp
-  source/image/image_processor.cu
-  source/image/image.cpp
+  #source/image/image_processor.cpp
+  #source/image/image_processor.cu
+  source/image/debayer.cu
+  #source/image/image.cpp
   source/image/isp_manager.cpp
   source/image/isp.cpp
   
@@ -110,7 +112,8 @@ include_directories("brt_common")
 # cuda_include_directories("brt_common")
 
 if(EXECUTABLE)
-  cuda_add_executable(${PROJECT_NAME} ${SOURCES})
+  #cuda_add_executable(${PROJECT_NAME} ${SOURCES})
+  add_executable(${PROJECT_NAME} ${SOURCES})
 else()
   add_library(${PROJECT_NAME} SHARED ${SOURCES})
 endif()

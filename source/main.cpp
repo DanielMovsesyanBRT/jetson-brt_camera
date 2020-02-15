@@ -63,10 +63,9 @@ public:
       return;
 
     if (!_images[id])
-    {
       _images[id] = box[0]->get_bits();
-      _event.notify_all();
-    }
+
+    _event.notify_all();
   }
 
   void                            start()

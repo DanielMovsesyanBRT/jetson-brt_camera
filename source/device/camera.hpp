@@ -15,8 +15,9 @@
 #include <sys/ioctl.h>
 #include <linux/videodev2.h>
 
-#include "image.hpp"
-#include "image_processor.hpp"
+#include <image.hpp>
+#include "debayer.hpp"
+//#include "image_processor.hpp"
 
 #define EVENT_STOP                          (1)
 
@@ -135,7 +136,7 @@ private:
   }                               *_buffers;
   unsigned int                    _n_buffers;
 
-  image::ImageProcessor           _ip;
+  Debayer                         _ip;
 };
 
 } /* namespace jupiter */

@@ -367,6 +367,9 @@ bool Camera::init_device()
   if (_fmt.fmt.pix.sizeimage < min)
     _fmt.fmt.pix.sizeimage = min;
 
+
+  _ip.init(_fmt.fmt.pix.width, _fmt.fmt.pix.height, 9);
+
 //  if (fmt_cback != nullptr)
 //    fmt_cback(fmt);
 
@@ -724,7 +727,7 @@ bool Camera::read_frame()
 
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
-      image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height));
+      image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height, 16));
       if (_skip_frames-- == 0)
       {
         consume(image::ImageBox(raw12));
@@ -775,7 +778,7 @@ bool Camera::read_frame()
 
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
     {
-      image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height));
+      image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height, 16));
       if (_skip_frames-- == 0)
       {
         consume(image::ImageBox(raw12));
