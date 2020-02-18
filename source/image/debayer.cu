@@ -486,19 +486,17 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
     return image::RawRGBPtr();
 
   timespec ts,ts2;
-  clock_gettime(CLOCK_MONOTONIC,&ts);
 
   _raw.put((uint16_t*)img->bytes());
+  clock_gettime(CLOCK_MONOTONIC,&ts);
 
   dim3 threads(_thx >> 1,_thy >> 1);
   dim3 blocks(_blkx, _blky);
 
-  cudaProfilerStart();
   green_interpolate<<<blocks,threads>>>(_raw.ref(), _horiz.ref(), _vert.ref());
-  cudaProfilerStop();
-
-
   blue_red_interpolate<<<blocks,threads>>>(_raw.ref(), _horiz.ref(), _vert.ref(), _hlab.ref(), _vlab.ref());
+
+  clock_gettime(CLOCK_MONOTONIC,&ts2);
 
   _histogram_max.fill(0);
   _small_histogram.fill(0);
@@ -508,8 +506,6 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
                       _vert.ref(), _hlab.ref(), _vlab.ref(),
                       _histogram.ptr(), _histogram.size(),
                       _small_histogram.ptr(), _small_histogram.size());
-
-  clock_gettime(CLOCK_MONOTONIC,&ts2);
 
   int thx = 64;
   while (_histogram.size() < thx)
