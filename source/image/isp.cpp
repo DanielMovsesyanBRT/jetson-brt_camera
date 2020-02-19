@@ -10,6 +10,7 @@
 #include <iostream>
 #include <cmath>
 #include "camera.hpp"
+#include "debayer.hpp"
 
 #define NUM_SKIPPS                          (1)
 #define NUM_ACCUMULATIONS                   (3)
@@ -236,7 +237,7 @@ void ISP::add_camera(Camera* camera)
   block._id = camera->id();
 
   _cameras.push_back(block);
-  camera->debayer_producer()->register_consumer(this,Metadata().set<int>("camera_id",_cameras.size() - 1));
+  Debayer::get()->register_consumer(this,Metadata().set<int>("camera_id",_cameras.size() - 1));
 }
 
 /*
@@ -251,7 +252,7 @@ void ISP::stop()
   _mutex.lock();
   for (auto block : _cameras)
   {
-    block._cam->debayer_producer()->unregister_consumer(this);
+    Debayer::get()->unregister_consumer(this);
   }
   _cameras.clear();
   _mutex.unlock();

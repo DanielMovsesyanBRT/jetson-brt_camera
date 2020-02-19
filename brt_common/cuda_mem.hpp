@@ -10,7 +10,7 @@
 
 #include <stddef.h>
 #include <stdint.h>
-
+#include <algorithm>
 #include "private/cuda/cuda_data.hpp"
 
 namespace brt {
