@@ -12,6 +12,7 @@
 #include <unordered_set>
 #include <mutex>
 #include <vector>
+#include <deque>
 
 #include "metadata.hpp"
 #include "utils.hpp"
@@ -174,10 +175,15 @@ public:
  * created on: Jul 3, 2019
  *
  */
-class ImageBox : public std::vector<ImagePtr>
+class ImageBox : public std::deque<ImagePtr>
 {
 public:
-  ImageBox() : std::vector<ImagePtr>() {}
+  ImageBox() : std::deque<ImagePtr>() {}
+  ImageBox(ImagePtr image)
+  {
+    push_back(image);
+  }
+
   ImageBox(RawRGBPtr raw_rgb)
   {
     push_back(ImagePtr(raw_rgb));

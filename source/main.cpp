@@ -24,7 +24,6 @@
 #include "device/deserializer.hpp"
 #include "device/device_manager.hpp"
 #include "utils.hpp"
-#include "debayer.hpp"
 
 
 using namespace brt::jupiter;
@@ -277,7 +276,7 @@ int main(int argc, char **argv)
                   cam->format()->fmt.pix.width,
                   cam->format()->fmt.pix.height);
             }
-            wnd->add_subwnd(Debayer::get());
+            wnd->add_subwnd(cam->debayer_producer());
           }
 
           cam_des.push_back(id << 8 | index);

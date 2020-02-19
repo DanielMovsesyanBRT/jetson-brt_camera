@@ -16,6 +16,7 @@
 #include <linux/videodev2.h>
 
 #include <image.hpp>
+#include "debayer.hpp"
 //#include "image_processor.hpp"
 
 #define EVENT_STOP                          (1)
@@ -80,6 +81,8 @@ public:
           void                    set_gain(eCameraGain);
 
           std::string             name() const { return _device_name; }
+
+          image::ImageProducer*   debayer_producer() { return &_ip; }
 private:
           bool                    open_device();
 
@@ -132,6 +135,8 @@ private:
     size_t length;
   }                               *_buffers;
   unsigned int                    _n_buffers;
+
+  Debayer                         _ip;
 };
 
 } /* namespace jupiter */

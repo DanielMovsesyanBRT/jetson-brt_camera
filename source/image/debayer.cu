@@ -9,6 +9,9 @@
 #include "cuda_mem.hpp"
 #include "debayer.hpp"
 
+#include <mutex>
+#include <atomic>
+
 namespace brt
 {
 namespace jupiter
@@ -16,8 +19,6 @@ namespace jupiter
 
 __constant__ double             _Xn = (0.950456);
 __constant__ double             _Zn = (1.088754);
-
-Debayer Debayer::_db;
 
 /*
  * \\class name
@@ -87,6 +88,7 @@ public:
 Debayer_impl()
   : _thx(0),_thy(0)
   , _blkx(0),_blky(0)
+  , _ref(0)
   { }
 
   virtual ~Debayer_impl() {}
@@ -109,8 +111,10 @@ private:
 
   int                             _thx,_thy;
   int                             _blkx,_blky;
-};
 
+  std::atomic_uint32_t            _ref;
+  std::mutex                      _mutex;
+};
 
 /*
  * \\fn void green_interpolate
@@ -478,6 +482,7 @@ __global__ void cudaMax(uint32_t* org,uint32_t* max)
 }
 
 
+Debayer_impl* Debayer::_impl = nullptr;
 /*
  * \\fn constructor Debayer::Debayer
  *
@@ -489,7 +494,10 @@ Debayer::Debayer()
 : _width(0)
 , _height(0)
 {
-  _impl = new Debayer_impl();
+  if (_impl == nullptr)
+    _impl = new Debayer_impl();
+
+  _impl->_ref++;
 }
 
 /*
@@ -501,10 +509,8 @@ Debayer::Debayer()
  */
 Debayer::~Debayer()
 {
-  _stop_flag = true;
-  _cv.notify_all();
-
-  delete _impl;
+  if (--_impl->_ref == 0)
+    delete _impl;
 }
 
 
@@ -555,55 +561,16 @@ void Debayer_impl::init(size_t width,size_t height,size_t small_hits_size)
  */
 bool Debayer::init(size_t width,size_t height,size_t small_hits_size)
 {
-  std::unique_lock<std::mutex> lk(_mutex);
-
-  if ((_width == width) && (_height == height))
-    return true;
-
-  _width = width;
-  _height = height;
-  lk.unlock();
-
-  _impl->init(width, height, small_hits_size);
-
-  _stop_flag = false;
-  _th = std::thread([](Debayer* db)
-      {
-        db->loop();
-      },this);
-  return true;
-}
-
-/*
- * \\fn Debayer::loop
- *
- * created on: Feb 18, 2020
- * author: daniel
- *
- */
-void Debayer::loop()
-{
-  while (!_stop_flag.load())
+  _impl->_mutex.lock();
+  if (!_impl->_raw)
   {
-    image::RawRGBPtr img;
+    _width = width;
+    _height = height;
 
-    std::unique_lock<std::mutex> lk(_mutex);
-    while ((_img_stack.size() == 0) && !_stop_flag.load())
-    {
-      _cv.wait(lk);
-    }
-
-    if (_stop_flag.load())
-      break;
-
-    img = _img_stack.front();
-    _img_stack.pop_front();
-    lk.unlock();
-
-    img = _impl->ahd(img);
-    if (img)
-      ImageProducer::consume(image::ImageBox(img));
+    _impl->init(width, height, small_hits_size);
   }
+  _impl->_mutex.unlock();
+  return true;
 }
 
 /*
@@ -617,6 +584,8 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
 {
   if (!img)
     return image::RawRGBPtr();
+
+  _mutex.lock();
 
   _histogram_max.fill(0);
   _small_histogram.fill(0);
@@ -653,6 +622,7 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
 
   result->set_histogram(full_hist);
 
+  _mutex.unlock();
 
   return result;
 }
@@ -678,17 +648,12 @@ image::RawRGBPtr Debayer::ahd(image::RawRGBPtr img)
  */
 void Debayer::consume(image::ImageBox box)
 {
-  std::unique_lock<std::mutex> lk(_mutex);
   for (image::ImagePtr img : box)
   {
-    _img_stack.push_back(img->get_bits());
-//
-//    image::RawRGBPtr result = _impl->ahd(img->get_bits());
-//    if (result)
-//      ImageProducer::consume(image::ImageBox(result));
+    image::RawRGBPtr result = _impl->ahd(img->get_bits());
+    if (result)
+      ImageProducer::consume(image::ImageBox(result));
   }
-  lk.unlock();
-  _cv.notify_all();
 }
 
 

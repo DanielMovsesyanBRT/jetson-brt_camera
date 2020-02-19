@@ -17,7 +17,6 @@
 #include <string.h>
 
 #include "camera.hpp"
-#include "debayer.hpp"
 
 #include <utils.hpp>
 #include "deserializer.hpp"
@@ -62,7 +61,7 @@ Camera::Camera(Deserializer* owner,int id)
       _device_name = Utils::string_format("/dev/%s", video_name._name);
   }
 
-  register_consumer(Debayer::get());
+  register_consumer(&_ip);
 }
 
 /*
@@ -74,7 +73,7 @@ Camera::Camera(Deserializer* owner,int id)
  */
 Camera::~Camera()
 {
-  unregister_consumer(Debayer::get());
+  unregister_consumer(&_ip);
   stop_streaming();
 }
 
@@ -369,8 +368,7 @@ bool Camera::init_device()
     _fmt.fmt.pix.sizeimage = min;
 
 
-  Debayer::get()->init(_fmt.fmt.pix.width, _fmt.fmt.pix.height, 9);
-  //_ip.init(_fmt.fmt.pix.width, _fmt.fmt.pix.height, 9);
+  _ip.init(_fmt.fmt.pix.width, _fmt.fmt.pix.height, 9);
 
 //  if (fmt_cback != nullptr)
 //    fmt_cback(fmt);
