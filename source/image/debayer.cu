@@ -17,9 +17,6 @@ namespace brt
 namespace jupiter
 {
 
-__constant__ double             _Xn = (0.950456);
-__constant__ double             _Zn = (1.088754);
-
 /*
  * \\class name
  *
@@ -38,43 +35,23 @@ struct RGBA
 /*
  * \\struct LAB
  *
- * created on: Feb 14, 2020
+ * created on: Feb 20, 2020
  *
  */
 struct LAB
 {
-  double                          _L;
-  double                          _a;
-  double                          _b;
+  __device__ LAB() : _L(0), _a(0), _b(0) {}
+  int32_t                         _L;
+  int32_t                         _a;
+  int32_t                         _b;
 
   __device__ void                 from(RGBA& rgba)
   {
-    double X,Y,Z;
-
-    // Matrix multiplication
-    X = (0.412453 * rgba._r  +
-         0.357580 * rgba._g  +
-         0.180423 * rgba._b) / _Xn;
-
-    Y = (0.212671 * rgba._r +
-         0.715160 * rgba._g +
-         0.072169 * rgba._b);
-
-    Z = (0.019334 * rgba._r +
-         0.119193 * rgba._g +
-         0.950227 * rgba._b) / _Zn;
-
-    auto adjust = [](double value)->double
-    {
-      return (value > 0.00856) ? cbrt(value) : (7.787 * value + 0.1379310);
-    };
-
-    _L = (Y > 0.00856) ? (116.0 * cbrt(Y) - 16.0) : 903.3 * Y;
-    _a = 500.0 * (adjust(X) - adjust(Y));
-    _b = 200.0 * (adjust(Y) - adjust(Z));
+    _L = (rgba._r+rgba._r+rgba._r + rgba._b + rgba._g+rgba._g+rgba._g+rgba._g) >> 3;
+    _a = 5 * (rgba._r+rgba._r + rgba._b - rgba._g-rgba._g-rgba._g);
+    _b = 4 * (rgba._r+rgba._r + rgba._g+rgba._g+rgba._g - rgba._b-rgba._b-rgba._b-rgba._b);
   }
 };
-
 /*
  * \\class Debayer_impl
  *
@@ -219,47 +196,98 @@ __global__ void blue_red_interpolate( size_t width, size_t height,
 
   auto limit = [](int x,int a,int b)->int
   {
-    int result = max(x,min(a,b));
-    return min(result,max(a,b));
+    return (x<a)?a:(x>b)?b:x;
   };
 
-  auto sum = [](int arr[4])->int { return arr[0] + arr[1] + arr[2] + arr[3]; };
+  int h_sub[4][4] = { {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} };
+  int v_sub[4][4] = { {0,0,0,0}, {0,0,0,0}, {0,0,0,0}, {0,0,0,0} };
+
+  int io = origx + origy * width;
+
+
+  if (origx > 0)
+  {
+    if (origy > 0)
+    {
+      h_sub[0][0] = raw[io-width-1] - hr[io-width-1]._g;
+      v_sub[0][0] = raw[io-width-1] - vr[io-width-1]._g;
+    }
+
+    h_sub[1][0] = raw[io-1] - hr[io-1]._g;
+    v_sub[1][0] = raw[io-1] - vr[io-1]._g;
+
+    h_sub[2][0] = raw[io+width-1] - hr[io+width-1]._g;
+    v_sub[2][0] = raw[io+width-1] - vr[io+width-1]._g;
+
+    if (origy < (height - 2))
+    {
+      h_sub[3][0] = raw[io+2*width-1] - hr[io+2*width-1]._g;
+      v_sub[3][0] = raw[io+2*width-1] - vr[io+2*width-1]._g;
+    }
+  }
+
+  if (origx < (width - 2))
+  {
+    if (origy > 0)
+    {
+      h_sub[0][3] = raw[io-width+2] - hr[io-width+2]._g;
+      v_sub[0][3] = raw[io-width+2] - vr[io-width+2]._g;
+    }
+
+    h_sub[1][3] = raw[io+2] - hr[io+2]._g;
+    v_sub[1][3] = raw[io+2] - vr[io+2]._g;
+
+    h_sub[2][3] = raw[io+width+2] - hr[io+width+2]._g;
+    v_sub[2][3] = raw[io+width+2] - vr[io+width+2]._g;
+
+    if (origy < (height - 2))
+    {
+      h_sub[3][3] = raw[io+2*width+2] - hr[io+2*width+2]._g;
+      v_sub[3][3] = raw[io+2*width+2] - vr[io+2*width+2]._g;
+    }
+  }
+
+  if (origy > 0)
+  {
+    h_sub[0][1] = raw[io-width] - hr[io-width]._g;
+    v_sub[0][1] = raw[io-width] - vr[io-width]._g;
+
+    h_sub[0][2] = raw[io-width+1] - hr[io-width+1]._g;
+    v_sub[0][2] = raw[io-width+1] - vr[io-width+1]._g;
+  }
+
+  if (origy < (height - 2))
+  {
+    h_sub[3][1] = raw[io+2*width] - hr[io+2*width]._g;
+    v_sub[3][1] = raw[io+2*width] - vr[io+2*width]._g;
+
+    h_sub[3][2] = raw[io+2*width+1] - hr[io+2*width+1]._g;
+    v_sub[3][2] = raw[io+2*width+1] - vr[io+2*width+1]._g;
+  }
+
+  h_sub[1][1] = raw[io] - hr[io]._g;
+  v_sub[1][1] = raw[io] - vr[io]._g;
+
+  h_sub[1][2] = raw[io+1] - hr[io+1]._g;
+  v_sub[1][2] = raw[io+1] - vr[io+1]._g;
+
+  h_sub[2][1] = raw[io+width] - hr[io+width]._g;
+  v_sub[2][1] = raw[io+width] - vr[io+width]._g;
+
+  h_sub[2][2] = raw[io+width+1] - hr[io+width+1]._g;
+  v_sub[2][2] = raw[io+width+1] - vr[io+width+1]._g;
+
 
   // C R
   // B C
   ////////////////////////////////////////////////
   // (0,0) -> ClearRead
-  int x = origx, y = origy;
-  int io = x + y * width; // input offset
-
   {
-    int pp[] = { (x > 0) ? raw[io - 1] : 0,                      // x-1,y
-                 (y > 0) ? raw[io - width] : 0,                  // x,y-1
-                 (x < (width - 1)) ? raw[io + 1] : 0,            // x+1,y
-                 (y < (height - 1)) ? raw[io + width] : 0};      // x,y+1
+    hr[io]._r = limit(hr[io]._g + ((h_sub[1][0] + h_sub[1][2]) >> 1),0,(1<<16)-1);
+    hr[io]._b = limit(hr[io]._g + ((h_sub[0][1] + h_sub[2][1]) >> 1),0,(1<<16)-1);
 
-    int ph[] = { (x > 0) ? hr[io - 1]._g : 0,                    // x-1,y
-                 (y > 0) ? hr[io - width]._g : 0,                // x,y-1
-                 (x < (width - 1)) ? hr[io + 1]._g : 0,          // x+1,y
-                 (y < (height - 1)) ? hr[io + width]._g : 0};    // x,y+1
-
-    int pv[] = { (x > 0) ? vr[io - 1]._g : 0,                    // x-1,y
-                 (y > 0) ? vr[io - width]._g  : 0,               // x,y-1
-                 (x < (width - 1)) ? vr[io + 1]._g : 0,          // x+1,y
-                 (y < (height - 1)) ? vr[io + width]._g : 0};    // x,y+1
-
-
-    int value = hr[io]._g + ((pp[0] - ph[0] + pp[2] - ph[2]) >> 1);
-    hr[io]._r = limit(value,0,(1<<16)-1);
-
-    value = hr[io]._g + ((pp[1] - ph[1] + pp[3] - ph[3]) >> 1);
-    hr[io]._b = limit(value,0,(1<<16)-1);
-
-    value = vr[io]._g + ((pp[0] - pv[0] + pp[2] - pv[2]) >> 1);
-    vr[io]._r = limit(value,0,(1<<16)-1);
-
-    value = vr[io]._g + ((pp[1] - pv[1] + pp[3] - pv[3]) >> 1);
-    vr[io]._b = limit(value,0,(1<<16)-1);
+    vr[io]._r = limit(vr[io]._g + ((v_sub[1][0] + v_sub[1][2]) >> 1),0,(1<<16)-1);
+    vr[io]._b = limit(vr[io]._g + ((v_sub[0][1] + v_sub[2][1]) >> 1),0,(1<<16)-1);
 
     hl[io].from(hr[io]);
     vl[io].from(vr[io]);
@@ -267,108 +295,39 @@ __global__ void blue_red_interpolate( size_t width, size_t height,
 
   ////////////////////////////////////////////////
   // (1,0) -> Red
-  x = origx + 1;
-  y = origy;
-  io = x + y * width; // input offset
   {
-    hr[io]._r = vr[io]._r = raw[io];
+    hr[io+1]._r = vr[io+1]._r = raw[io+1];
 
-    int pp[] = { (x > 0 && y > 0) ? raw[io - width - 1] : 0,                            // x-1,y-1
-                 (x > 0 && y < (height - 1)) ? raw[io + width - 1] : 0,                 // x-1,y+1
-                 (x < (width - 1) && y > 0) ? raw[io - width + 1] : 0,                  // x+1,y-1
-                 (x < (width - 1) && y < (height - 1)) ? raw[io + width + 1] : 0};      // x+1,y+1
+    hr[io+1]._b = limit(hr[io+1]._g + ((h_sub[0][1] + h_sub[0][3] + h_sub[2][1] + h_sub[2][3]) >> 2),0,(1<<16)-1);
+    vr[io+1]._b = limit(vr[io+1]._g + ((v_sub[0][1] + v_sub[0][3] + v_sub[2][1] + v_sub[2][3]) >> 2),0,(1<<16)-1);
 
-    int ph[] = { (x > 0 && y > 0) ? hr[io - width - 1]._g : 0,                          // x-1,y-1
-                 (x > 0 && y < (height - 1)) ? hr[io + width - 1]._g : 0,               // x-1,y+1
-                 (x < (width - 1) && y > 0) ? hr[io - width + 1]._g : 0,                // x+1,y-1
-                 (x < (width - 1) && y < (height - 1)) ? hr[io + width + 1]._g : 0};    // x+1,y+1
-
-    int pv[] = { (x > 0 && y > 0) ? vr[io - width - 1]._g : 0,                          // x-1,y-1
-                 (x > 0 && y < (height - 1)) ? vr[io + width - 1]._g : 0,               // x-1,y+1
-                 (x < (width - 1) && y > 0) ? vr[io - width + 1]._g : 0,                // x+1,y-1
-                 (x < (width - 1) && y < (height - 1)) ? vr[io + width + 1]._g : 0};    // x+1,y+1
-
-    // horizontal
-    int value = hr[io]._g + ((sum(pp) - sum(ph)) >> 2);
-    hr[io]._b = limit(value,0,(1<<16)-1);
-
-    value = vr[io]._g + ((sum(pp) - sum(pv)) >> 2);
-    vr[io]._b = limit(value,0,(1<<16)-1);
-
-    hl[io].from(hr[io]);
-    vl[io].from(vr[io]);
+    hl[io+1].from(hr[io+1]);
+    vl[io+1].from(vr[io+1]);
   }
 
   ////////////////////////////////////////////////
   // (0,1) -> Blue
-  x = origx;
-  y = origy + 1;
-  io = x + y * width; // input offset
   {
-    hr[io]._b = vr[io]._b = raw[io];
+    hr[io+width]._b = vr[io+width]._b = raw[io+width];
 
-    int pp[] = { (x > 0 && y > 0) ? raw[io - width - 1] : 0,                            // x-1,y-1
-                 (x > 0 && y < (height - 1)) ? raw[io + width - 1] : 0,                 // x-1,y+1
-                 (x < (width - 1) && y > 0) ? raw[io - width + 1] : 0,                  // x+1,y-1
-                 (x < (width - 1) && y < (height - 1)) ? raw[io + width + 1] : 0};      // x+1,y+1
+    hr[io+width]._r = limit(hr[io+width]._g + ((h_sub[1][0] + h_sub[1][2] + h_sub[3][0] + h_sub[3][2]) >> 2),0,(1<<16)-1);
+    vr[io+width]._r = limit(vr[io+width]._g + ((v_sub[1][0] + v_sub[1][2] + v_sub[3][0] + v_sub[3][2]) >> 2),0,(1<<16)-1);
 
-    int ph[] = { (x > 0 && y > 0) ? hr[io - width - 1]._g : 0,                          // x-1,y-1
-                 (x > 0 && y < (height - 1)) ? hr[io + width - 1]._g : 0,               // x-1,y+1
-                 (x < (width - 1) && y > 0) ? hr[io - width + 1]._g : 0,                // x+1,y-1
-                 (x < (width - 1) && y < (height - 1)) ? hr[io + width + 1]._g : 0};    // x+1,y+1
-
-    int pv[] = { (x > 0 && y > 0) ? vr[io - width - 1]._g : 0,                          // x-1,y-1
-                 (x > 0 && y < (height - 1)) ? vr[io + width - 1]._g : 0,               // x-1,y+1
-                 (x < (width - 1) && y > 0) ? vr[io - width + 1]._g : 0,                // x+1,y-1
-                 (x < (width - 1) && y < (height - 1)) ? vr[io + width + 1]._g : 0};    // x+1,y+1
-
-    // horizontal
-    int value = hr[io]._g + ((sum(pp) - sum(ph)) >> 2);
-    hr[io]._r = limit(value,0,(1<<16)-1);
-
-    value = vr[io]._g + ((sum(pp) - sum(pv)) >> 2);
-    vr[io]._r = limit(value,0,(1<<16)-1);
-
-    hl[io].from(hr[io]);
-    vl[io].from(vr[io]);
+    hl[io+width].from(hr[io+width]);
+    vl[io+width].from(vr[io+width]);
   }
 
   ////////////////////////////////////////////////
   // (1,1) -> ClearBlue
-  x = origx + 1;
-  y = origy + 1;
-  io = x + y * width; // input offset
-
   {
-    int pp[] = { (x > 0) ? raw[io - 1] : 0,                      // x-1,y
-                 (y > 0) ? raw[io - width] : 0,                  // x,y-1
-                 (x < (width - 1)) ? raw[io + 1] : 0,            // x+1,y
-                 (y < (height - 1)) ? raw[io + width] : 0};      // x,y+1
+    hr[io+width+1]._b = limit(hr[io+width+1]._g + ((h_sub[2][1] + h_sub[2][3]) >> 1),0,(1<<16)-1);
+    hr[io+width+1]._r = limit(hr[io+width+1]._g + ((h_sub[1][2] + h_sub[3][2]) >> 1),0,(1<<16)-1);
 
-    int ph[] = { (x > 0) ? hr[io - 1]._g : 0,                    // x-1,y
-                 (y > 0) ? hr[io - width]._g : 0,                // x,y-1
-                 (x < (width - 1)) ? hr[io + 1]._g : 0,          // x+1,y
-                 (y < (height - 1)) ? hr[io + width]._g : 0};    // x,y+1
+    vr[io+width+1]._b = limit(vr[io+width+1]._g + ((v_sub[2][1] + v_sub[2][3]) >> 1),0,(1<<16)-1);
+    vr[io+width+1]._r = limit(vr[io+width+1]._g + ((v_sub[1][2] + v_sub[3][2]) >> 1),0,(1<<16)-1);
 
-    int pv[] = { (x > 0) ? vr[io - 1]._g : 0,                    // x-1,y
-                 (y > 0) ? vr[io - width]._g  : 0,               // x,y-1
-                 (x < (width - 1)) ? vr[io + 1]._g : 0,          // x+1,y
-                 (y < (height - 1)) ? vr[io + width]._g : 0};    // x,y+1
-
-    int value = hr[io]._g + ((pp[0] - ph[0] + pp[2] - ph[2]) >> 1);
-    hr[io]._b = limit(value,0,(1<<16)-1);
-
-    value = hr[io]._g + ((pp[1] - ph[1] + pp[3] - ph[3]) >> 1);
-    hr[io]._r = limit(value,0,(1<<16)-1);
-
-    value = vr[io]._g + ((pp[0] - pv[0] + pp[2] - pv[2]) >> 1);
-    vr[io]._b = limit(value,0,(1<<16)-1);
-
-    value = vr[io]._g + ((pp[1] - pv[1] + pp[3] - pv[3]) >> 1);
-    vr[io]._r = limit(value,0,(1<<16)-1);
-
-    hl[io].from(hr[io]);
-    vl[io].from(vr[io]);
+    hl[io+width+1].from(hr[io+width+1]);
+    vl[io+width+1].from(vr[io+width+1]);
   }
 }
 
@@ -386,43 +345,49 @@ __global__ void misguidance_color_artifacts(size_t width, size_t height, RGBA* r
                                             uint32_t* histogram,uint32_t histogram_size,
                                             uint32_t* small_histogram, uint32_t small_histogram_size)
 {
-  int hist_size_bits = ((sizeof(unsigned int) * 8) - 1 -  __clz(histogram_size));
-  int small_hist_size_bits = ((sizeof(unsigned int) * 8) - 1 -  __clz(small_histogram_size));
-
   int x = ((blockIdx.x * blockDim.x) + threadIdx.x);
   int y = ((blockIdx.y * blockDim.y) + threadIdx.y);
   int io = x + y * width;
 
-  auto sqr=[](double a)->double { return a*a; };
+  auto sqr=[](int a)->int { return a*a; };
 
-  double lv[2],lh[2],cv[2],ch[2];
+  int lv[2],lh[2],cv[2],ch[2];
   int hh = 0,hv = 0;
 
-  lh[0] = fabs(hl[io]._L - ((x > 0)?hl[io-1]._L:0));
-  lh[1] = fabs(hl[io]._L - ((x < (width-1))?hl[io + 1]._L:0));
 
-  lv[0] = fabs(vl[io]._L - ((y > 0)?vl[io - width]._L : 0));
-  lv[1] = fabs(vl[io]._L - ((y < (height -1))?vl[io + width]._L : 0));
+  LAB ph[] = { (x > 0) ? hl[io-1] : LAB(),                            // x-1,y
+               (x < (width - 1)) ? hl[io+1] : LAB()};                 // x+1,y
 
-  ch[0] = sqr(hl[io]._a - ((x > 0)?hl[io-1]._a:0)) +
-          sqr(hl[io]._b - ((x > 0)?hl[io-1]._b:0));
+  LAB pv[] = { (y > 0) ? vl[io-width] : LAB(),                        // x,y-1
+               (y < (height - 1)) ? vl[io+width] : LAB()};            // x,y+1
 
-  ch[1] = sqr(hl[io]._a - ((x < (width-1))?hl[io+1]._a:0)) +
-          sqr(hl[io]._b - ((x < (width-1))?hl[io+1]._b:0));
 
-  cv[0] = sqr(vl[io]._a - ((y > 0)?vl[io - width]._a:0)) +
-          sqr(vl[io]._b - ((y > 0)?vl[io + width]._b:0));
+  lh[0] = __sad(hl[io]._L,ph[0]._L,0);
+  lh[1] = __sad(hl[io]._L,ph[1]._L,0);
 
-  cv[1] = sqr(vl[io]._a - ((y < (height-1))?vl[io + width]._a:0)) +
-          sqr(vl[io]._b - ((y < (height-1))?vl[io + width]._b:0));
+  lv[0] = __sad(vl[io]._L,pv[0]._L,0);
+  lv[1] = __sad(vl[io]._L,pv[1]._L,0);
 
-  double h = (lh[0]>lh[1])?lh[0]:lh[1];
-  double v = (lv[0]>lv[1])?lv[0]:lv[1];
-  double eps_l = v < h ? v : h;
+  ch[0] = sqr(hl[io]._a - ph[0]._a) +
+          sqr(hl[io]._b - ph[0]._b);
+
+  ch[1] = sqr(hl[io]._a - ph[1]._a) +
+          sqr(hl[io]._b - ph[1]._b);
+
+  cv[0] = sqr(vl[io]._a - pv[0]._a) +
+          sqr(vl[io]._b - pv[0]._b);
+
+  cv[1] = sqr(vl[io]._a - pv[1]._a) +
+          sqr(vl[io]._b - pv[1]._b);
+
+
+  int h = (lh[0]>lh[1]) ? lh[0]: lh[1];
+  int v = (lv[0]>lv[1]) ? lv[0]: lv[1];
+  int eps_l = v < h ? v : h;
 
   h = (ch[0]>ch[1])?ch[0]:ch[1];
   v = (cv[0]>cv[1])?cv[0]:cv[1];
-  double eps_c = v < h ? v : h;
+  int eps_c = v < h ? v : h;
 
   hh = ((lh[0]<=eps_l) * (ch[0]<= eps_c)) +
        ((lh[1]<=eps_l) * (ch[1]<= eps_c));
@@ -441,11 +406,11 @@ __global__ void misguidance_color_artifacts(size_t width, size_t height, RGBA* r
   b = rst[io]._b = (lf->_b + rt->_b) >> 1;
   rst[io]._a = (uint16_t)-1;
 
-  uint32_t brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> small_hist_size_bits;
-  atomicAdd(&small_histogram[brightness & ((1 << small_hist_size_bits) - 1)], 1);
+  uint32_t brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
+  atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
 
-  brightness = ((r+r+r+b+g+g+g+g) >> 3) * histogram_size >> hist_size_bits;
-  atomicAdd(&histogram[brightness & ((1 << hist_size_bits) - 1)], 1);
+  brightness = ((r+r+r+b+g+g+g+g) >> 3) * histogram_size >> 16;
+  atomicAdd(&histogram[brightness & ((1 << 16) - 1)], 1);
 }
 
 
