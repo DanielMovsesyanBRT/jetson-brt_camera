@@ -18,7 +18,6 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
-#add_compile_options(-Wall -Wno-long-long -pedantic) 
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/assets)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/assets)
@@ -38,78 +37,28 @@ add_subdirectory(fltk_interface)
 #
 project(jetson-brt_camera C CXX CUDA)
 
-#if (NOT FLTK_PATH)
-#  if (DEFINED ENV{FLTK_PATH})
-#    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-#      set(FLTK_DIR "$ENV{FLTK_PATH}/Debug/share/fltk")
-#    else()
-#      set(FLTK_DIR "$ENV{FLTK_PATH}/Release/share/fltk")
-#    endif()
-#  else()
-#    message(FATAL_ERROR "FLTK path is missing")
-#  endif()
-#endif()
-#
-#find_package(FLTK REQUIRED NO_MODULE)
-
-#set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
-# find_package(CUDA REQUIRED)
-
-#if (DEFINED OPENCV_PATH)
-#  find_package(OpenCV REQUIRED
-#        PATHS ${OPENCV_PATH}
-#        NO_DEFAULT_PATH)
-#        
-#elseif(DEFINED ENV{OPENCV_PATH})
-#  find_package(OpenCV REQUIRED
-#        PATHS $ENV{OPENCV_PATH}
-#        NO_DEFAULT_PATH)
-#else()
-#  find_package(OpenCV REQUIRED)
-#endif()
-
-#find_package(X11_user REQUIRED)
-#
-#find_library(GL REQUIRED
-#        NAMES GL
-#        PATHS 
-#          ${LD_PATH}
-#          ${LD_PATH_EXTRA}
-#          )
 
 set(SOURCES 
-  # source/cuda_debayering/src/cuda_debayering.cu
- 
+
   source/device/camera.cpp
   source/device/deserializer.cpp
   source/device/device_action.cpp
   source/device/device_manager.cpp
-  # source/device/script_file.cpp
-  
-#  source/fltk/fltk_manager.cpp  
-#  source/fltk/camera_menu.cxx  
-  
-  #source/image/image_processor.cpp
-  #source/image/image_processor.cu
+
   source/image/debayer.cu
-  #source/image/image.cpp
   source/image/isp_manager.cpp
   source/image/isp.cpp
   
   source/window/camera_window.cpp
   source/window/window.cpp
   source/window/window_manager.cpp
-  
-#  source/metadata.cpp
-#  source/meta_impl.cpp
-#  source/utils.cpp
 )
 
 
 if(EXECUTABLE)
   list(APPEND SOURCES 
-        source/main.cpp
-        )
+        source/main.cpp)
+        
   message(STATUS "Compiling Executable version")
 else()
   message(STATUS "Compiling Library version")
@@ -118,11 +67,7 @@ endif()
 include_directories("brt_common")
 include_directories("fltk_interface")
 
-# include_directories( "source/cuda_debayering/include" "source" "source/image" "script/brt_common")
-# cuda_include_directories("brt_common")
-
 if(EXECUTABLE)
-  #cuda_add_executable(${PROJECT_NAME} ${SOURCES})
   add_executable(${PROJECT_NAME} ${SOURCES})
 else()
   add_library(${PROJECT_NAME} SHARED ${SOURCES})
@@ -136,19 +81,8 @@ target_include_directories(${PROJECT_NAME}
                               "source/fltk" 
                               "source/image" 
                               "source/window"
-                              "script"
-                              # ${X11_X11_INCLUDE_PATH}
-                              # ${FLTK_INCLUDE_DIRS}
-                              )
+                              "script" )
                               
-# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
-target_link_libraries(${PROJECT_NAME} PUBLIC script pthread)# fltk_interfaces) #  fltk_SHARED)
-
-#if (ARCH EQUAL ARCH_ARM)
+target_link_libraries(${PROJECT_NAME} PUBLIC script pthread)
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)
-#  target_link_libraries(${PROJECT_NAME} ${NVMEDIA} ${NVMEDIA_ISC})
-#endif()
-
-#install(TARGETS ${PROJECT_NAME} DESTINATION lib)
-#install(FILES JupiterIPP.hpp include/Metadata.hpp DESTINATION include)
 

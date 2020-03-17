@@ -20,6 +20,7 @@ set(SOURCES
   private/cuda/cuda_data.cu
   private/cuda/cuda_2d_data.cu
   image/image.cpp
+  console_cli.cpp
   metadata.cpp
   utils.cpp
   value.cpp

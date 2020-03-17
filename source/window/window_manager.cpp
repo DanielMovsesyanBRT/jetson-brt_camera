@@ -70,7 +70,6 @@ WindowManager::~WindowManager()
 void WindowManager::init()
 {
   X11Library::get().call<Status>("XInitThreads");
-  // XInitThreads();
   _default_display = Utils::aquire_display("videos");
 }
 
@@ -248,12 +247,9 @@ void WindowManager::post_message(Context ctx, const bytestream& msg)
 void WindowManager::x_loop(_Context* ctx)
 {
   X11Library::get().call<XErrorHandler,XErrorHandler>("XSetErrorHandler", x_error_handler);
-  //XSetErrorHandler(x_error_handler);
 
   Display* dsp = X11Library::get().call<::Display*,_Xconst char*>
         ("XOpenDisplay",(ctx->_display_name.size() > 0) ? ctx->_display_name.c_str() : nullptr);
-
-//  Display* dsp = XOpenDisplay((ctx->_display_name.size() > 0) ? ctx->_display_name.c_str() : nullptr);
 
   if (dsp == nullptr)
   {
@@ -294,7 +290,6 @@ void WindowManager::x_loop(_Context* ctx)
   }
 
   X11Library::get().call<int,::Display*>("XCloseDisplay", dsp);
-  // XCloseDisplay(dsp);
 }
 
 
@@ -309,10 +304,8 @@ void WindowManager::x_event(_Context* ctx)
 {
   XEvent e;
   while(!ctx->_terminate && X11Library::get().call<int,Display*>("XPending",ctx->_display))
-  //while(!ctx->_terminate && XPending(ctx->_display))
   {
     X11Library::get().call<int,::Display*,XEvent*>("XNextEvent", ctx->_display, &e);
-    // XNextEvent(ctx->_display, &e);
     if (e.type == DestroyNotify) // MapNotify)
       ctx->_terminate = true;
 
@@ -399,7 +392,6 @@ int WindowManager::x_error_handler(Display* display, XErrorEvent* err)
 
   X11Library::get().call<int,Display*,int,char*,int>
           ("XGetErrorText", display,err->error_code,text,sizeof(text));
-  // XGetErrorText(display,err->error_code,text,sizeof(text));
 
   std::cerr << "Error: " << text << std::endl;
   std::cerr << "Request code: " << err->request_code << std::endl;

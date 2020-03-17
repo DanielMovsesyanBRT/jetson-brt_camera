@@ -22,6 +22,7 @@
 #include "device/deserializer.hpp"
 #include "device/device_manager.hpp"
 #include "utils.hpp"
+#include "console_cli.hpp"
 
 
 using namespace brt::jupiter;
@@ -106,6 +107,11 @@ public:
     }
   }
 
+  bool                            is_started() const
+  {
+    return _thread.joinable();
+  }
+
   void                            set_destination(const char* dir)
   {
     _directory = dir;
@@ -116,10 +122,23 @@ public:
     return _directory.c_str();
   }
 
-  void                            trigger()
+  void                            trigger(bool block = false)
   {
     bool expected = false;
     _flag.compare_exchange_strong(expected, true);
+
+    if (block)
+    {
+      std::unique_lock<std::mutex> l(_mutex);
+      _event_back.wait(l);
+    }
+  }
+
+  void                            get_last_file_names(std::string name[2])
+  {
+    std::lock_guard<std::mutex> l(_mutex);
+    name[0] = _file_name[0];
+    name[1] = _file_name[1];
   }
 
 private:
@@ -137,20 +156,21 @@ private:
         bool expected = true;
         if (_flag.compare_exchange_strong(expected, false))
         {
-          std::string file_name = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
+          std::unique_lock<std::mutex> l(_mutex);
+          _file_name[0] = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
           uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
 
-          std::ofstream raw_file (file_name, std::ios::out | std::ios::binary);
+          std::ofstream raw_file (_file_name[0], std::ios::out | std::ios::binary);
           raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
           raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
           raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
           raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
 
-          file_name = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
+          _file_name[1] = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
 
           w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
 
-          raw_file = std::ofstream(file_name, std::ios::out | std::ios::binary);
+          raw_file = std::ofstream(_file_name[1], std::ios::out | std::ios::binary);
           raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
           raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
           raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
@@ -158,6 +178,7 @@ private:
           raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
 
           _unique++;
+          _event_back.notify_all();
         }
         _images[0].reset();
         _images[1].reset();
@@ -177,10 +198,13 @@ private:
   std::mutex                      _mutex;
   std::thread                     _thread;
   std::atomic_bool                _terminate;
-  std::condition_variable         _event;
+  std::condition_variable         _event, _event_back;
+
+  std::string                     _file_name[2];
 };
 
 Consumer camera[3] = { "camera1", "camera2", "camera3" };
+
 
 /*
  * \\class MenuCallback
@@ -237,12 +261,20 @@ int main(int argc, char **argv)
   meta_args.parse(argc,argv);
 
   bool cli_only = meta_args.get<bool>("cli_only",false);
-  cli_only = cli_only || (!FLTKLibrary::get() || !window::GLLibrary::get() || !window::X11Library::get());
+
+  if (!cli_only)
+  {
+    cli_only = cli_only || (!FLTKLibrary::get() || !window::GLLibrary::get() || !window::X11Library::get());
+    if (cli_only)
+    {
+      std::cout << "Cannot properly initialize one of the graphic libraries." << std::endl;
+      std::cout << "  Turning into CLI only mode" << std::endl;
+    }
+  }
 
   if (!cli_only)
   {
     wm::get()->init();
-    //fm::get()->init();
     FLTKLibrary::get().call<void>("fltk_initialize");
   }
 
@@ -336,11 +368,61 @@ int main(int argc, char **argv)
               ("fltk_interface_run", &aa);
     wm::get()->release();
   }
-//  CameraWindow* cm = new CameraWindow;
-//  cm->make_window(&aa)->show();
-//  Fl::run();
-//  delete cm;
+  else
+  {
+    // CLI only mode
+    ConsoleCLI cli;
+    std::cout << std::endl
+              << std::endl
+              << std::endl
+              << std::endl
+              << std::endl;
 
+    cli.move_to(0, 5);
+    std::cout << "Press camera index [0, 1, 2] to capture camera image. q or Q to quit" << std::endl;
+    std::cout << "0:" << std::endl << "1:" << std::endl << "2:";
+    cli.move_to(-2,-1);
+
+    int character;
+    while ( ((character = getchar()) != 'Q') && (character != 'q') )
+    {
+      if (std::isdigit(character))
+      {
+        int index = character - '0';
+        if ((index < 0) || (index > 2))
+        {
+          cli.move_to(-100,0);
+          std::cout << "Invalid index " << character;
+        }
+        else
+        {
+          cli.move_to(-100,0);
+          cli.move_to(2,3 - index);
+
+          if (::camera[index].is_started())
+          {
+            ::camera[index].trigger(true);
+            std::string file_name[2];
+            ::camera[index].get_last_file_names(file_name);
+
+            std::cout << "  " << file_name[0] << ", " << file_name[1];
+          }
+          else
+            std::cout << " NOT INITIALIZED!!!";
+
+          cli.move_to(-100,0);
+          cli.move_to(0,index - 3);
+        }
+      }
+      else
+      {
+        std::cout << "Invalid key " << (char)character;
+        cli.move_to(-100,0);
+      }
+    }
+
+
+  }
   isp_manager.release();
 
   DeviceManager::get()->stop_all();
