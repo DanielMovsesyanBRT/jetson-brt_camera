@@ -54,6 +54,6 @@ private:
 } /* namespace jupiter */
 } /* namespace brt */
 
-
 using fm = brt::jupiter::fltk::FLTKManager;
+
 #endif /* SOURCE_FLTK_FLTK_MANAGER_HPP_ */

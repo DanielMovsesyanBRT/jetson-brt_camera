@@ -91,10 +91,15 @@ bool CameraWindow::x_event(Context ctx,const XEvent &event)
   case Expose:
     {
       XWindowAttributes attribs;
-      XGetWindowAttributes(wm::get()->display(ctx), handle(), &attribs);
-      glViewport(0, 0, attribs.width, attribs.height);
+      //XGetWindowAttributes(wm::get()->display(ctx), handle(), &attribs);
+      X11Library::get().call<Status,::Display*, ::Window, XWindowAttributes*>
+                ("XGetWindowAttributes",wm::get()->display(ctx), handle(), &attribs);
 
-      glXSwapBuffers(wm::get()->display(ctx), handle());
+      //glViewport(0, 0, attribs.width, attribs.height);
+      GLLibrary::get().call<void,GLint,GLint,GLsizei, GLsizei>("glViewport",0, 0, attribs.width, attribs.height);
+
+      //glXSwapBuffers(wm::get()->display(ctx), handle());
+      GLLibrary::get().call<void,Display*,GLXDrawable>("glXSwapBuffers",wm::get()->display(ctx), handle() );
     }
     return true;
 
@@ -315,11 +320,14 @@ void CameraWindow::pre_create_window(Context context)
   Display* dsp = display(context);
   int screenId = screen(context);
 
-  _vi = glXChooseVisual(dsp, screenId, att);
+  _vi = GLLibrary::get().call<XVisualInfo*,::Display*, int,int*>("glXChooseVisual",dsp, screenId, att);
+  //_vi = glXChooseVisual(dsp, screenId, att);
   if (_vi == nullptr)
     return;
 
-  _swa.colormap = XCreateColormap(display(context), RootWindow(display(context), screen(context)), _vi->visual, AllocNone);
+  _swa.colormap = X11Library::get().call<Colormap,::Display*,::Window,::Visual*,int>
+            ("XCreateColormap",display(context), RootWindow(display(context), screen(context)), _vi->visual, AllocNone);
+//  _swa.colormap = XCreateColormap(display(context), RootWindow(display(context), screen(context)), _vi->visual, AllocNone);
 }
 
 /*
@@ -331,30 +339,48 @@ void CameraWindow::pre_create_window(Context context)
  */
 void CameraWindow::on_create_window(Context context)
 {
-  _glc = glXCreateContext(display(context), _vi, NULL, GL_TRUE);
-  glXMakeCurrent(display(context), handle(), _glc);
+  _glc = GLLibrary::get().call<GLXContext,::Display*,
+      XVisualInfo*,GLXContext,Bool>("glXCreateContext",display(context), _vi, NULL, GL_TRUE);
+//  _glc = glXCreateContext(display(context), _vi, NULL, GL_TRUE);
+
+  GLLibrary::get().call<Bool,::Display*,GLXDrawable,
+      GLXContext>("glXMakeCurrent",display(context), handle(), _glc);
+  // glXMakeCurrent(display(context), handle(), _glc);
 
   // Set GL Sample stuff
-  glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-  glGenTextures(1, &_texture);
+  GLLibrary::get().call<void,GLclampf,GLclampf,GLclampf,
+      GLclampf>("glClearColor",0.0f, 0.0f, 0.0f, 0.0f);
+  // glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+
+  GLLibrary::get().call<void,GLsizei,GLuint*>("glGenTextures",1, &_texture);
+  //glGenTextures(1, &_texture);
 
   const char * fontname = "-*-courier 10 *-medium-r-*-*-*-*-*-*-*-*-*-*";
-  _font = XLoadQueryFont (display(context), fontname);
+  _font = X11Library::get().call<XFontStruct*,::Display*,_Xconst char*>
+            ("XLoadQueryFont",display(context), fontname);
+  //_font = XLoadQueryFont (display(context), fontname);
 
   /* If the font could not be loaded, revert to the "fixed" font. */
   if (_font == nullptr)
   {
      std::cerr << "unable to load font " << fontname << ": using fixed\n" << std::endl;
-     _font = XLoadQueryFont (display(context), "fixed");
+     _font = X11Library::get().call<XFontStruct*,::Display*,_Xconst char*>
+               ("XLoadQueryFont",display(context), "fixed");
+     //_font = XLoadQueryFont (display(context), "fixed");
   }
 
-  _gc = XCreateGC (display(context), handle(), 0, 0);
+  _gc = X11Library::get().call<GC,::Display*,::Drawable,unsigned long,::XGCValues*>
+          ("XCreateGC",display(context), handle(), 0, 0);
+  // _gc = XCreateGC (display(context), handle(), 0, 0);
 
   Colormap cmap = DefaultColormap(display(context), screen(context));
   // I guess XParseColor will work here
   _text_color.red = 32000; _text_color.green = 65000; _text_color.blue = 32000;
   _text_color.flags = DoRed | DoGreen | DoBlue;
-  XAllocColor(display(context), cmap, &_text_color);
+
+  X11Library::get().call<Status,::Display*,::Colormap,XColor*>
+          ("XAllocColor",display(context), cmap, &_text_color);
+  //XAllocColor(display(context), cmap, &_text_color);
 
 }
 
@@ -409,41 +435,81 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 
     _click.store(-1);
   }
-  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
-  glBindTexture(GL_TEXTURE_2D, _texture);
 
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  GLLibrary::get().call<void,GLenum,GLenum,GLint>("glTexEnvi",GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+  //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+  GLLibrary::get().call<void,GLenum,GLuint>("glBindTexture",GL_TEXTURE_2D, _texture);
+  //glBindTexture(GL_TEXTURE_2D, _texture);
 
-  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,  wnd._image->width(), wnd._image->height(), 0, GL_RGB, GL_UNSIGNED_SHORT, wnd._image->bytes());
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  wnd._image->width(), wnd._image->height(), 0, GL_RGBA, GL_UNSIGNED_SHORT, wnd._image->bytes());
+  GLLibrary::get().call<void,GLenum,GLenum,GLint>("glTexParameteri",GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  GLLibrary::get().call<void,GLenum,GLenum,GLint>("glTexParameteri",GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+  //glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
-  glEnable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, _texture);
+  GLLibrary::get().call<void,GLenum,GLint,
+      GLint,GLsizei,GLsizei,
+      GLint,GLenum,GLenum,const GLvoid*>("glTexImage2D",GL_TEXTURE_2D,
+          0, GL_RGBA,  wnd._image->width(), wnd._image->height(),
+          0, GL_RGBA, GL_UNSIGNED_SHORT, wnd._image->bytes());
+  //glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,  wnd._image->width(), wnd._image->height(), 0, GL_RGBA, GL_UNSIGNED_SHORT, wnd._image->bytes());
+
+
+  GLLibrary::get().call<void,GLenum>("glEnable",GL_TEXTURE_2D);
   //glEnable(GL_TEXTURE_2D);
-  glBegin(GL_QUADS);
-    glTexCoord2f(0.0, 1.0); glVertex3f(wnd._left, wnd._top, 0.0);
-    glTexCoord2f(0.0, 0.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
-    glTexCoord2f(1.0, 0.0); glVertex3f(wnd._right, wnd._bottom, 0.0);
-    glTexCoord2f(1.0, 1.0); glVertex3f(wnd._right, wnd._top, 0.0);
-  glEnd();
 
-  glDisable(GL_TEXTURE_2D);
-  glBindTexture(GL_TEXTURE_2D, 0);
-  glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  GLLibrary::get().call<void,GLenum,GLuint>("glBindTexture",GL_TEXTURE_2D, _texture);
+  //glBindTexture(GL_TEXTURE_2D, _texture);
+
+  GLLibrary::get().call<void,GLenum>("glBegin",GL_QUADS);
+  //glBegin(GL_QUADS);
+  {
+    GLLibrary::get().call<void,GLfloat,GLfloat>("glTexCoord2f",0.0, 1.0);
+    GLLibrary::get().call<void,GLfloat,GLfloat,GLfloat>("glVertex3f",wnd._left, wnd._top, 0.0);
+    //glTexCoord2f(0.0, 1.0); glVertex3f(wnd._left, wnd._top, 0.0);
+
+    GLLibrary::get().call<void,GLfloat,GLfloat>("glTexCoord2f",0.0, 0.0);
+    GLLibrary::get().call<void,GLfloat,GLfloat,GLfloat>("glVertex3f",wnd._left, wnd._bottom, 0.0);
+    //glTexCoord2f(0.0, 0.0); glVertex3f(wnd._left, wnd._bottom, 0.0);
+
+    GLLibrary::get().call<void,GLfloat,GLfloat>("glTexCoord2f",1.0, 0.0);
+    GLLibrary::get().call<void,GLfloat,GLfloat,GLfloat>("glVertex3f",wnd._right, wnd._bottom, 0.0);
+    //glTexCoord2f(1.0, 0.0); glVertex3f(wnd._right, wnd._bottom, 0.0);
+
+    GLLibrary::get().call<void,GLfloat,GLfloat>("glTexCoord2f",1.0, 1.0);
+    GLLibrary::get().call<void,GLfloat,GLfloat,GLfloat>("glVertex3f",wnd._right, wnd._top, 0.0);
+    //glTexCoord2f(1.0, 1.0); glVertex3f(wnd._right, wnd._top, 0.0);
+  }
+  GLLibrary::get().call<void>("glEnd");
+  //glEnd();
+
+  GLLibrary::get().call<void,GLenum>("glDisable",GL_TEXTURE_2D);
+  //glDisable(GL_TEXTURE_2D);
+
+  GLLibrary::get().call<void,GLenum,GLuint>("glBindTexture",GL_TEXTURE_2D, 0);
+  //glBindTexture(GL_TEXTURE_2D, 0);
+  GLLibrary::get().call<void,GLenum,GLenum,GLint>("glTexEnvi",GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+  //glTexEnvi(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 
   image::HistPtr hist = wnd._image->get_histogram();
   if (hist)
   {
     uint32_t max_value = (hist->_max_value >> 5) << 6;
 
-    glShadeModel(GL_SMOOTH);
-    glLineWidth(4.0);
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    GLLibrary::get().call<void,GLenum>("glShadeModel",GL_SMOOTH);
+    //glShadeModel(GL_SMOOTH);
+    GLLibrary::get().call<void,GLfloat>("glLineWidth",4.0);
+    //glLineWidth(4.0);
+    GLLibrary::get().call<void,GLenum>("glEnable",GL_BLEND);
+    //glEnable(GL_BLEND);
+    GLLibrary::get().call<void,GLenum,GLenum>("glBlendFunc",GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    //glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    glBegin(GL_LINE_STRIP);
-      glColor4ub(255, 0, 0, 32);
+    GLLibrary::get().call<void,GLenum>("glBegin",GL_LINE_STRIP);
+    //glBegin(GL_LINE_STRIP);
+    {
+      GLLibrary::get().call<void,GLubyte,GLubyte,
+          GLubyte,GLubyte>("glColor4ub",255, 0, 0, 32);
+      //glColor4ub(255, 0, 0, 32);
       //glColor3f(1.0, 0.0, 0.0);
       GLfloat gap = (wnd._right -  wnd._left) * 10 / wnd._image->width();
       for (size_t hist_index = 0; hist_index < hist->_histogram.size(); hist_index++)
@@ -451,14 +517,19 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
         GLfloat value = (max_value == 0) ? wnd._top : wnd._top + (wnd._bottom -  wnd._top) * hist->_histogram[hist_index] / max_value;
         GLfloat xx = wnd._left + gap + (wnd._right -  wnd._left - 2.0 * gap) * hist_index / hist->_histogram.size();
 
-        glVertex3f(xx, value, 1.0);
+        GLLibrary::get().call<void,GLfloat,GLfloat,
+            GLfloat>("glVertex3f",xx, value, 1.0);
+        //glVertex3f(xx, value, 1.0);
       }
-
-    glEnd();
-    glDisable(GL_BLEND);
+    }
+    GLLibrary::get().call<void>("glEnd");
+    //glEnd();
+    GLLibrary::get().call<void,GLenum>("glDisable",GL_BLEND);
+    //glDisable(GL_BLEND);
   }
 
-  glXSwapBuffers(display(context), handle());
+  GLLibrary::get().call<void,::Display*,GLXDrawable>("glXSwapBuffers",display(context), handle());
+  //glXSwapBuffers(display(context), handle());
 
   // Replace text
   wnd._text->clear();
@@ -477,15 +548,22 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
 
       Rect cur_rect = gl_rect(glwnd);
 
-      XSetFont (display(context), _gc, _font->fid);
-      XSetForeground(display(context), _gc, _text_color.pixel);
+      X11Library::get().call<int,::Display*,GC,Font>("XSetFont",display(context), _gc, _font->fid);
+      // XSetFont (display(context), _gc, _font->fid);
+      X11Library::get().call<int,::Display*,GC,unsigned long>
+              ("XSetForeground",display(context), _gc, _text_color.pixel);
+      //XSetForeground(display(context), _gc, _text_color.pixel);
 
       // Centre the text in the middle of the box.
       int direction, ascent, descent;
       XCharStruct overall;
 
-      XTextExtents (_font, glwnd._text->at(0).c_str(), glwnd._text->at(0).size(),
-                    & direction, & ascent, & descent, & overall);
+      X11Library::get().call<int,XFontStruct*,_Xconst char*,int,int*,int*,int*,XCharStruct*>
+              ("XTextExtents",_font, glwnd._text->at(0).c_str(), glwnd._text->at(0).size(),
+                    &direction, &ascent, &descent, &overall);
+
+//      XTextExtents (_font, glwnd._text->at(0).c_str(), glwnd._text->at(0).size(),
+//                    & direction, & ascent, & descent, & overall);
 
       for (size_t index = 0; index < glwnd._text->size(); index++)
       {
@@ -493,11 +571,16 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
         int y = cur_rect.top + 20 + (overall.ascent + 5) * index;
 
         //XClearWindow (display(context), handle());
-        XDrawString (display(context), handle(), _gc, x, y, glwnd._text->at(index).c_str(), glwnd._text->at(index).size());
+        X11Library::get().call<int,::Display*,::Drawable,GC,int,int,_Xconst char*,int>
+                ("XDrawString", display(context), handle(), _gc, x, y,
+                      glwnd._text->at(index).c_str(), glwnd._text->at(index).size());
+
+        //XDrawString (display(context), handle(), _gc, x, y, glwnd._text->at(index).c_str(), glwnd._text->at(index).size());
       }
     }
   }
-  XFlush(display(context));
+  X11Library::get().call<int,::Display*>("XFlush",display(context));
+  //XFlush(display(context));
   _mutex.unlock();
 
 }

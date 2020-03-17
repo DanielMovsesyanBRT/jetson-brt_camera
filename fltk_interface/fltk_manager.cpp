@@ -6,7 +6,6 @@
  */
 
 #include "fltk_manager.hpp"
-#include "camera_menu.hpp"
 
 #include <dirent.h>
 #include <unistd.h>
@@ -14,6 +13,8 @@
 #include <utils.hpp>
 #include <stdlib.h>
 #include <thread>
+
+#include "camera_menu.hpp"
 
 #define _PATH_PROCNET_X11                   "/tmp/.X11-unix"
 #define _PATH_PROCNET_TCP                   "/proc/net/tcp"
@@ -89,3 +90,33 @@ void FLTKManager::run()
 } /* namespace fltk */
 } /* namespace jupiter */
 } /* namespace brt */
+
+
+
+/*
+ * \\fn void void fltk_initialize
+ *
+ * created on: Mar 16, 2020
+ * author: daniel
+ *
+ */
+extern "C" void fltk_initialize()
+{
+  fm::get()->init();
+}
+
+/*
+ * \\fn fltk_interface_run
+ *
+ * created on: Mar 16, 2020
+ * author: daniel
+ *
+ */
+extern "C" void fltk_interface_run(brt::jupiter::fltk::CallbackInterface* ci)
+{
+  brt::jupiter::fltk::CameraWindow* cm = new brt::jupiter::fltk::CameraWindow;
+  cm->make_window(ci)->show();
+  Fl::run();
+  delete cm;
+}
+

@@ -20,29 +20,37 @@ endif()
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
 #add_compile_options(-Wall -Wno-long-long -pedantic) 
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/assets)
+set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/assets)
+
+
+INCLUDE_DIRECTORIES(
+  ${CMAKE_SOURCE_DIR}/script
+  ${CMAKE_SOURCE_DIR}/brt_common
+  ${CMAKE_SOURCE_DIR}/brt_common/image)
+
 add_subdirectory(script)
 add_subdirectory(brt_common)
+add_subdirectory(fltk_interface)
 
-
-message(STATUS "INCLUDE = ${INCLUDE_DIRECTORIES}")
 #
 # ---------- Define Project
 #
 project(jetson-brt_camera C CXX CUDA)
 
-if (NOT FLTK_PATH)
-  if (DEFINED ENV{FLTK_PATH})
-    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-      set(FLTK_DIR "$ENV{FLTK_PATH}/Debug/share/fltk")
-    else()
-      set(FLTK_DIR "$ENV{FLTK_PATH}/Release/share/fltk")
-    endif()
-  else()
-    message(FATAL_ERROR "FLTK path is missing")
-  endif()
-endif()
-
-find_package(FLTK REQUIRED NO_MODULE)
+#if (NOT FLTK_PATH)
+#  if (DEFINED ENV{FLTK_PATH})
+#    if (CMAKE_BUILD_TYPE STREQUAL "Debug")
+#      set(FLTK_DIR "$ENV{FLTK_PATH}/Debug/share/fltk")
+#    else()
+#      set(FLTK_DIR "$ENV{FLTK_PATH}/Release/share/fltk")
+#    endif()
+#  else()
+#    message(FATAL_ERROR "FLTK path is missing")
+#  endif()
+#endif()
+#
+#find_package(FLTK REQUIRED NO_MODULE)
 
 #set(CUDA_TOOLKIT_ROOT_DIR "/usr/local/cuda")
 # find_package(CUDA REQUIRED)
@@ -60,14 +68,14 @@ find_package(FLTK REQUIRED NO_MODULE)
 #  find_package(OpenCV REQUIRED)
 #endif()
 
-find_package(X11_user REQUIRED)
-
-find_library(GL REQUIRED
-        NAMES GL
-        PATHS 
-          ${LD_PATH}
-          ${LD_PATH_EXTRA}
-          )
+#find_package(X11_user REQUIRED)
+#
+#find_library(GL REQUIRED
+#        NAMES GL
+#        PATHS 
+#          ${LD_PATH}
+#          ${LD_PATH_EXTRA}
+#          )
 
 set(SOURCES 
   # source/cuda_debayering/src/cuda_debayering.cu
@@ -78,8 +86,8 @@ set(SOURCES
   source/device/device_manager.cpp
   # source/device/script_file.cpp
   
-  source/fltk/fltk_manager.cpp  
-  source/fltk/camera_menu.cxx  
+#  source/fltk/fltk_manager.cpp  
+#  source/fltk/camera_menu.cxx  
   
   #source/image/image_processor.cpp
   #source/image/image_processor.cu
@@ -108,6 +116,8 @@ else()
 endif()
 
 include_directories("brt_common")
+include_directories("fltk_interface")
+
 # include_directories( "source/cuda_debayering/include" "source" "source/image" "script/brt_common")
 # cuda_include_directories("brt_common")
 
@@ -128,11 +138,11 @@ target_include_directories(${PROJECT_NAME}
                               "source/window"
                               "script"
                               # ${X11_X11_INCLUDE_PATH}
-                              ${FLTK_INCLUDE_DIRS}
+                              # ${FLTK_INCLUDE_DIRS}
                               )
                               
-target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
-# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} )
+# target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${OpenCV_LIBS} ${X11_X11_LIB} ${GL} fltk dl)
+target_link_libraries(${PROJECT_NAME} PUBLIC script pthread)# fltk_interfaces) #  fltk_SHARED)
 
 #if (ARCH EQUAL ARCH_ARM)
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)

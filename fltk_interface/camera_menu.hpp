@@ -2,23 +2,30 @@
 
 #ifndef camera_menu_h
 #define camera_menu_h
+
 #include <FL/Fl.H>
 #include <FL/Fl_Double_Window.H>
 #include <FL/Fl_Box.H>
 #include <FL/Fl_Input.H>
 #include <FL/Fl_Button.H>
 
-struct CallbackInterface
+#include "fltk_interface_exports.hpp"
+
+namespace brt
 {
-  virtual ~CallbackInterface() {}
+namespace jupiter
+{
+namespace fltk
+{
 
-  virtual void                    run(int) = 0;
-  virtual void                    dir(int,const char*) = 0;
-  virtual const char*             destination(int) = 0;
-};
-
-
-class CameraWindow {
+/*
+ * \\class CameraWindow
+ *
+ * created on: Mar 16, 2020
+ *
+ */
+class CameraWindow
+{
 public:
   Fl_Double_Window* make_window(CallbackInterface* ci = nullptr);
   struct Row
@@ -51,4 +58,9 @@ private:
 private:
   CallbackInterface*              _callback;
 };
+
+} /* namespace fltk */
+} /* namespace jupiter */
+} /* namespace brt */
+
 #endif

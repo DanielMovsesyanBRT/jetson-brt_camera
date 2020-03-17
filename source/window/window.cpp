@@ -124,7 +124,8 @@ bool Window::l_event(Context context,const LEvent *event)
     return true;
 
   case eCloseWindowEvent:
-    XDestroyWindow(display(), _handle);
+    X11Library::get().call<int,::Display*,::Window>("XDestroyWindow",display(), _handle);
+    // XDestroyWindow(display(), _handle);
     return true;
 
   case eUpdateWindowEvent:
@@ -201,7 +202,9 @@ void Window::update()
 WinRect Window::get_window_rect() const
 {
   XWindowAttributes attr;
-  XGetWindowAttributes(display(), _handle, &attr);
+  X11Library::get().call<Status,::Display*,::Window,XWindowAttributes*>
+      ("XGetWindowAttributes", display(), _handle, &attr);
+  // XGetWindowAttributes(display(), _handle, &attr);
 
   return WinRect(attr.x,attr.y,attr.width,attr.height);
 }
@@ -241,30 +244,48 @@ void Window::x_create(Context context)
   _visual = DefaultVisual(dspl, screenId);
   _depth  = DefaultDepth(dspl, screenId);
 
-  _swa.colormap = XCreateColormap(dspl, RootWindow(dspl, screenId), _visual, AllocNone);
+  _swa.colormap = X11Library::get().call<Colormap,::Display*,::Window,Visual*,int>
+            ("XCreateColormap", dspl, RootWindow(dspl, screenId), _visual, AllocNone);
+  // _swa.colormap = XCreateColormap(dspl, RootWindow(dspl, screenId), _visual, AllocNone);
+
   _swa.override_redirect = True;
   _swa.background_pixel = wm::get()->white_color(context);
   _swa.border_pixel = wm::get()->black_color(context);
   _swa.event_mask = ExposureMask | KeyPressMask;
 
-  ::Window  parent = (_parent != nullptr) ? _parent->handle() : XRootWindow(dspl, screenId);
+  //::Window  parent = (_parent != nullptr) ? _parent->handle() : XRootWindow(dspl, screenId);
+  ::Window  parent = (_parent != nullptr) ? _parent->handle() :
+          X11Library::get().call<::Window,::Display*,int>("XRootWindow", dspl, screenId);
+
   pre_create_window(context);
 
-  _handle = XCreateWindow(dspl, parent,
-      _x, _y, _width, _height, _border_width, _depth,
-      InputOutput, _visual, _value_mask, &_swa);
+  _handle = X11Library::get().call<::Window,::Display*,::Window,int,
+                  int,unsigned int,unsigned int,unsigned int,int,
+                  unsigned int,Visual*,unsigned long,XSetWindowAttributes*>
+            ("XCreateWindow", dspl, parent,
+                _x, _y, _width, _height, _border_width, _depth,
+                InputOutput, _visual, _value_mask, &_swa);
+
+//  _handle = XCreateWindow(dspl, parent,
+//      _x, _y, _width, _height, _border_width, _depth,
+//      InputOutput, _visual, _value_mask, &_swa);
 
   if (_handle != 0)
   {
     on_create_window(context);
 
-    XClearWindow(dspl, _handle);
-    XStoreName(dspl, _handle, _title.c_str());
+    X11Library::get().call<int,::Display*,::Window>("XClearWindow", dspl, _handle);
+    // XClearWindow(dspl, _handle);
+    X11Library::get().call<int,::Display*,::Window,_Xconst char*>("XStoreName",dspl, _handle, _title.c_str());
+    // XStoreName(dspl, _handle, _title.c_str());
 
-    XMapWindow(dspl, _handle);
-    XMoveWindow(dspl, _handle, _x, _y);
+    X11Library::get().call<int,::Display*,::Window>("XMapWindow", dspl, _handle);
+    //XMapWindow(dspl, _handle);
+    X11Library::get().call<int,::Display*,::Window,int,int>("XMoveWindow", dspl, _handle, _x, _y);
+    //XMoveWindow(dspl, _handle, _x, _y);
 
-    XFlush(dspl);
+    X11Library::get().call<int,Display*>("XFlush",dspl);
+    //XFlush(dspl);
   }
 }
 
@@ -281,7 +302,8 @@ void Window::x_close(Context context)
     return;
 
   on_close(context);
-  XDestroyWindow(display(), _handle);
+  X11Library::get().call<int,::Display*,::Window>("XDestroyWindow",display(), _handle);
+  // XDestroyWindow(display(), _handle);
 
   delete this;
 }

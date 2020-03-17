@@ -10,16 +10,14 @@
 #include "window_manager.hpp"
 #include "camera_window.hpp"
 
-#include "fltk_manager.hpp"
-#include "camera_menu.hpp"
-
-
 #include <map>
 #include <iostream>
 #include <fstream>
 #include <string>
 
 #include <stdint.h>
+
+#include "fltk_interface_exports.hpp"
 #include "device/camera.hpp"
 #include "device/deserializer.hpp"
 #include "device/device_manager.hpp"
@@ -28,6 +26,25 @@
 
 using namespace brt::jupiter;
 
+#define FLTK_LIB_NAME                       "libfltk_interfaces.so"
+/*
+ * \\class FLTKLibrary
+ *
+ * created on: Mar 16, 2020
+ *
+ */
+class FLTKLibrary : public DynamicLibrary<FLTKLibrary>
+{
+friend DynamicLibrary<FLTKLibrary>;
+  FLTKLibrary() : DynamicLibrary<FLTKLibrary>(_path.c_str()) {}
+
+public:
+  static  void                    set_fltk_path(const char *path) { _path = path; }
+private:
+  static  std::string             _path;
+};
+
+std::string FLTKLibrary::_path = "";
 
 /*
  * \\class Consumer
@@ -171,7 +188,7 @@ Consumer camera[3] = { "camera1", "camera2", "camera3" };
  * created on: Jan 17, 2020
  *
  */
-class MenuCallback : public CallbackInterface
+class MenuCallback : public fltk::CallbackInterface
 {
 public:
   MenuCallback(window::Window* window) : _window(window) {}
@@ -204,13 +221,31 @@ private:
  */
 int main(int argc, char **argv)
 {
-  wm::get()->init();
-  fm::get()->init();
+  std::string _cur_file = argv[0];
+  size_t idx = _cur_file.rfind('/');
+  if (idx != std::string::npos)
+  {
+    _cur_file = _cur_file.substr(0, idx + 1) + FLTK_LIB_NAME;
+    FLTKLibrary::set_fltk_path(_cur_file.c_str());
+  }
+  else
+    FLTKLibrary::set_fltk_path(FLTK_LIB_NAME);
 
   image::ISPManager isp_manager;
 
   brt::jupiter::Metadata meta_args;
   meta_args.parse(argc,argv);
+
+  bool cli_only = meta_args.get<bool>("cli_only",false);
+  cli_only = cli_only || (!FLTKLibrary::get() || !window::GLLibrary::get() || !window::X11Library::get());
+
+  if (!cli_only)
+  {
+    wm::get()->init();
+    //fm::get()->init();
+    FLTKLibrary::get().call<void>("fltk_initialize");
+  }
+
 
   double frame_rate = brt::jupiter::Utils::frame_rate(meta_args.get<std::string>("frame_rate","10fps").c_str());
   std::cout << "Setting trigger to " << frame_rate << "fps" << std::endl;
@@ -268,7 +303,7 @@ int main(int argc, char **argv)
         Camera* cam = des->get_camera(index);
         if (cam != nullptr)
         {
-          if (cam->start_streaming())
+          if (cam->start_streaming() && !cli_only)
           {
             if (wnd == nullptr)
             {
@@ -291,19 +326,23 @@ int main(int argc, char **argv)
     }
   }
 
-  if (wnd != nullptr)
-    wnd->show(nullptr);
+  if (!cli_only)
+  {
+    if (wnd != nullptr)
+      wnd->show(nullptr);
 
-  MenuCallback aa(wnd);
-  CameraWindow* cm = new CameraWindow;
-  cm->make_window(&aa)->show();
-  Fl::run();
-  delete cm;
+    MenuCallback aa(wnd);
+    FLTKLibrary::get().call<void,brt::jupiter::fltk::CallbackInterface*>
+              ("fltk_interface_run", &aa);
+    wm::get()->release();
+  }
+//  CameraWindow* cm = new CameraWindow;
+//  cm->make_window(&aa)->show();
+//  Fl::run();
+//  delete cm;
 
   isp_manager.release();
-  wm::get()->release();
 
   DeviceManager::get()->stop_all();
-
   return 0;
 }

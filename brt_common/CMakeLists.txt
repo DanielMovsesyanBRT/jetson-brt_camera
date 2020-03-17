@@ -25,9 +25,10 @@ set(SOURCES
   value.cpp
 )
   
+  
 add_library(${PROJECT_NAME} STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME} 
-                            PUBLIC 
+                            INTERFACE 
                               "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
                               "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>/image" 
                             PRIVATE 

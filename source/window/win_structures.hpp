@@ -16,6 +16,8 @@
 #include <climits>
 #include <vector>
 
+#include "dynamic_library.hpp"
+
 #define RANDOM_POS                          (INT_MAX)
 
 
@@ -263,6 +265,18 @@ struct WinRect
 };
 
 typedef void* Context;
+
+class GLLibrary : public DynamicLibrary<GLLibrary>
+{
+friend DynamicLibrary<GLLibrary>;
+  GLLibrary() : DynamicLibrary<GLLibrary>("/usr/lib/aarch64-linux-gnu/libGL.so") {}
+};
+
+class X11Library : public DynamicLibrary<X11Library>
+{
+friend DynamicLibrary<X11Library>;
+  X11Library() : DynamicLibrary<X11Library>("/usr/lib/aarch64-linux-gnu/libX11.so") {}
+};
 
 
 } /* namespace window */

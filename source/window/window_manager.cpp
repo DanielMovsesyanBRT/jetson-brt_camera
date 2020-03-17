@@ -69,7 +69,8 @@ WindowManager::~WindowManager()
  */
 void WindowManager::init()
 {
-  XInitThreads();
+  X11Library::get().call<Status>("XInitThreads");
+  // XInitThreads();
   _default_display = Utils::aquire_display("videos");
 }
 
@@ -246,8 +247,13 @@ void WindowManager::post_message(Context ctx, const bytestream& msg)
  */
 void WindowManager::x_loop(_Context* ctx)
 {
-  XSetErrorHandler(x_error_handler);
-  Display* dsp = XOpenDisplay((ctx->_display_name.size() > 0) ? ctx->_display_name.c_str() : nullptr);
+  X11Library::get().call<XErrorHandler,XErrorHandler>("XSetErrorHandler", x_error_handler);
+  //XSetErrorHandler(x_error_handler);
+
+  Display* dsp = X11Library::get().call<::Display*,_Xconst char*>
+        ("XOpenDisplay",(ctx->_display_name.size() > 0) ? ctx->_display_name.c_str() : nullptr);
+
+//  Display* dsp = XOpenDisplay((ctx->_display_name.size() > 0) ? ctx->_display_name.c_str() : nullptr);
 
   if (dsp == nullptr)
   {
@@ -287,7 +293,8 @@ void WindowManager::x_loop(_Context* ctx)
     }
   }
 
-  XCloseDisplay(dsp);
+  X11Library::get().call<int,::Display*>("XCloseDisplay", dsp);
+  // XCloseDisplay(dsp);
 }
 
 
@@ -301,9 +308,11 @@ void WindowManager::x_loop(_Context* ctx)
 void WindowManager::x_event(_Context* ctx)
 {
   XEvent e;
-  while(!ctx->_terminate && XPending(ctx->_display))
+  while(!ctx->_terminate && X11Library::get().call<int,Display*>("XPending",ctx->_display))
+  //while(!ctx->_terminate && XPending(ctx->_display))
   {
-    XNextEvent(ctx->_display, &e);
+    X11Library::get().call<int,::Display*,XEvent*>("XNextEvent", ctx->_display, &e);
+    // XNextEvent(ctx->_display, &e);
     if (e.type == DestroyNotify) // MapNotify)
       ctx->_terminate = true;
 
@@ -387,7 +396,11 @@ void WindowManager::l_event(_Context* ctx)
 int WindowManager::x_error_handler(Display* display, XErrorEvent* err)
 {
   char text[1024];
-  XGetErrorText(display,err->error_code,text,sizeof(text));
+
+  X11Library::get().call<int,Display*,int,char*,int>
+          ("XGetErrorText", display,err->error_code,text,sizeof(text));
+  // XGetErrorText(display,err->error_code,text,sizeof(text));
+
   std::cerr << "Error: " << text << std::endl;
   std::cerr << "Request code: " << err->request_code << std::endl;
   std::cerr << "Minor code: " << err->minor_code << std::endl;

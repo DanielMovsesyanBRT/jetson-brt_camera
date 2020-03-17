@@ -94,6 +94,8 @@ private:
   XColor                          _text_color;
 };
 
+
+
 } /* namespace window */
 } /* namespace jupiter */
 } /* namespace brt */
