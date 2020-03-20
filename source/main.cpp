@@ -261,6 +261,7 @@ int main(int argc, char **argv)
   meta_args.parse(argc,argv);
 
   bool cli_only = meta_args.get<bool>("cli_only",false);
+  bool print_eeprom = meta_args.get<bool>("print_eeprom",false);
 
   if (!cli_only)
   {
@@ -352,6 +353,13 @@ int main(int argc, char **argv)
 
           cam->register_consumer(&camera[id],Metadata().set("<id>", index));
           camera[id].set_destination(cwd);
+
+          if (print_eeprom)
+          {
+            std::string json;
+            cam->get_camera_parameters_json(json);
+            std::cout << json << std::endl << std::endl;
+          }
         }
       }
       camera[id].start();
@@ -420,8 +428,6 @@ int main(int argc, char **argv)
         cli.move_to(-100,0);
       }
     }
-
-
   }
   isp_manager.release();
 

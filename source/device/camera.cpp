@@ -15,6 +15,7 @@
 
 #include <dirent.h>
 #include <string.h>
+#include <sstream>
 
 #include "camera.hpp"
 
@@ -34,7 +35,7 @@ namespace jupiter
  * author: daniel
  *
  */
-Camera::Camera(Deserializer* owner,int id)
+Camera::Camera(Deserializer* owner,int id,const Value::byte_buffer& bb /*= Value::byte_buffer()*/)
 : _owner (owner)
 , _id(id)
 , _active(false)
@@ -60,6 +61,9 @@ Camera::Camera(Deserializer* owner,int id)
     if (strlen(video_name._name) > 0)
       _device_name = Utils::string_format("/dev/%s", video_name._name);
   }
+
+  if (!bb.empty())
+    memcpy(&_camera_params, &bb.front(), std::min(bb.size(), sizeof(_camera_params)));
 
   register_consumer(&_ip);
 }
@@ -235,6 +239,45 @@ void Camera::set_gain(eCameraGain gain)
 
   _skip_frames = 4;
   _owner->run_macro("set_gain", args);
+}
+
+/*
+ * \\fn void Camera::get_camera_parameters_json
+ *
+ * created on: Mar 19, 2020
+ * author: daniel
+ *
+ */
+void Camera::get_camera_parameters_json(std::string& jstring)
+{
+  const CameraParameters* cam_params = get_camera_parameters_bin();
+  const Intrinsics primary_intrinsics = cam_params->_lense_parameters;
+  const Intrinsics secondary_intrinsics = cam_params->_companion_lense_params;
+  const Extrinsics extrinsics = cam_params->_stereo_params;
+
+  std::stringstream json_stream;
+  json_stream << "{ \"camera_name\": \"" << _device_name << "\", " << std::endl << "    ";
+  json_stream << "\"K1\": [" << primary_intrinsics._fx << ", 0, " << primary_intrinsics._cx << ", ";
+  json_stream << "0, " << primary_intrinsics._fy << ", " << primary_intrinsics._cy << ", ";
+  json_stream << "0, 0, 1], " << std::endl << "    ";
+  json_stream << "\"K2\": [" << secondary_intrinsics._fx << ", 0, " << secondary_intrinsics._cx << ", ";
+  json_stream << "0, " << secondary_intrinsics._fy << ", " << secondary_intrinsics._cy << ", ";
+  json_stream << "0, 0, 1], " << std::endl << "    ";
+  json_stream << "\"D1\": [" << primary_intrinsics._k1 << ", " << primary_intrinsics._k2 << ", ";
+  json_stream << primary_intrinsics._p1 << ", " << primary_intrinsics._p2 << ", ";
+  json_stream << primary_intrinsics._k3 << ", " << primary_intrinsics._k4 << ", ";
+  json_stream << primary_intrinsics._k5 << ", " << primary_intrinsics._k6 << "], " << std::endl << "    ";
+  json_stream << "\"D2\": [" << secondary_intrinsics._k1 << ", " << secondary_intrinsics._k2 << ", ";
+  json_stream << secondary_intrinsics._p1 << ", " << secondary_intrinsics._p2 << ", ";
+  json_stream << secondary_intrinsics._k3 << ", " << secondary_intrinsics._k4 << ", ";
+  json_stream << secondary_intrinsics._k5 << ", " << secondary_intrinsics._k6 << "]," << std::endl << "    ";
+  json_stream << "\"R\": [";
+  json_stream << extrinsics._rot[0][0] << ", " << extrinsics._rot[0][1] << ", " << extrinsics._rot[0][2] << ", ";
+  json_stream << extrinsics._rot[1][0] << ", " << extrinsics._rot[1][1] << ", " << extrinsics._rot[1][2] << ", ";
+  json_stream << extrinsics._rot[2][0] << ", " << extrinsics._rot[2][1] << ", " << extrinsics._rot[2][2] << "]," << std::endl << "    ";
+  json_stream << "\"T\": [" << extrinsics._tx << ", " << extrinsics._ty << ", " << extrinsics._tz << "]," << std::endl << "    ";
+  json_stream << "\"stereoRotRodriguesVec\": [" << extrinsics._rx << ", " << extrinsics._ry << ", " << extrinsics._rz << "]" << std::endl << "}";
+  jstring = json_stream.str();
 }
 
 

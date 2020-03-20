@@ -262,6 +262,22 @@ Value Script::get(const char* var_name)
 }
 
 /*
+ * \\fn bool Script::exist
+ *
+ * created on: Mar 19, 2020
+ * author: daniel
+ *
+ */
+bool Script::exist(const char* var_name)
+{
+  if (!_data)
+    return false;
+
+  std::lock_guard<std::mutex> lk1(_data->_mutex);
+  return _data->_session.exist(var_name);
+}
+
+/*
  * \\fn void Script::set
  *
  * created on: Dec 11, 2019

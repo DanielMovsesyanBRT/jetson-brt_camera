@@ -157,6 +157,7 @@ public:
           Value                   run_macro(const char* macro_name,std::vector<Value> arguments,Metadata meta = Metadata());
 
           Value                   get(const char* var_name);
+          bool                    exist(const char* var_name);
           void                    set(Metadata meta);
           void                    set(const char* var_name,Value val);
 

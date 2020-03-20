@@ -820,13 +820,15 @@ loop $global_loop_cntr < $num_cameras
    x reset_serializer 0x80
    x reset_serializer $serializer_addr[$global_loop_cntr]
    d 1s
- 
+   
    e "Serializer address = 0x" + hex($serializer_addr[$global_loop_cntr]) + "[0x" + hex($global_loop_cntr) + "]"
  
    x set_addresses 0x80,$serializer_addr[$global_loop_cntr],0x20,$sensor_addr[$global_loop_cntr],$global_loop_cntr * 2
    x config_serializer $serializer_addr[$global_loop_cntr], 1 + $global_loop_cntr * 2  # Y or U
    d 100ms
  
+   r 1528,0xA0,0x0000,$camera_eeprom[$global_loop_cntr]
+   e "Serial Number N1 " + sub_array($camera_eeprom[$global_loop_cntr],48,11)
    
    if $hdr_mode
 #      x config_hdr_sensor $global_loop_cntr

@@ -11,6 +11,7 @@
 #include "device_action.hpp"
 
 #include <iostream>
+#include <algorithm>
 
 #include <utils.hpp>
 
@@ -93,20 +94,28 @@ bool Deserializer::read(uint8_t address, uint16_t offset, size_t offset_size, ui
   if (DeviceManager::get()->handle() == INVALID_DEVICE_HANDLE)
     return false;
 
-  brt_camera_xfer xfer;
-  xfer._deser_id = _id;
-  xfer._device_addr = address;
-  xfer._register_address_size = static_cast<uint8_t>(offset_size);
-  xfer._register_address = offset;
-  xfer._data_size = static_cast<uint16_t>(size);
-
-  if ((ret = ioctl(DeviceManager::get()->handle(),BRT_CAMERA_READ,(unsigned long)&xfer)) < 0)
+  while (size > 0)
   {
-    std::cerr << "Read error " << errno << std::endl;
-    return false;
-  }
+    size_t transfer_size = std::min(size, (size_t)MAX_DATA_SIZE);
 
-  memcpy(buffer, xfer._data,size);
+    brt_camera_xfer xfer;
+    xfer._deser_id = _id;
+    xfer._device_addr = address;
+    xfer._register_address_size = static_cast<uint8_t>(offset_size);
+    xfer._register_address = offset;
+    xfer._data_size = static_cast<uint16_t>(transfer_size); //size);
+
+    if ((ret = ioctl(DeviceManager::get()->handle(),BRT_CAMERA_READ,(unsigned long)&xfer)) < 0)
+    {
+      std::cerr << "Read error " << errno << std::endl;
+      return false;
+    }
+
+    memcpy(buffer, xfer._data,transfer_size); //size);
+    buffer += transfer_size;
+    size -= transfer_size;
+    offset += transfer_size;
+  }
   return true;
 }
 
@@ -123,18 +132,26 @@ bool Deserializer::write(uint8_t address, uint16_t offset, size_t offset_size, c
   if (DeviceManager::get()->handle() == INVALID_DEVICE_HANDLE)
     return false;
 
-  brt_camera_xfer xfer;
-  xfer._deser_id = _id;
-  xfer._device_addr = address;
-  xfer._register_address_size = static_cast<uint8_t>(offset_size);
-  xfer._register_address = offset;
-  xfer._data_size = static_cast<uint16_t>(size);
-  memcpy(xfer._data,buffer,size);
-
-  if ((ret = ioctl(DeviceManager::get()->handle(),BRT_CAMERA_WRITE,(unsigned long)&xfer)) < 0)
+  while (size > 0)
   {
-    std::cerr << "Read error " << errno << std::endl;
-    return false;
+    size_t transfer_size = std::min(size, (size_t)MAX_DATA_SIZE);
+
+    brt_camera_xfer xfer;
+    xfer._deser_id = _id;
+    xfer._device_addr = address;
+    xfer._register_address_size = static_cast<uint8_t>(offset_size);
+    xfer._register_address = offset;
+    xfer._data_size = static_cast<uint16_t>(transfer_size);
+    memcpy(xfer._data,buffer,transfer_size);
+
+    if ((ret = ioctl(DeviceManager::get()->handle(),BRT_CAMERA_WRITE,(unsigned long)&xfer)) < 0)
+    {
+      std::cerr << "Read error " << errno << std::endl;
+      return false;
+    }
+    buffer += transfer_size;
+    size -= transfer_size;
+    offset += transfer_size;
   }
 
   return true;
@@ -159,7 +176,19 @@ bool Deserializer::load_script(const char *file_path,const Metadata& extra_args/
   // Activate Cameras
   size_t number_of_cameras = static_cast<int>(_script.get("num_cameras"));
   for (size_t index = 0; index < number_of_cameras; index++)
-    _cameras.push_back(new Camera(this, index));
+  {
+    Camera *cam = nullptr;
+    if (_script.exist("camera_eeprom"))
+    {
+      Value::byte_buffer bb = _script.get("camera_eeprom").at(index);
+      if (!bb.empty())
+        cam = new Camera(this, index,bb);
+    }
+
+    if (cam == nullptr)
+      cam = new Camera(this, index);
+    _cameras.push_back(cam);
+  }
 
   return true;
 }
