@@ -476,12 +476,12 @@ __constant__ int16_t red_blue[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
   {
     for (int j = -MHC_KERNEL_RADIUS; j <= MHC_KERNEL_RADIUS; j++)
     {
-      int x = x0+i, y=y0+j;
+      int x = x0+j, y=y0+i;
       if ((x >= 0) && (y >= 0) && 
           (x < (width - MHC_KERNEL_RADIUS)) && 
           (y < (height - MHC_KERNEL_RADIUS)))
       {
-        sum += raw[g_loc + (i + j * width)] * kernel[i + MHC_KERNEL_RADIUS][j + MHC_KERNEL_RADIUS];
+        sum += raw[g_loc + (j + i * width)] * kernel[i + MHC_KERNEL_RADIUS][j + MHC_KERNEL_RADIUS];
       }
     }
   }
