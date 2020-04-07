@@ -1,6 +1,6 @@
 s $num_cameras = 2
 
-s $x = 4
+s $x = 0
 s $y = 0
 s $width = 1920s2
 s $height = 1208s2

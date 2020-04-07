@@ -27,12 +27,14 @@ if (NOT FLTK_PATH)
 endif()
 
 find_package(FLTK REQUIRED NO_MODULE)
-find_package(X11_user REQUIRED)
+#find_package(X11_user REQUIRED)
+find_package(X11 REQUIRED)
 find_library(GL REQUIRED
-        NAMES GL
-        PATHS 
-          ${LD_PATH}
-          ${LD_PATH_EXTRA})
+        NAMES GL)
+
+        # PATHS 
+        #   ${LD_PATH}
+        #   ${LD_PATH_EXTRA})
 
 set(SOURCES 
   fltk_manager.cpp

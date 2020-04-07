@@ -20,6 +20,8 @@
 #include "camera.hpp"
 
 #include <utils.hpp>
+#include <metadata.hpp>
+
 #include "deserializer.hpp"
 #include "device_manager.hpp"
 
@@ -705,13 +707,13 @@ void Camera::main_loop()
           std::cerr << "select error:" << errno << ", "
               << strerror(errno) << std::endl;
         }
-        continue;
+        break;
       }
 
       if (0 == r)
       {
         std::cerr << "timeout" << std::endl;
-        continue;
+        break;
       }
 
       if (FD_ISSET(_pipe[0],&fds))
@@ -727,9 +729,8 @@ void Camera::main_loop()
           break;
       }
 
-      if (read_frame())
-        break;
-
+      if (FD_ISSET(_handle,&fds))
+        read_frame();
       /* EAGAIN - continue select loop. */
     }
   }
@@ -773,23 +774,10 @@ bool Camera::read_frame()
       image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[0].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height, 16));
       if (_skip_frames-- == 0)
       {
-        consume(image::ImageBox(raw12));
+        consume(image::ImageBox(raw12).set_meta(Metadata().set<unsigned long>("time_tag",time(nullptr))));
         _skip_frames = 0;
       }
-
-//      image::RawRGBPtr result = _ip.debayer(raw12);
-//      if (result)
-//      {
-//        if (_skip_frames-- == 0)
-//        {
-//          consume(image::ImageBox(result));
-//          _skip_frames = 0;
-//        }
-//      }
-
-
     }
-    //process_image(buffers[0].start, buffers[0].length);
     break;
 
   case IO_METHOD_MMAP:
@@ -803,7 +791,7 @@ bool Camera::read_frame()
       switch (errno)
       {
       case EAGAIN:
-        return 0;
+        return false;
 
       case EIO:
         /* Could ignore EIO, see spec. */
@@ -817,6 +805,12 @@ bool Camera::read_frame()
       }
     }
 
+    if ((buf.flags & V4L2_BUF_FLAG_ERROR) != 0)
+    {
+      std::cerr << "Data of " << _device_name << " is corrupted" << std::endl;
+      return false;
+    }
+
     assert(buf.index < _n_buffers);
 
     if (buf.length >= (_fmt.fmt.pix.width * _fmt.fmt.pix.height * 2))
@@ -824,19 +818,9 @@ bool Camera::read_frame()
       image::RawRGBPtr raw12(new image::RawRGB((uint8_t*)_buffers[buf.index].start,_fmt.fmt.pix.width,_fmt.fmt.pix.height, 16));
       if (_skip_frames-- == 0)
       {
-        consume(image::ImageBox(raw12));
+        consume(image::ImageBox(raw12).set_meta(Metadata().set<unsigned long>("time_tag",time(nullptr))));
         _skip_frames = 0;
       }
-
-//      image::RawRGBPtr result = _ip.debayer(raw12);
-//      if (result)
-//      {
-//        if (_skip_frames-- == 0)
-//        {
-//          consume(image::ImageBox(result));
-//          _skip_frames = 0;
-//        }
-//      }
     }
 
     if (-1 == xioctl(_handle, static_cast<int>(VIDIOC_QBUF), &buf))

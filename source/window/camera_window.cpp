@@ -227,6 +227,8 @@ size_t CameraWindow::add_subwnd(image::ImageProducer* ip)
  */
 void CameraWindow::consume(image::ImageBox box)
 {
+  // std::cout << " CAMERA publish " << box[0]->get<std::string>("id") << std::endl;
+
   if (!is_window())
     return;
 
@@ -318,7 +320,6 @@ void CameraWindow::pre_create_window(Context context)
   int screenId = screen(context);
 
   _vi = GLLibrary::get().call<XVisualInfo*,::Display*, int,int*>("glXChooseVisual",dsp, screenId, att);
-  //_vi = glXChooseVisual(dsp, screenId, att);
   if (_vi == nullptr)
     return;
 

@@ -20,6 +20,8 @@
 #include "image.hpp"
 //#include "image_processor.hpp"
 
+typedef struct __GLXcontextRec *GLXContext;
+
 namespace brt
 {
 namespace jupiter
@@ -62,11 +64,11 @@ protected:
 private:
   struct GLWindow
   {
-    GLfloat                         _left;
-    GLfloat                         _top;
-    GLfloat                         _right;
-    GLfloat                         _bottom;
-    GLuint                          _tex;
+    float                           _left;
+    float                           _top;
+    float                           _right;
+    float                           _bottom;
+    unsigned int                    _tex;
     size_t                          _col;
     size_t                          _row;
     image::RawRGBPtr                _image;
@@ -82,7 +84,7 @@ private:
   size_t                          _actual_width, _actual_height;
   size_t                          _rows, _cols;
   GLXContext                      _glc;
-  GLuint                          _texture;
+  unsigned int                    _texture;
 
   std::vector<GLWindow>           _gl_map;
   std::atomic_int_fast32_t        _click;

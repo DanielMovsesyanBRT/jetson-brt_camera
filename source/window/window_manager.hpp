@@ -10,6 +10,7 @@
 
 #include <X11/X.h>
 #include <X11/Xlib.h>
+
 #include <climits>
 #include <string.h>
 #include <unistd.h>

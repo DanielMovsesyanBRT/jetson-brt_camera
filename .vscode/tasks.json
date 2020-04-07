@@ -1,0 +1,74 @@
+{
+  // See https://go.microsoft.com/fwlink/?LinkId=733558
+  // for the documentation about the tasks.json format
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "configure",
+      "type": "shell",
+      "command": "${workspaceFolder}/configure",
+      "options":{
+        "cwd": "${workspaceFolder}/build"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
+    {
+      "label": "make",
+      "type": "shell",
+      "command": "make -j$(nproc)",
+      "options":{
+        "cwd": "${workspaceFolder}/build"
+      },
+      "presentation": {
+        "echo": true,
+        "reveal": "always",
+        "focus": false,
+        "panel": "shared",
+        "showReuseMessage": true,
+        "clear": false
+      }
+    },
+    {
+      "label": "upload",
+      "type": "shell",
+      "command": "scp ${workspaceFolder}/assets/* jupiter@192.168.20.77:/home/jupiter/daniel/new/",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      }
+    },
+    {
+      "label": "gdbserver",
+      "type": "shell",
+      "isBackground": true,
+
+      "command" : "xterm",
+      "args": [
+        "-e","\"", "ssh", "jupiter@192.168.20.77", "-t",
+        "'/usr/bin/gdbserver :2345 /home/jupiter/daniel/new/jetson-brt_camera --device2=/home/jupiter/daniel/new/gmsl2_jtys_003.i2c'", "\""
+      ],
+
+      "options": {
+        "env": {"DISPLAY": "localhost:10.0"}
+      },
+
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      },
+    },
+
+    {
+      "label": "debug",
+      "dependsOrder": "sequence",
+      "dependsOn": ["upload", "gdbserver"]
+    }
+  ]
+}

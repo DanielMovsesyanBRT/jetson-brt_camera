@@ -189,6 +189,13 @@ public:
     push_back(ImagePtr(raw_rgb));
   }
 
+  ImageBox&                       set_meta(const Metadata &m)
+  {
+    for (ImagePtr img : *this)
+      *(img.get()) += m;
+
+    return *this;
+  }
 
   void                            append(const ImageBox& array)
   {

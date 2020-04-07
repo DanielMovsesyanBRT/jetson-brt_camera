@@ -22,6 +22,7 @@
 #include "device/deserializer.hpp"
 #include "device/device_manager.hpp"
 #include "utils.hpp"
+#include "png.h"
 #include "console_cli.hpp"
 
 
@@ -81,7 +82,7 @@ public:
       return;
 
     if (!_images[id])
-      _images[id] = box[0]->get_bits();
+      _images[id] = box[0];//->get_bits();
 
     _event.notify_all();
   }
@@ -142,6 +143,108 @@ public:
   }
 
 private:
+
+  /**
+   * \fn  writeImage
+   *
+   * @param  filename : const char* 
+   * @param  width :  int 
+   * @param  height :  int 
+   * @param  *buffer :  uint8_t 
+   * @param  title : const char* 
+   * \brief <description goes here>
+   */
+  void writeImage(const char* filename, int width, int height, uint8_t *buffer,const char* title)
+  {
+    FILE *fp = NULL;
+    png_structp png_ptr = NULL;
+    png_infop info_ptr = NULL;
+    png_bytep row = NULL;
+
+    try
+    {
+      // Open file for writing (binary mode)
+      fp = fopen(filename, "wb");
+      if (fp == NULL)
+      {
+        fprintf(stderr, "Could not open file %s for writing\n", filename);
+        throw 1;
+      }
+
+      // Initialize write structure
+      png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+      if (png_ptr == NULL)
+      {
+        fprintf(stderr, "Could not allocate write struct\n");
+        throw 1;
+      }
+
+      // Initialize info structure
+      info_ptr = png_create_info_struct(png_ptr);
+      if (info_ptr == NULL)
+      {
+        fprintf(stderr, "Could not allocate info struct\n");
+        throw 1;
+      }
+
+      // Setup Exception handling
+      if (setjmp(png_jmpbuf(png_ptr)))
+      {
+        fprintf(stderr, "Error during png creation\n");
+        throw 1;
+      }
+
+      png_init_io(png_ptr, fp);
+
+      // Write header (8 bit colour depth)
+      png_set_IHDR(png_ptr, info_ptr, width, height,
+          8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+          PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
+
+      // Set title
+      if (title != NULL)
+      {
+        png_text title_text;
+        title_text.compression = PNG_TEXT_COMPRESSION_NONE;
+        title_text.key = (png_charp)"Title";
+        title_text.text = (png_charp)title;
+        png_set_text(png_ptr, info_ptr, &title_text, 1);
+      }
+
+      png_write_info(png_ptr, info_ptr);
+
+      // Allocate memory for one row (3 bytes per pixel - RGB)
+      row = (png_bytep) malloc(4 * width * sizeof(png_byte));
+  //
+      // Write image data
+      int x, y;
+      for (y=0 ; y<height ; y++)
+      {
+        for (x=0 ; x<width ; x++)
+        {
+          *((uint16_t*)&row[x * 4]) = *((uint16_t*)&buffer[(y*width +x) * 8]) >> 8;
+          *((uint16_t*)&row[x * 4 + 1]) = *((uint16_t*)&buffer[(y*width +x) * 8 + 2]) >> 8;
+          *((uint16_t*)&row[x * 4 + 2]) = *((uint16_t*)&buffer[(y*width +x) * 8 + 4]) >> 8;
+          *((uint16_t*)&row[x * 4 + 3]) = *((uint16_t*)&buffer[(y*width +x) * 8  + 6]) >> 8;
+        }
+        png_write_row(png_ptr, row);
+      }
+
+      // End write
+      png_write_end(png_ptr, NULL);
+    }
+    catch(...)
+    {
+
+    }
+
+    if (fp != NULL) fclose(fp);
+    if (info_ptr != NULL) png_free_data(png_ptr, info_ptr, PNG_FREE_ALL, -1);
+    if (png_ptr != NULL) png_destroy_write_struct(&png_ptr, (png_infopp)NULL);
+    if (row != NULL) free(row);
+  }
+
+
   void                            thread_loop()
   {
     while(!_terminate)
@@ -156,26 +259,46 @@ private:
         bool expected = true;
         if (_flag.compare_exchange_strong(expected, false))
         {
+          image::RawRGBPtr img = _images[0]->get_bits();
+          uint32_t timetag = _images[0]->get<unsigned long>("time_tag", 0);
+
           std::unique_lock<std::mutex> l(_mutex);
-          _file_name[0] = Utils::string_format("%s/%s_%04d_left.raw", _directory.c_str(),_prefix.c_str(),_unique);
-          uint32_t w = _images[0]->width(), h = _images[0]->height(), bytes = 2 /* RAW12*/;
+          uint32_t w = img->width(), h = img->height(), bytes = img->depth(); /* RAW12*/;
 
-          std::ofstream raw_file (_file_name[0], std::ios::out | std::ios::binary);
-          raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
-          raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
-          raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-          raw_file.write(reinterpret_cast<const char*>(_images[0]->bytes()),w * h * bytes);
+          if (img->type() == image::eBayer)
+          {
+            _file_name[0] = Utils::string_format("%s/%s_%08X_left.raw", _directory.c_str(),_prefix.c_str(), timetag);
+            std::ofstream raw_file (_file_name[0], std::ios::out | std::ios::binary);
+            raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
+            raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
+            raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
+            raw_file.write(reinterpret_cast<const char*>(img->bytes()),w * h * bytes);
+          }
+          else
+          {
+            _file_name[0] = Utils::string_format("%s/%s_%08X_left.png", _directory.c_str(),_prefix.c_str(),timetag);
+            writeImage(_file_name[0].c_str(), (int)w, (int)h, img->bytes(), "left");
+          }
 
-          _file_name[1] = Utils::string_format("%s/%s_%04d_right.raw", _directory.c_str(),_prefix.c_str(),_unique);
+          img = _images[1]->get_bits();
+          timetag = _images[1]->get<unsigned long>("time_tag", 0);
+          w = img->width(); h = img->height(); bytes = img->depth(); /* RAW12*/;
 
-          w = _images[1]->width(), h = _images[1]->height(), bytes = 2 /* RAW12*/;
+          if (img->type() == image::eBayer)
+          {
+            _file_name[1] = Utils::string_format("%s/%s_%08X_right.raw", _directory.c_str(),_prefix.c_str(),timetag);
+            std::ofstream raw_file(_file_name[1], std::ios::out | std::ios::binary);
+            raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
+            raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
+            raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
 
-          raw_file = std::ofstream(_file_name[1], std::ios::out | std::ios::binary);
-          raw_file.write(reinterpret_cast<const char*>(&w), sizeof(w));
-          raw_file.write(reinterpret_cast<const char*>(&h), sizeof(h));
-          raw_file.write(reinterpret_cast<const char*>(&bytes), sizeof(bytes));
-
-          raw_file.write(reinterpret_cast<const char*>(_images[1]->bytes()),w * h * bytes);
+            raw_file.write(reinterpret_cast<const char*>(img->bytes()),w * h * bytes);
+          }
+          else
+          {
+            _file_name[1] = Utils::string_format("%s/%s_%08X_right.png", _directory.c_str(),_prefix.c_str(),timetag);
+            writeImage(_file_name[1].c_str(), (int)w, (int)h, img->bytes(), "right");
+          }
 
           _unique++;
           _event_back.notify_all();
@@ -193,7 +316,8 @@ private:
   std::atomic_bool                _flag;
   uint32_t                        _unique;
 
-  image::RawRGBPtr                _images[2];
+  //image::RawRGBPtr                _images[2];
+  image::ImagePtr                 _images[2];
 
   std::mutex                      _mutex;
   std::thread                     _thread;
@@ -203,7 +327,8 @@ private:
   std::string                     _file_name[2];
 };
 
-Consumer camera[3] = { "camera1", "camera2", "camera3" };
+Consumer camera_raw[3] = { "camera1", "camera2", "camera3" };
+Consumer camera_png[3] = { "camera1", "camera2", "camera3" };
 
 
 /*
@@ -219,17 +344,19 @@ public:
 
   virtual void                    run(int camera)
   {
-    ::camera[camera].trigger();
+    ::camera_raw[camera].trigger();
+    ::camera_png[camera].trigger();
   }
 
   virtual void                    dir(int camera,const char* directory)
   {
-    ::camera[camera].set_destination(directory);
+    ::camera_raw[camera].set_destination(directory);
+    ::camera_png[camera].set_destination(directory);
   }
 
   virtual const char*             destination(int camera)
   {
-    return ::camera[camera].get_destination();
+    return ::camera_raw[camera].get_destination();
   }
 
 private:
@@ -351,8 +478,14 @@ int main(int argc, char **argv)
           if (current_isp != nullptr)
             current_isp->add_camera(cam);
 
-          cam->register_consumer(&camera[id],Metadata().set("<id>", index));
-          camera[id].set_destination(cwd);
+          //cam->register_consumer(&camera[id],Metadata().set("<id>", index));
+          if (cam->debayer_producer() != nullptr)
+            cam->debayer_producer()->register_consumer(&camera_png[id],Metadata().set("<id>", index));
+
+          cam->register_consumer(&camera_raw[id],Metadata().set("<id>", index));
+
+          camera_raw[id].set_destination(cwd);
+          camera_png[id].set_destination(cwd);
 
           if (print_eeprom)
           {
@@ -362,7 +495,8 @@ int main(int argc, char **argv)
           }
         }
       }
-      camera[id].start();
+      camera_raw[id].start();
+      camera_png[id].start();
     }
   }
 
@@ -407,11 +541,22 @@ int main(int argc, char **argv)
           cli.move_to(-100,0);
           cli.move_to(2,3 - index);
 
-          if (::camera[index].is_started())
+          if (::camera_raw[index].is_started())
           {
-            ::camera[index].trigger(true);
+            ::camera_raw[index].trigger(true);
             std::string file_name[2];
-            ::camera[index].get_last_file_names(file_name);
+            ::camera_raw[index].get_last_file_names(file_name);
+
+            std::cout << "  " << file_name[0] << ", " << file_name[1];
+          }
+          else
+            std::cout << " NOT INITIALIZED!!!";
+
+          if (::camera_png[index].is_started())
+          {
+            ::camera_png[index].trigger(true);
+            std::string file_name[2];
+            ::camera_png[index].get_last_file_names(file_name);
 
             std::cout << "  " << file_name[0] << ", " << file_name[1];
           }

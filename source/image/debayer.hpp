@@ -43,6 +43,7 @@ public:
 
           bool                    init(size_t width,size_t height,size_t small_hits_size);
           image::RawRGBPtr        ahd(image::RawRGBPtr img);
+          image::RawRGBPtr        mhc(image::RawRGBPtr img);
 
   virtual void                    consume(image::ImageBox box);
 

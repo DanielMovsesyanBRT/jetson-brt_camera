@@ -1,0 +1,7 @@
+{
+  "ros.distro": "dashing",
+  "C_Cpp.default.configurationProvider": "go2sh.cmake-integration",
+  "files.associations": {
+    "atomic": "cpp"
+  }
+}

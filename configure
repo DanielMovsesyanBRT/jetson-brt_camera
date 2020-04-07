@@ -13,7 +13,8 @@ if [ "$TARGET" = exe ]; then
 fi
 
 if [ "$ARCH" = ARM ]; then
-  ARGUMENTS="${ARGUMENTS} -DCMAKE_TOOLCHAIN_FILE=${DIRECTORY}/targets/tegra_toolchain.cmake"
+  # ARGUMENTS="${ARGUMENTS} -DCMAKE_TOOLCHAIN_FILE=${DIRECTORY}/targets/tegra_toolchain.cmake"
+  ARGUMENTS="${ARGUMENTS} -DCMAKE_TOOLCHAIN_FILE=${DIRECTORY}/targets/aarch64_toolchainfile.cmake"
 fi
 
 if [ -n ${INSTALL+x} ]; then

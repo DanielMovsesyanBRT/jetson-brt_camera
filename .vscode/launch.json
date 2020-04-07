@@ -1,0 +1,32 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "(gdb) Attach",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/assets/jetson-brt_camera",
+      // "preLaunchTask": "debug",
+      "args": [],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}",
+      "externalConsole": true,
+      "logging": {"engineLogging": true, "exceptions": true, "moduleLoad": true, "programOutput": true, "trace": true, "traceResponse": true  },
+      "MIMode": "gdb",
+      "miDebuggerPath": "/home/daniel/Tools/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu/bin/aarch64-linux-gnu-gdb",
+      "miDebuggerServerAddress": "192.168.20.77:2345",
+      // "debugServerPath": "/usr/bin/gdbserver",
+      // "debugServerArgs": "localhost:2345 /home/jupiter/daniel/new/jetson-brt_camera",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ]
+    }
+  ]
+}

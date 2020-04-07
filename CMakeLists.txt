@@ -37,6 +37,15 @@ add_subdirectory(fltk_interface)
 #
 project(jetson-brt_camera C CXX CUDA)
 
+find_package(X11 REQUIRED)
+
+find_library(PNG
+        NAMES png16
+        HINTS "${CMAKE_SOURCE_DIR}/png/lib")        
+
+find_library(LIBZ
+        NAMES z
+        HINTS "${CMAKE_SOURCE_DIR}/png/lib")        
 
 set(SOURCES 
 
@@ -81,8 +90,10 @@ target_include_directories(${PROJECT_NAME}
                               "source/fltk" 
                               "source/image" 
                               "source/window"
-                              "script" )
+                              "script" 
+                              "png/include" 
+                              ${X11_X11_INCLUDE_PATH})
                               
-target_link_libraries(${PROJECT_NAME} PUBLIC script pthread)
+target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${PNG} ${LIBZ})
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)
 

@@ -72,6 +72,7 @@ Debayer_impl()
 
           void                    init(size_t width,size_t height,size_t small_hits_size);
           image::RawRGBPtr        ahd(image::RawRGBPtr img);
+          image::RawRGBPtr        mhc(image::RawRGBPtr img);
 private:
 
   CudaPtr<uint16_t>               _raw;
@@ -404,6 +405,164 @@ __global__ void cudaMax(uint32_t* org,uint32_t* max)
 }
 
 
+
+/**
+ *
+ *
+ *   Malvar-He-Cutler Linear Image Demosaicking
+ *
+ *
+ */
+
+ #define MHC_KERNEL_RADIUS                (2)
+ #define MHC_KERNEL_SIZE                  (MHC_KERNEL_RADIUS  * 2 + 1)
+
+ __constant__ int16_t green[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
+ { // Green at red or blue location
+  { 0, 0,-1, 0, 0},
+  { 0, 0, 2, 0, 0},
+  {-1, 2, 4, 2,-1},
+  { 0, 0, 2, 0, 0},
+  { 0, 0,-1, 0, 0}
+};
+
+__constant__ int16_t red_blue_row[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
+{ // Red at Green in red row multiplied by 2
+  { 0, 0, 1, 0, 0},
+  { 0,-2, 0,-2, 0},
+  {-2, 8,10, 8,-2},
+  { 0,-2, 0,-2, 0},
+  { 0, 0, 1, 0, 0},
+};
+
+__constant__ int16_t red_blue_col[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
+{ // Red at Green in blue row multiplied by 2
+  { 0, 0,-2, 0, 0},
+  { 0,-2, 8,-2, 0},
+  { 1, 0,10, 0, 1},
+  { 0,-2, 8,-2, 0},
+  { 0, 0,-2, 0, 0},
+};
+
+__constant__ int16_t red_blue[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
+{ // Red at blue  multiplied by 2
+  { 0, 0,-3, 0, 0},
+  { 0, 4, 0, 4, 0},
+  {-3, 0,12, 0,-3},
+  { 0, 4, 0, 4, 0},
+  { 0, 0,-3, 0, 0},
+};
+
+/**
+ * \fn  convolute
+ *
+ * @param  int16_t kernel[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE]
+ * @param  x0 :  size_t 
+ * @param  y0 :  size_t 
+ * @param  width :  size_t 
+ * @param  height :  size_t 
+ * @param  raw : uint16_t* 
+ * @param  g_loc :  int 
+ * @return  __device__ int
+ * \brief <description goes here>
+ */
+
+ __device__ int convolute(int16_t kernel[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE],
+                          size_t x0, size_t y0, size_t width, size_t height, uint16_t* raw, int g_loc)
+{
+  int sum = 0;
+
+  for (int i = -MHC_KERNEL_RADIUS; i <= MHC_KERNEL_RADIUS; i++)
+  {
+    for (int j = -MHC_KERNEL_RADIUS; j <= MHC_KERNEL_RADIUS; j++)
+    {
+      int x = x0+i, y=y0+j;
+      if ((x >= 0) && (y >= 0) && 
+          (x < (width - MHC_KERNEL_RADIUS)) && 
+          (y < (height - MHC_KERNEL_RADIUS)))
+      {
+        sum += raw[g_loc + (i + j * width)] * kernel[i + MHC_KERNEL_RADIUS][j + MHC_KERNEL_RADIUS];
+      }
+    }
+  }
+  return sum;
+}
+
+/**
+ * \fn  mhc_debayering
+ *
+ * @param  width : size_t 
+ * @param  height :  size_t 
+ * @param  raw : uint16_t* 
+ * @param  result :  RGBA* 
+ * @param  histogram :  uint32_t* 
+ * @param  histogram_size : uint32_t 
+ * @param  small_histogram :  uint32_t* 
+ * @param  small_histogram_size :  uint32_t 
+ * @return  __global__ void
+ * \brief <description goes here>
+ */
+__global__ void mhc_debayering(size_t width, size_t height,uint16_t* raw, RGBA* result,
+                                uint32_t* histogram,uint32_t histogram_size,
+                                uint32_t* small_histogram, uint32_t small_histogram_size)
+{
+  enum ColorPos
+  {
+    eClearRed = 0, eRed = 1, eBlue = 2, eClearBlue = 3
+  };
+
+  auto position=[](int x, int y)->ColorPos
+  {
+    return static_cast<ColorPos>((x & 1) + (y & 1) * 2);
+  };
+
+  int x0 = ((blockIdx.x * blockDim.x) + threadIdx.x);
+  int y0 = ((blockIdx.y * blockDim.y) + threadIdx.y);
+  int g_loc = x0 + y0 * width; // input offset
+
+  // convolution
+  ColorPos  pos = position(x0, y0);
+  int r,g,b,a = 0xFFFF;
+  switch (pos)
+  {
+  case eClearRed:
+    r = convolute(red_blue_row,x0,y0,width,height,raw,g_loc) >> 4;
+    g = raw[g_loc];
+    b = convolute(red_blue_col,x0,y0,width,height,raw,g_loc) >> 4;
+    break;
+
+  case eRed:
+    r = raw[g_loc];
+    g = convolute(green,x0,y0,width,height,raw,g_loc) >> 3;
+    b = convolute(red_blue,x0,y0,width,height,raw,g_loc) >> 4;
+    break;
+
+  case eBlue:
+    r = convolute(red_blue,x0,y0,width,height,raw,g_loc) >> 4;
+    g = convolute(green,x0,y0,width,height,raw,g_loc) >> 3;
+    b = raw[g_loc];
+    break;
+
+  case eClearBlue:  // coefficient Beta = 5/8 (or 10/16)
+    r = convolute(red_blue_col,x0,y0,width,height,raw,g_loc) >> 4;
+    g = raw[g_loc];
+    b = convolute(red_blue_row,x0,y0,width,height,raw,g_loc) >> 4;
+    break;
+  }      
+  
+  result[g_loc]._r = (r <= 0xFFFF) ? r : 0xFFFF;
+  result[g_loc]._g = (g <= 0xFFFF) ? g : 0xFFFF;
+  result[g_loc]._b = (b <= 0xFFFF) ? b : 0xFFFF;
+  result[g_loc]._a = (a <= 0xFFFF) ? a : 0xFFFF;
+  
+  uint32_t brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
+  atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
+
+  brightness = ((r+r+r+b+g+g+g+g) >> 3) * histogram_size >> 16;
+  atomicAdd(&histogram[brightness & ((1 << 16) - 1)], 1);
+}
+
+
 Debayer_impl* Debayer::_impl = nullptr;
 /*
  * \\fn constructor Debayer::Debayer
@@ -550,6 +709,69 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
   return result;
 }
 
+
+/**
+ * \fn  Debayer_impl::mhc
+ *
+ * @param   img : image::RawRGBPtr
+ * @return  image::RawRGBPtr
+ * \brief <description goes here>
+ */
+image::RawRGBPtr Debayer_impl::mhc(image::RawRGBPtr img)
+{
+  if (!img)
+    return image::RawRGBPtr();
+
+  _mutex.lock();
+
+  _histogram_max.fill(0);
+  _small_histogram.fill(0);
+  _raw.put((uint16_t*)img->bytes(),img->width() * img->height());
+
+  dim3 threads(_thx, _thy);
+  dim3 blocks(_blkx, _blky);
+
+  mhc_debayering<<<blocks,threads>>>(img->width(), img->height(), _raw.ptr(), _result.ptr(),
+                                          _histogram.ptr(), _histogram.size(),_small_histogram.ptr(), _small_histogram.size());
+
+  int thx = 64;
+  while (_histogram.size() < thx)
+    thx >>= 1;
+
+  cudaMax<<<_histogram.size() / thx, thx>>>(_histogram.ptr(), _histogram_max.ptr());
+
+  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGBA));
+  _result.get((RGBA*)result->bytes(), result->width() * result->height());
+
+  image::HistPtr  full_hist(new image::Histogram);
+  full_hist->_histogram.resize(_histogram.size());
+  full_hist->_small_hist.resize(_small_histogram.size());
+
+  _histogram.get((uint32_t*)full_hist->_histogram.data(), _histogram.size());
+  _small_histogram.get(full_hist->_small_hist.data(), _small_histogram.size());
+  _histogram_max.get(&full_hist->_max_value, 1);
+
+  result->set_histogram(full_hist);
+
+  _mutex.unlock();
+
+  return result;
+}
+
+/**
+ * \fn  Debayer::mhc
+ *
+ * @param   img : image::RawRGBPtr
+ * @return  image::RawRGBPtr
+ * \brief <description goes here>
+ */
+image::RawRGBPtr Debayer::mhc(image::RawRGBPtr img)
+{
+  return _impl->mhc(img);
+}
+
+
+
 /*
  * \\fn image::RawRGBPtr Debayer::ahd
  *
@@ -573,9 +795,10 @@ void Debayer::consume(image::ImageBox box)
 {
   for (image::ImagePtr img : box)
   {
-    image::RawRGBPtr result = _impl->ahd(img->get_bits());
+    //image::RawRGBPtr result = _impl->ahd(img->get_bits());
+    image::RawRGBPtr result = _impl->mhc(img->get_bits());
     if (result)
-      ImageProducer::consume(image::ImageBox(result));
+      ImageProducer::consume(image::ImageBox(result).set_meta(*(img.get())));
   }
 }
 
