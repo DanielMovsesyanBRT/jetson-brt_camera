@@ -668,6 +668,7 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
 
   _mutex.lock();
 
+  _histogram.fill(0);
   _histogram_max.fill(0);
   _small_histogram.fill(0);
   _raw.put((uint16_t*)img->bytes(),img->width() * img->height());
@@ -724,6 +725,7 @@ image::RawRGBPtr Debayer_impl::mhc(image::RawRGBPtr img)
 
   _mutex.lock();
 
+  _histogram.fill(0);
   _histogram_max.fill(0);
   _small_histogram.fill(0);
   _raw.put((uint16_t*)img->bytes(),img->width() * img->height());
@@ -732,7 +734,8 @@ image::RawRGBPtr Debayer_impl::mhc(image::RawRGBPtr img)
   dim3 blocks(_blkx, _blky);
 
   mhc_debayering<<<blocks,threads>>>(img->width(), img->height(), _raw.ptr(), _result.ptr(),
-                                          _histogram.ptr(), _histogram.size(),_small_histogram.ptr(), _small_histogram.size());
+                                          _histogram.ptr(), _histogram.size(), _small_histogram.ptr(), 
+                                          _small_histogram.size());
 
   int thx = 64;
   while (_histogram.size() < thx)

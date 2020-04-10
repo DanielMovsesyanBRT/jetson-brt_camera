@@ -16,7 +16,7 @@
 #define MAX_EXPOSURE                        (20.0)
 #define MIN_DOUBLE_COMPARE                  (0.01)
 #define EXPOSURE_CORRECTION                 (0.77)
-#define HISTERESIS_SIZE                     (0.11)
+#define HISTERESIS_SIZE                     (0.3) //(0.11)
 
 #define DECAYING_COEFFICIENT                (0.4)
 
