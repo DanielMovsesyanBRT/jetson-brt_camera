@@ -35,32 +35,44 @@ elseif(NOT DEFINED ENV{TOOLCHAIN_PATH})
   set(ENV{TOOLCHAIN_PATH} ${TOOLCHAIN_PATH})
 endif()
 
+if(NOT DEFINED ENV{JETSON_SYS_ROOT})
+  message(FATAL_ERROR "JETSON_SYS_ROOT is not specified")
+endif()
+
+
+# set(ROS2_DIR $ENV{ROS2_HOME_DIRECTORY})
+set(SYSROOT  $ENV{JETSON_SYS_ROOT})
 
 
 set(CMAKE_CXX_COMPILER "${TOOLCHAIN_PATH}/${TOOLCHAIN_PREFIX}-g++")
 set(CMAKE_C_COMPILER "${TOOLCHAIN_PATH}/${TOOLCHAIN_PREFIX}-gcc")
 set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
-set(CMAKE_EXECUTABLE_RUNTIME_CXX_FLAG       "-Wl,-rpath,")       # -rpath
-set(CMAKE_EXECUTABLE_RUNTIME_C_FLAG         "-Wl,-rpath,")       # -rpath
-set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG     "-Wl,-rpath,")
-set(CMAKE_SHARED_LIBRARY_RUNTIME_CXX_FLAG   "-Wl,-rpath,")
+#string(APPEND CMAKE_EXE_LINKER_FLAGS "-L${SYSROOT}/lib -Wl,--allow-shlib-undefined -Wl,-as-needed ")
+#string(APPEND CMAKE_SHARED_LINKER_FLAGS "-L${SYSROOT}/lib -Wl,--allow-shlib-undefined -Wl,-as-needed ")
+string(APPEND CMAKE_EXE_LINKER_FLAGS "-L${SYSROOT}/lib ")
+string(APPEND CMAKE_SHARED_LINKER_FLAGS "-L${SYSROOT}/lib ")
 
-if(NOT CMAKE_EXE_LINKER_FLAGS MATCHES ".*-Wl,--allow-shlib-undefined.*")
-  string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-shlib-undefined")
-endif()
-
-if(NOT CMAKE_SHARED_LINKER_FLAGS MATCHES ".*-Wl,--allow-shlib-undefined.*")
-  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--allow-shlib-undefined")
-endif()
+#set(CMAKE_EXECUTABLE_RUNTIME_CXX_FLAG       "-Wl,-rpath,")       # -rpath
+#set(CMAKE_EXECUTABLE_RUNTIME_C_FLAG         "-Wl,-rpath,")       # -rpath
+#set(CMAKE_SHARED_LIBRARY_RUNTIME_C_FLAG     "-Wl,-rpath,")
+#set(CMAKE_SHARED_LIBRARY_RUNTIME_CXX_FLAG   "-Wl,-rpath,")
+#
+#if(NOT CMAKE_EXE_LINKER_FLAGS MATCHES ".*-Wl,--allow-shlib-undefined.*")
+#  string(APPEND CMAKE_EXE_LINKER_FLAGS " -Wl,--allow-shlib-undefined")
+#endif()
+#
+#if(NOT CMAKE_SHARED_LINKER_FLAGS MATCHES ".*-Wl,--allow-shlib-undefined.*")
+#  string(APPEND CMAKE_SHARED_LINKER_FLAGS " -Wl,--allow-shlib-undefined")
+#endif()
 
 # if(NOT CMAKE_STATIC_LINKER_FLAGS MATCHES ".*\-Wl,\-\-allow\-shlib-undefined.*")
 #   string(APPEND CMAKE_STATIC_LINKER_FLAGS " -Wl,--allow-shlib-undefined")
 # endif()
 
 # setup compiler for cross-compilation
-set(CMAKE_CXX_FLAGS           "-fPIC"        CACHE STRING "c++ flags")
-set(CMAKE_C_FLAGS             "-fPIC"        CACHE STRING "c flags")
+#set(CMAKE_CXX_FLAGS           "-fPIC"        CACHE STRING "c++ flags")
+#set(CMAKE_C_FLAGS             "-fPIC"        CACHE STRING "c flags")
 # set(CMAKE_SHARED_LINKER_FLAGS ""                    CACHE STRING "shared linker flags")
 # set(CMAKE_MODULE_LINKER_FLAGS ""                    CACHE STRING "module linker flags")
 # set(CMAKE_EXE_LINKER_FLAGS    ""                    CACHE STRING "executable linker flags")
@@ -83,13 +95,6 @@ endif()
 #   message(FATAL_ERROR "ROS2 Home directory ROS2_HOME_DIRECTORY is not specified")
 # endif()
 
-if(NOT DEFINED ENV{JETSON_SYS_ROOT})
-  message(FATAL_ERROR "JETSON_SYS_ROOT is not specified")
-endif()
-
-
-# set(ROS2_DIR $ENV{ROS2_HOME_DIRECTORY})
-set(SYSROOT  $ENV{JETSON_SYS_ROOT})
 
 set(CMAKE_FIND_ROOT_PATH ${SYSROOT})
 set(CMAKE_FIND_ROOT_PATH_MODE_PROGRAM NEVER)

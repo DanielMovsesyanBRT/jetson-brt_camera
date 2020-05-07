@@ -67,6 +67,17 @@ Camera::Camera(Deserializer* owner,int id,const Value::byte_buffer& bb /*= Value
   if (!bb.empty())
     memcpy(&_camera_params, &bb.front(), std::min(bb.size(), sizeof(_camera_params)));
 
+  
+  std::string db_alg = gm::get()["args"].get<std::string>("debayering","mhc");
+  if (db_alg.compare("mhc") == 0)
+    _ip.set_debayer_algorithm(daMHC);
+
+  else if (db_alg.compare("ahd") == 0)
+    _ip.set_debayer_algorithm(daAHD);
+  
+  else if (db_alg.compare("bilinear") == 0)
+    _ip.set_debayer_algorithm(daBiLinear);
+
   register_consumer(&_ip);
 }
 

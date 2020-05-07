@@ -27,7 +27,7 @@ public:
 
   Value();
   Value(const Value& val);
-  Value(ValueData& vd);
+  Value(ValueData* vd);
   virtual ~Value();
 
           operator bool() const;

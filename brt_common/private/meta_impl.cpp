@@ -7,6 +7,7 @@
 
 #include <string.h>
 #include <sstream>
+
 #include "meta_impl.hpp"
 #include "meta_impl.hpp"
 
@@ -71,10 +72,8 @@ void MetaImpl::add(const char *semicolon_separated_list)
 void MetaImpl::add(const MetaImpl* params)
 {
   if ((_meta_data != nullptr) && (params->_meta_data != nullptr))
-  {
-    for (auto pair : (*params->_meta_data))
-      _meta_data->insert(pair);
-  }
+    _meta_data->add(params->_meta_data);
+
 }
 
 /*
@@ -125,9 +124,9 @@ void MetaImpl::copy_key(const char* to, const char* from, const MetaImpl* meta)
 {
   if ((_meta_data != nullptr) && (meta->_meta_data != nullptr))
   {
-    value_database::iterator iter = meta->_meta_data->find(from);
-    if (iter != meta->_meta_data->end())
-      (*_meta_data)[to] = iter->second;
+    ValueData* vl = meta->_meta_data->find(from);
+    if (vl != nullptr)
+      *_meta_data->value(to) = *vl;
   }
 }
 
@@ -140,12 +139,12 @@ void MetaImpl::copy_key(const char* to, const char* from, const MetaImpl* meta)
  *
  */
 std::string MetaImpl::to_string() const
-{
+{  
   std::stringstream result;
   if (_meta_data != nullptr)
   {
     for (auto pair : (*_meta_data))
-      result << pair.first << "=" << pair.second.get_string() << ";";
+      result << pair.first << "=" << pair.second->get_string() << ";";
   }
 
   return result.str();
@@ -172,7 +171,7 @@ std::string MetaImpl::to_json(bool nicely_formatted /*= true*/) const
     if (nicely_formatted)
       result << std::endl << "\t";
 
-    result << "\"" << pair.first << "\": " << pair.second.get_string();
+    result << "\"" << pair.first << "\": " << pair.second->get_string();
     first_arg = false;
   }
 

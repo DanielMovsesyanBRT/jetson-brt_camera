@@ -129,9 +129,35 @@ template<> struct Metadata::default_arg<std::string> { static std::string get() 
 template<> struct Metadata::default_arg<Metadata::byte_buffer>
     { static Metadata::byte_buffer get() { return Metadata::byte_buffer(); } };
 
+
+/*
+ * \\class GlobalMetadata
+ *
+ * created on: Apr 21, 2020
+ *
+ */
+class GlobalMetadata
+{
+private:
+  GlobalMetadata() {}
+  virtual ~GlobalMetadata() {}
+
+public:
+  static GlobalMetadata&          get() { return _object; }
+          Metadata&               operator[](const char *);
+          Metadata&               operator[](std::string);
+
+private:
+  static GlobalMetadata           _object;
+
+  std::unordered_map<std::string,Metadata>
+                                  _data;
+};
+
 } // jupiter
 } // brt
 
 extern brt::jupiter::Metadata _context;
+using gm=brt::jupiter::GlobalMetadata;
 
 #endif //MOTEC_BU_METADATA_HPP

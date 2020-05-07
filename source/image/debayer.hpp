@@ -27,6 +27,24 @@ namespace brt
 namespace jupiter
 {
 
+/*
+ * \\enum DebayerAlgorithm
+ *
+ * created on: Apr 21, 2020
+ *
+ */
+enum DebayerAlgorithm
+{
+  daBiLinear,
+
+  // Adaptive Homogeneity-directed Demosaicing
+  daAHD,
+
+  // Malvar-He-Cutler Linear Image Demosaicing
+  daMHC
+
+};
+
 class Debayer_impl;
 /*
  * \\class Debayer1D
@@ -46,11 +64,14 @@ public:
           image::RawRGBPtr        mhc(image::RawRGBPtr img);
 
   virtual void                    consume(image::ImageBox box);
+          DebayerAlgorithm        debayer_algorithm() const { return _daType; }
+          void                    set_debayer_algorithm(DebayerAlgorithm da) { _daType = da; }
 
 private:
   static Debayer_impl*            _impl;
   size_t                          _width;
   size_t                          _height;
+  DebayerAlgorithm                _daType;
 };
 
 } /* namespace jupiter */

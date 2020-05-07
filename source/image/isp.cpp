@@ -164,6 +164,10 @@ void ISP::consume(ImageBox box)
         double exp_value = x * std::fabs(k1);
         double exposure_ms = block._cam->get_exposure();
         double new_exposure = exposure_ms + exp_value;
+
+        std::cout << "___ AU:" << exposure_ms << " ," << new_exposure << std::endl;
+
+
         if (new_exposure < 0)
         {
           new_exposure = exposure_ms / 2.0;

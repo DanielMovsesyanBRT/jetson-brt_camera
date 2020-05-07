@@ -14,6 +14,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <atomic>
 
 #include <stdint.h>
 
@@ -327,8 +328,8 @@ private:
   std::string                     _file_name[2];
 };
 
-Consumer camera_raw[3] = { "camera1", "camera2", "camera3" };
-Consumer camera_png[3] = { "camera1", "camera2", "camera3" };
+Consumer camera_raw[4] = { "camera1", "camera2", "camera3", "camera4" };
+Consumer camera_png[4] = { "camera1", "camera2", "camera3", "camera4" };
 
 
 /*
@@ -384,11 +385,12 @@ int main(int argc, char **argv)
 
   image::ISPManager isp_manager;
 
-  brt::jupiter::Metadata meta_args;
-  meta_args.parse(argc,argv);
+  gm::get()["args"].parse(argc,argv);
+  // brt::jupiter::Metadata meta_args;
+  // meta_args.parse(argc,argv);
 
-  bool cli_only = meta_args.get<bool>("cli_only",false);
-  bool print_eeprom = meta_args.get<bool>("print_eeprom",false);
+  bool cli_only = gm::get()["args"].get<bool>("cli_only",false);
+  bool print_eeprom = gm::get()["args"].get<bool>("print_eeprom",false);
 
   if (!cli_only)
   {
@@ -407,7 +409,7 @@ int main(int argc, char **argv)
   }
 
 
-  double frame_rate = brt::jupiter::Utils::frame_rate(meta_args.get<std::string>("frame_rate","10fps").c_str());
+  double frame_rate = brt::jupiter::Utils::frame_rate(gm::get()["args"].get<std::string>("frame_rate","10fps").c_str());
   std::cout << "Setting trigger to " << frame_rate << "fps" << std::endl;
   brt_camera_trigger trg;
 
@@ -416,21 +418,20 @@ int main(int argc, char **argv)
 
   if (::ioctl(brt::jupiter::DeviceManager::get()->handle(),BRT_CAMERA_TRIGGER_SET_PWM,(unsigned long)&trg))
     std::cerr << "Unable to set trigger error:" << errno << std::endl;
-
-
+ 
   std::vector<int> ids;
-  std::vector<std::string> devices = meta_args.matching_keys("device\\d");
+  std::vector<std::string> devices = gm::get()["args"].matching_keys("device\\d");
   for (auto device : devices)
   {
     std::cout << "Loading device " << device << std::endl;
     int id = strtol(device.substr(6).c_str(),nullptr,0);
 
-    std::string script_file = meta_args.get<std::string>(device.c_str(),"");
+    std::string script_file = gm::get()["args"].get<std::string>(device.c_str(),"");
 
     auto deserializer = brt::jupiter::DeviceManager::get()->get_device(id);
     if (deserializer != nullptr)
     {
-      deserializer->load_script(script_file.c_str(), meta_args);
+      deserializer->load_script(script_file.c_str(), gm::get()["args"]);
       ids.push_back(id);
     }
   }
@@ -444,7 +445,7 @@ int main(int argc, char **argv)
   std::vector<uint16_t> cam_des;
 
   image::ISP* current_isp = nullptr;
-  if (devices.size() != 0 && !meta_args.get<bool>("group_isp") && !meta_args.get<bool>("no_isp"))
+  if (devices.size() != 0 && !gm::get()["args"].get<bool>("group_isp") && !gm::get()["args"].get<bool>("no_isp"))
     current_isp = isp_manager.new_isp();
 
   for (auto device : devices)
@@ -455,7 +456,7 @@ int main(int argc, char **argv)
     Deserializer* des = DeviceManager::get()->get_device(id);
     if (des != nullptr)
     {
-      if (meta_args.get<bool>("group_isp") && !meta_args.get<bool>("no_isp"))
+      if (gm::get()["args"].get<bool>("group_isp") && !gm::get()["args"].get<bool>("no_isp"))
         current_isp = isp_manager.new_isp(true);
 
       for (size_t index = 0; index < 2; index++)
@@ -521,8 +522,8 @@ int main(int argc, char **argv)
               << std::endl;
 
     cli.move_to(0, 5);
-    std::cout << "Press camera index [0, 1, 2] to capture camera image. q or Q to quit" << std::endl;
-    std::cout << "0:" << std::endl << "1:" << std::endl << "2:";
+    std::cout << "Press camera index [0, 1, 2, 3] to capture camera image. q or Q to quit" << std::endl;
+    std::cout << "0:" << std::endl << "1:" << std::endl << "2:" << std::endl << "3:";
     cli.move_to(-2,-1);
 
     int character;
@@ -531,7 +532,7 @@ int main(int argc, char **argv)
       if (std::isdigit(character))
       {
         int index = character - '0';
-        if ((index < 0) || (index > 2))
+        if ((index < 0) || (index > 3))
         {
           cli.move_to(-100,0);
           std::cout << "Invalid index " << character;
@@ -539,7 +540,7 @@ int main(int argc, char **argv)
         else
         {
           cli.move_to(-100,0);
-          cli.move_to(2,3 - index);
+          cli.move_to(2,4 - index);
 
           if (::camera_raw[index].is_started())
           {
@@ -564,7 +565,7 @@ int main(int argc, char **argv)
             std::cout << " NOT INITIALIZED!!!";
 
           cli.move_to(-100,0);
-          cli.move_to(0,index - 3);
+          cli.move_to(0,index - 4);
         }
       }
       else

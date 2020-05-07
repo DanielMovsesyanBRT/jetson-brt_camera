@@ -36,7 +36,7 @@ public:
     Fl_Button *m_Browse;
 
     void      enable(bool);
-  }      	 						            m_row[3];
+  }      	 						            m_row[4];
   Fl_Button*				              m_close;
   Fl_Double_Window*               m_window;
 
@@ -47,10 +47,12 @@ private:
   static void cb_m_run1(Fl_Button*, void*);
   static void cb_m_run2(Fl_Button*, void*);
   static void cb_m_run3(Fl_Button*, void*);
+  static void cb_m_run4(Fl_Button*, void*);
 
   static void cb_m_Browse1(Fl_Button*, void*);
   static void cb_m_Browse2(Fl_Button*, void*);
   static void cb_m_Browse3(Fl_Button*, void*);
+  static void cb_m_Browse4(Fl_Button*, void*);
   
   inline void cb_m_close_i(Fl_Button*, void*);
   static void cb_m_close(Fl_Button*, void*);

@@ -574,6 +574,7 @@ Debayer_impl* Debayer::_impl = nullptr;
 Debayer::Debayer()
 : _width(0)
 , _height(0)
+, _daType(daMHC)
 {
   if (_impl == nullptr)
     _impl = new Debayer_impl();
@@ -798,8 +799,24 @@ void Debayer::consume(image::ImageBox box)
 {
   for (image::ImagePtr img : box)
   {
-    //image::RawRGBPtr result = _impl->ahd(img->get_bits());
-    image::RawRGBPtr result = _impl->mhc(img->get_bits());
+    image::RawRGBPtr result;
+    switch (_daType)
+    {
+    case daBiLinear:
+      break; //TODO:
+      
+    case daAHD:
+      result = _impl->ahd(img->get_bits());
+      break;
+    
+    case daMHC:
+      result = _impl->mhc(img->get_bits());
+      break;
+        
+    default:
+      return;
+    }
+
     if (result)
       ImageProducer::consume(image::ImageBox(result).set_meta(*(img.get())));
   }

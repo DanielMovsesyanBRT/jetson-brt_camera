@@ -14,8 +14,11 @@
 #include <vector>
 #include <unordered_map>
 #include <typeinfo>
-
+#include <sstream>
 #include <regex>
+
+#include <assert.h>
+
 #include "value_data.hpp"
 
 namespace brt
@@ -24,6 +27,135 @@ namespace jupiter
 {
 
 class Metadata;
+
+typedef std::unordered_map<std::string,ValueData*> value_db;
+
+/**
+ * \class value_database
+ *
+ * \brief <description goes here>
+ */
+class value_database
+{
+public:
+  /**
+   * \fn  constructor value_database
+   *
+   * \brief <description goes here>
+   */
+  value_database()
+  {  }
+
+  /**
+   * \fn  destructor value_database
+   *
+   * \brief <description goes here>
+   */
+  virtual ~value_database()
+  {
+    for (auto val : _db)
+    {
+      if (val.second != nullptr)
+        val.second->release();
+    }
+  }
+
+
+  /**
+   * \fn  value
+   *
+   * @param  key : const char* 
+   * @return  ValueData*
+   * \brief <description goes here>
+   */
+  ValueData*  value(const char* key)
+  {
+    ValueData* result = nullptr;
+    auto iter = _db.find(key);
+    if (iter != _db.end())
+      result = iter->second;
+    else
+    {
+      auto pr = _db.insert({key, new ValueData});
+      result = pr.first->second;
+    }
+    assert(result != nullptr);
+    return result;
+  }
+
+  /**
+   * \fn  find
+   *
+   * @param  key : const char* 
+   * @return  ValueData*
+   * \brief <description goes here>
+   */
+  ValueData*  find(const char* key)
+  {
+    auto iter = _db.find(key);
+    if (iter != _db.end())
+      return iter->second;
+      
+    return nullptr;
+  }
+
+  /**
+   * \fn  matching_keys
+   *
+   * @param  *regex : const char 
+   * @return  std::vector<std::string
+   * \brief <description goes here>
+   */
+  std::vector<std::string>  matching_keys(const char *regex) const
+  {
+    const std::regex re(regex);
+    std::vector<std::string> result;
+
+    for (auto pair : _db)
+    {
+      if (std::regex_match(pair.first, re))
+        result.push_back(pair.first);
+    }
+    return result;
+  }
+
+  /**
+   * \fn  erase
+   *
+   * @param  *key : const char 
+   * \brief <description goes here>
+   */
+  void  erase(const char *key)
+  {
+    auto iter = _db.find(key);
+    if (iter != _db.end())
+    {
+      assert(iter->second != nullptr);
+      iter->second->release();
+      _db.erase(iter);
+    }
+  }
+
+  /**
+   * \fn  add
+   *
+   * @param  other : const value_database* 
+   * \brief <description goes here>
+   */
+  void add(const value_database* other)
+  {
+      for (auto pair : other->_db)
+        _db.insert({pair.first, new ValueData(*pair.second)});
+  }
+
+  value_db::iterator begin() { return _db.begin(); }
+  value_db::const_iterator begin() const { return _db.begin(); }
+  value_db::iterator end() { return _db.end(); }
+  value_db::const_iterator end() const { return _db.end(); }
+
+private:
+  value_db                        _db;
+};
 
 class MetaImpl
 {
@@ -70,7 +202,7 @@ public:
    */
   virtual ~MetaImpl()
   {
-    if (_own_data && (_meta_data == nullptr))
+    if (_own_data && (_meta_data != nullptr))
       delete _meta_data;
   }
 
@@ -85,7 +217,7 @@ public:
   void                      set(const char* key,T value)
   {
     if (_meta_data != nullptr)
-      (*_meta_data)[key].set<T>(value);
+      _meta_data->value(key)->set<T>(value);
   }
 
   /*
@@ -100,11 +232,11 @@ public:
   {
     if (_meta_data != nullptr)
     {
-      value_database::iterator iter = _meta_data->find(key);
-      if (iter == _meta_data->end())
-        (*_meta_data)[key].set<T>(value);
+      ValueData* vl = _meta_data->find(key);
+      if (vl == nullptr)
+        _meta_data->value(key)->set<T>(value);
       else
-        iter->second.at(iter->second.length() - 1).set<T>(value);
+        vl->at(vl->length() - 1)->set<T>(value);
     }
   }
 
@@ -121,11 +253,11 @@ public:
     if (_meta_data == nullptr)
       return default_value;
 
-    value_database::const_iterator iter = _meta_data->find(key);
-    if (iter == _meta_data->end())
+    ValueData* vl = _meta_data->find(key);
+    if (vl == nullptr)
       return default_value;
 
-    return iter->second.get<T>();
+    return vl->get<T>();
   }
 
   /*
@@ -135,9 +267,9 @@ public:
    * author: daniel
    *
    */
-  ValueData&          value(const char* key)
+  ValueData*          value(const char* key)
   {
-    return (*_meta_data)[key];
+    return _meta_data->value(key);
   }
 
   /*
@@ -149,19 +281,11 @@ public:
    */
   std::vector<std::string>  matching_keys(const char *regex) const
   {
-    const std::regex re(regex);
-    std::vector<std::string> result;
-
-    for (auto pair : (*_meta_data))
-    {
-      if (std::regex_match(pair.first, re))
-        result.push_back(pair.first);
-    }
-    return result;
+    return _meta_data->matching_keys(regex);
   }
 
         void                      parse(int argc,char** argv,const char* default_arg_name);
-        bool                      exist(const char *key) const { return (_meta_data != nullptr) ? (_meta_data->find(key) != _meta_data->end()) : false; }
+        bool                      exist(const char *key) const { return (_meta_data != nullptr) ? (_meta_data->find(key) != nullptr) : false; }
         void                      erase(const char *key) { if (_meta_data != nullptr) _meta_data->erase(key); }
 
         void                      copy_key(const char* to, const char* from, const MetaImpl* meta);

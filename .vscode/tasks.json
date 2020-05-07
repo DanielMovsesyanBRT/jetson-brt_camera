@@ -38,7 +38,8 @@
     {
       "label": "upload",
       "type": "shell",
-      "command": "scp ${workspaceFolder}/assets/* jupiter@192.168.20.77:/home/jupiter/daniel/new/",
+      "command": "scp ${workspaceFolder}/assets/* jupiter@192.168.20.251:/home/jupiter/daniel",
+      // "command": "scp ${workspaceFolder}/assets/* jupiter@192.168.20.77:/home/jupiter/daniel/new",
       "presentation": {
         "reveal": "always",
         "panel": "dedicated",
@@ -51,8 +52,11 @@
 
       "command" : "xterm",
       "args": [
-        "-e","\"", "ssh", "jupiter@192.168.20.77", "-t",
-        "'/usr/bin/gdbserver :2345 /home/jupiter/daniel/new/jetson-brt_camera --device2=/home/jupiter/daniel/new/gmsl2_jtys_003.i2c'", "\""
+        "-e","\"", "ssh", "jupiter@192.168.20.251", "-t",
+        "'/usr/bin/gdbserver :2345 /home/jupiter/daniel/jetson-brt_camera --device1=/home/jupiter/daniel/gmsl2_vpu.i2c --frame_rate=3fps'", "\""
+
+        /* "-e","\"", "ssh", "jupiter@192.168.20.77", "-t",
+        "'/usr/bin/gdbserver :2345 /home/jupiter/daniel/new/jetson-brt_camera --device0=/home/jupiter/daniel/new/gmsl2_jtys_003.i2c'", "\"" */
       ],
 
       "options": {

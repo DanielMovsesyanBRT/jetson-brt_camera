@@ -1,5 +1,5 @@
 # data file for the Fltk User Interface Designer (fluid)
-version 1.0400
+version 1.0305
 header_name {.h}
 code_name {.cxx}
 class CameraWindow {open
@@ -8,7 +8,7 @@ class CameraWindow {open
   } {
     Fl_Window {} {
       label Camera open
-      xywh {210 64 655 230} type Double visible
+      xywh {987 65 645 280} type Double visible
     } {
       Fl_Box {} {
         label {Camera 1}
@@ -69,8 +69,27 @@ class CameraWindow {open
       }
       Fl_Button m_close {
         label Close
-        callback {close_window()} selected
-        xywh {530 190 100 30}
+        callback {close_window()}
+        xywh {530 235 100 30}
+      }
+      Fl_Box {} {
+        label {Camera 4}
+        xywh {110 178 100 22}
+      }
+      Fl_Box {} {
+        image {Camera_icon.png} xywh {50 163 65 50}
+      }
+      Fl_Input m_camera4_script {
+        xywh {210 176 260 25}
+      }
+      Fl_Button m_run4 {
+        callback {run4()} selected
+        image {shot_small.png} xywh {592 176 25 25}
+      }
+      Fl_Button m_Browse4 {
+        label Browse
+        callback {browse4()}
+        xywh {485 178 75 25}
       }
     }
   }

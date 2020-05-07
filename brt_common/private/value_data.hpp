@@ -86,6 +86,12 @@ public:
   {
     if (_buffer != nullptr)
       delete[] _buffer;
+
+    while (_array.size() > 0)
+    {
+      _array.back()->release();
+      _array.pop_back();
+    }
   }
 
           ValueData&              operator=(const ValueData& data);
@@ -120,14 +126,14 @@ public:
 
           template<typename T>    T get() const { return T(); }
 
-          ValueData&              at(size_t index)
+          ValueData*              at(size_t index)
           {
             if (index == 0)
-              return *this;
+              return this;
 
             index -= 1;
-            if (_array.size() <= index)
-              _array.resize(index + 1);
+            while (_array.size() <= index)
+              _array.push_back(new ValueData);
 
             return _array.at(index);
           }
@@ -147,13 +153,11 @@ private:
   uint8_t*                        _buffer;
   size_t                          _size;
   value_type                      _type;
-  std::vector<ValueData>          _array;
+  std::vector<ValueData*>         _array;
 
   std::atomic_uint_fast32_t       _ref_cntr;
   bool                            _little_endian;
 };
-
-typedef std::unordered_map<std::string,ValueData>     value_database;
 
 template<> struct ValueData::default_arg<const char*> { static size_t get() { return (size_t)-1; } };
 template<> struct ValueData::default_arg<char*> { static size_t get() { return (size_t)-1; } };

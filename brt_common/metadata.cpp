@@ -115,8 +115,8 @@ template<> bool Metadata::get_at<bool>(const char* key,size_t index, const bool&
   if (!_impl->exist(key))
     return default_value;
 
-  ValueData& val = _impl->value(key).at(index);
-  return val.get<bool>();
+  ValueData* val = _impl->value(key)->at(index);
+  return val->get<bool>();
 }
 
 /*
@@ -131,8 +131,8 @@ template<> int Metadata::get_at<int>(const char* key,size_t index, const int& de
   if (!_impl->exist(key))
     return default_value;
 
-  ValueData& val = _impl->value(key).at(index);
-  return val.get<int>();
+  ValueData* val = _impl->value(key)->at(index);
+  return val->get<int>();
 }
 
 /*
@@ -147,8 +147,8 @@ template<> unsigned long Metadata::get_at<unsigned long>(const char* key,size_t 
   if (!_impl->exist(key))
     return default_value;
 
-  ValueData& val = _impl->value(key).at(index);
-  return val.get<unsigned long>();
+  ValueData* val = _impl->value(key)->at(index);
+  return val->get<unsigned long>();
 }
 
 /*
@@ -163,8 +163,8 @@ template<> double Metadata::get_at<double>(const char* key,size_t index, const d
   if (!_impl->exist(key))
     return default_value;
 
-  ValueData& val = _impl->value(key).at(index);
-  return val.get<double>();
+  ValueData* val = _impl->value(key)->at(index);
+  return val->get<double>();
 }
 
 /*
@@ -179,8 +179,8 @@ template<> std::string Metadata::get_at<std::string>(const char* key,size_t inde
   if (!_impl->exist(key))
     return default_value;
 
-  ValueData& val = _impl->value(key).at(index);
-  return val.get<std::string>();
+  ValueData* val = _impl->value(key)->at(index);
+  return val->get<std::string>();
 }
 
 /*
@@ -195,8 +195,8 @@ template<> Metadata::byte_buffer Metadata::get_at<Metadata::byte_buffer>(const c
   if (!_impl->exist(key))
     return default_value;
 
-  ValueData& val = _impl->value(key).at(index);
-  return val.get<Metadata::byte_buffer>();
+  ValueData* val = _impl->value(key)->at(index);
+  return val->get<Metadata::byte_buffer>();
 }
 
 /*
@@ -211,7 +211,7 @@ size_t Metadata::size(const char* key) const
   if (!_impl->exist(key))
     return 0;
 
-  return _impl->value(key).length();
+  return _impl->value(key)->length();
 }
 
 /*
@@ -223,7 +223,7 @@ size_t Metadata::size(const char* key) const
  */
 Value Metadata::value_at(const char* key,size_t index)
 {
-  return Value(_impl->value(key).at(index));
+  return Value(_impl->value(key)->at(index));
 }
 
 
@@ -464,6 +464,35 @@ void Metadata::add_ros_param(std::string key,XmlRpc::XmlRpcValue& rpc)
   }
 }
 #endif
+
+
+GlobalMetadata GlobalMetadata::_object;
+
+/*
+ * \\fn Metadata& GlobalMetadata::operator[]
+ *
+ * created on: Apr 21, 2020
+ * author: daniel
+ *
+ */
+Metadata& GlobalMetadata::operator[](const char *str)
+{
+  return _data[str];
+}
+
+/*
+ * \\fn Metadata& GlobalMetadata::operator[]
+ *
+ * created on: Apr 21, 2020
+ * author: daniel
+ *
+ */
+Metadata& GlobalMetadata::operator[](std::string str)
+{
+  return _data[str];
+}
+
+
 
 } // jupiter
 } // brt

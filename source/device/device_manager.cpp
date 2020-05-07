@@ -26,6 +26,18 @@ DeviceManager DeviceManager::_object;
 DeviceManager::DeviceManager()
 {
   _brt_handle = ::open(DRIVER_NAME, O_RDWR);
+  if (_brt_handle >= 0)
+  {
+    char  board_name[20];
+    brt_board_name bname;
+    bname._max_len = sizeof(board_name);
+    bname._buf     = board_name;
+
+    if (ioctl(_brt_handle, BRT_CAMERA_BOARD_NAME, (unsigned long)&bname) < 0)
+      std::cerr << "Cannot access board name: " << errno << std::endl;
+    else
+      std::cout << "Board name is " << bname._buf << std::endl;
+  }
 }
 
 /*

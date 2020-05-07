@@ -75,12 +75,26 @@ struct brt_camera_trigger
   int                             _duty_period;
 };
 
+/*
+ * \\struct brt_board_name
+ *
+ * created on: Apr 16, 2020
+ *
+ */
+struct brt_board_name
+{
+  int                             _max_len;
+  char*                           _buf;
+};
+
 #define BRT_CAMERA_TRIGGER_ONOFF            _IOW('B',  0, int)
 #define BRT_CAMERA_TRIGGER_SET_PWM          _IOW('B',  1, struct brt_camera_trigger)
 
 #define BRT_CAMERA_GET_NAME                 _IOR('B',  2, struct brt_camera_name)
 #define BRT_CAMERA_WRITE                    _IOW('B',  3, struct brt_camera_xfer)
 #define BRT_CAMERA_READ                     _IOR('B',  4, struct brt_camera_xfer)
+
+#define BRT_CAMERA_BOARD_NAME               _IOR('B',  5, struct brt_board_name)
 
 
 namespace brt

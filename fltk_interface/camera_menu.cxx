@@ -222,34 +222,41 @@ void CameraWindow::cb_m_Browse(Fl_Button*, void*, size_t id)
   }
 }
 
-void CameraWindow::cb_m_run1(Fl_Button* o, void* v) {
-  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o,v,0);
-}
-
 static Fl_Image *image_shot_small() {
   static Fl_Image *image = new Fl_RGB_Image(idata_shot_small, 25, 18, 4, 0);
   return image;
 }
 
+void CameraWindow::cb_m_run1(Fl_Button* o, void* v) {
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o, v, 0);
+}
+
 void CameraWindow::cb_m_run2(Fl_Button* o, void* v) {
-  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o,v,1);
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o, v, 1);
 }
 
 void CameraWindow::cb_m_run3(Fl_Button* o, void* v) {
-  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o,v, 2);
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o, v, 2);
 }
 
+void CameraWindow::cb_m_run4(Fl_Button* o, void* v) {
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_run(o, v, 3);
+}
 
 void CameraWindow::cb_m_Browse1(Fl_Button* o, void* v) {
-  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o,v,0);
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o, v, 0);
 }
 
 void CameraWindow::cb_m_Browse2(Fl_Button* o, void* v) {
-  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o,v,1);
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o, v, 1);
 }
 
 void CameraWindow::cb_m_Browse3(Fl_Button* o, void* v) {
-  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o,v, 2);
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o, v, 2);
+}
+
+void CameraWindow::cb_m_Browse4(Fl_Button* o, void* v) {
+  ((CameraWindow*)(o->parent()->user_data()))->cb_m_Browse(o, v, 3);
 }
 
 void CameraWindow::cb_m_close_i(Fl_Button*, void*) {
@@ -264,7 +271,7 @@ Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
   _callback = ci;
 
   Fl_Double_Window* w;
-  { Fl_Double_Window* o = new Fl_Double_Window(655, 230, "Camera");
+  { Fl_Double_Window* o = new Fl_Double_Window(645, 280, "Camera");
     w = o; if (w) {/* empty */}
     o->user_data((void*)(this));
     { new Fl_Box(110, 25, 100, 22, "Camera 1");
@@ -282,12 +289,19 @@ Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
     { Fl_Box* o = new Fl_Box(50, 110, 65, 50);
       o->image( image_Camera_icon() );
     } // Fl_Box* o
+    { new Fl_Box(110, 175, 100, 22, "Camera 4");
+    } // Fl_Box* o
+    { Fl_Box* o = new Fl_Box(50, 160, 65, 50);
+      o->image( image_Camera_icon() );
+    } // Fl_Box* o
     { m_row[0].m_camera_script = new Fl_Input(210, 23, 260, 25);
     } // Fl_Input* m_camera1_script
     { m_row[1].m_camera_script = new Fl_Input(210, 73, 260, 25);
     } // Fl_Input* m_camera2_script
     { m_row[2].m_camera_script = new Fl_Input(210, 123, 260, 25);
     } // Fl_Input* m_camera3_script
+    { m_row[3].m_camera_script = new Fl_Input(210, 173, 260, 25);
+    } // Fl_Input* m_camera4_script
     { m_row[0].m_run = new Fl_Button(592, 23, 25, 25);
       m_row[0].m_run->image( image_shot_small() );
       m_row[0].m_run->callback((Fl_Callback*)cb_m_run1);
@@ -300,7 +314,11 @@ Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
       m_row[2].m_run->image( image_shot_small() );
       m_row[2].m_run->callback((Fl_Callback*)cb_m_run3);
     } // Fl_Button* m_run3
-    { m_row[0].m_Browse = new Fl_Button(485, 23, 75, 25, "Browse");
+    { m_row[3].m_run = new Fl_Button(592, 173, 25, 25);
+      m_row[3].m_run->image( image_shot_small() );
+      m_row[3].m_run->callback((Fl_Callback*)cb_m_run4);
+    } // Fl_Button* m_run4
+    { m_row[0].m_Browse = new Fl_Button(485, 25, 75, 25, "Browse");
       m_row[0].m_Browse->callback((Fl_Callback*)cb_m_Browse1);
     } // Fl_Button* m_Browse1
     { m_row[1].m_Browse = new Fl_Button(485, 75, 75, 25, "Browse");
@@ -309,7 +327,10 @@ Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
     { m_row[2].m_Browse = new Fl_Button(485, 125, 75, 25, "Browse");
       m_row[2].m_Browse->callback((Fl_Callback*)cb_m_Browse3);
     } // Fl_Button* m_Browse3
-    { m_close = new Fl_Button(530, 190, 100, 30, "Close");
+    { m_row[3].m_Browse = new Fl_Button(485, 175, 75, 25, "Browse");
+      m_row[3].m_Browse->callback((Fl_Callback*)cb_m_Browse4);
+    } // Fl_Button* m_Browse4
+    { m_close = new Fl_Button(530, 235, 100, 30, "Close");
       m_close->callback((Fl_Callback*)cb_m_close);
     } // Fl_Button* m_close
     o->end();
@@ -317,7 +338,7 @@ Fl_Double_Window* CameraWindow::make_window(CallbackInterface* ci) {
 
   if (_callback != nullptr)
   {
-    for (size_t index = 0; index < 3; index++)
+    for (size_t index = 0; index < 4; index++)
     {
       const char* path = _callback->destination(index);
       if ((path == nullptr) || (strlen(path) == 0))

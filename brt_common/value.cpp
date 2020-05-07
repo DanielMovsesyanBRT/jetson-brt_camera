@@ -55,8 +55,8 @@ Value::Value(const Value& val)
  * author: daniel
  *
  */
-Value::Value(ValueData& vd)
-: _data(&vd)
+Value::Value(ValueData* vd)
+: _data(vd)
 {
   _data->add_ref();
 }
@@ -1034,7 +1034,9 @@ Value& Value::operator<<=(const Value& val)
  */
 Value& Value::operator=(const Value& val)
 {
-  *_data = *val._data;
+  if (_data != val._data)
+    *_data = *val._data;
+
   return *this;
 }
 
@@ -1049,7 +1051,7 @@ Value Value::operator==(const Value& val) const
 
   if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+    result._data->set_bool(memcmp(val._data->at(0), _data->at(0),
               std::min(val._data->size(), _data->size()) == 0));
   }
   else
@@ -1106,7 +1108,7 @@ Value Value::operator!=(const Value& val) const
   Value result;
   if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+    result._data->set_bool(memcmp(val._data->at(0), _data->at(0),
               std::min(val._data->size(), _data->size()) != 0));
   }
   else
@@ -1164,7 +1166,7 @@ Value Value::operator>(const Value& val) const
 
   if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+    result._data->set_bool(memcmp(val._data->at(0), _data->at(0),
               std::min(val._data->size(), _data->size()) > 0));
   }
   else
@@ -1221,7 +1223,7 @@ Value Value::operator<(const Value& val) const
 
   if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+    result._data->set_bool(memcmp(val._data->at(0), _data->at(0),
               std::min(val._data->size(), _data->size()) < 0));
   }
   else
@@ -1278,7 +1280,7 @@ Value Value::operator>=(const Value& val) const
 
   if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+    result._data->set_bool(memcmp(val._data->at(0), _data->at(0),
               std::min(val._data->size(), _data->size()) >= 0));
   }
   else
@@ -1335,7 +1337,7 @@ Value Value::operator<=(const Value& val) const
 
   if ((_data->type() == ValueData::NIL) && (val._data->type() == ValueData::NIL))
   {
-    result._data->set_bool(memcmp(&val._data->at(0), &_data->at(0),
+    result._data->set_bool(memcmp(val._data->at(0), _data->at(0),
               std::min(val._data->size(), _data->size()) <= 0));
   }
   else

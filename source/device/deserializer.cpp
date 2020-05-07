@@ -191,6 +191,24 @@ bool Deserializer::load_script(const char *file_path,const Metadata& extra_args/
   }
 
   return true;
+  /*
+  for (size_t index = 0; index < 2; index++)
+  {
+    Camera *cam = nullptr;
+    // if (_script.exist("camera_eeprom"))
+    // {
+    //   Value::byte_buffer bb = _script.get("camera_eeprom").at(index);
+    //   if (!bb.empty())
+    //     cam = new Camera(this, index,bb);
+    // }
+
+    if (cam == nullptr)
+      cam = new Camera(this, index);
+    _cameras.push_back(cam);
+  }
+
+  return true;
+  */
 }
 
 /*
