@@ -14,7 +14,6 @@
 #include <vector>
 #include <unordered_map>
 #include <typeinfo>
-#include <sstream>
 #include <regex>
 
 #include <assert.h>
@@ -148,10 +147,41 @@ public:
         _db.insert({pair.first, new ValueData(*pair.second)});
   }
 
+
+  /**
+   * \fn  operator
+   *
+   * @param  rvalue : const value_database& 
+   * @return  value_database
+   * \brief <description goes here>
+   */
+  value_database& operator=(const value_database& rvalue)
+  {
+    for (auto val : _db)
+    {
+      if (val.second != nullptr)
+        val.second->release();
+    }
+    _db.clear();
+
+    for (auto val : rvalue._db)
+    {
+      if (val.second != nullptr)
+      {
+        val.second->add_ref();
+        _db.insert({val.first, val.second});
+      }
+    }
+
+    return *this;
+  }
+
+
   value_db::iterator begin() { return _db.begin(); }
   value_db::const_iterator begin() const { return _db.begin(); }
   value_db::iterator end() { return _db.end(); }
   value_db::const_iterator end() const { return _db.end(); }
+  
 
 private:
   value_db                        _db;
@@ -236,7 +266,7 @@ public:
       if (vl == nullptr)
         _meta_data->value(key)->set<T>(value);
       else
-        vl->at(vl->length() - 1)->set<T>(value);
+        vl->at(vl->length())->set<T>(value);
     }
   }
 

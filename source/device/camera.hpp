@@ -16,7 +16,7 @@
 #include <linux/videodev2.h>
 
 #include <image.hpp>
-#include "debayer.hpp"
+#include <cuda_debayer.hpp>
 //#include "image_processor.hpp"
 
 #define EVENT_STOP                          (1)

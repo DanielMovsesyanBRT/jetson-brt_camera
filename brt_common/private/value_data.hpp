@@ -111,7 +111,7 @@ public:
 
 
           template<typename T>    struct default_arg { static size_t get() { return sizeof(T); } };
-          template<typename T>    ValueData& __attribute__((optimize("O0"))) set(T value,size_t size = default_arg<T>::get())
+          template<typename T>    ValueData& __attribute__((optimize("O0"))) set(T,size_t = default_arg<T>::get())
           {
             return *this;
           }
@@ -144,7 +144,7 @@ public:
           const_iterator          begin() const { return const_iterator(this); }
           const_iterator          end() const { return   const_iterator(this,length()); }
 
-          void                    extract(ValueData& where, int start, int length) const;
+          void                    extract(ValueData& where, size_t start, size_t length) const;
 
           void                    add_ref() { ++_ref_cntr; }
           void                    release() { if (--_ref_cntr == 0) delete this; }
@@ -161,6 +161,7 @@ private:
 
 template<> struct ValueData::default_arg<const char*> { static size_t get() { return (size_t)-1; } };
 template<> struct ValueData::default_arg<char*> { static size_t get() { return (size_t)-1; } };
+template<> struct ValueData::default_arg<std::string> { static size_t get() { return (size_t)-1; } };
 
 template<> ValueData& ValueData::set<bool>(bool value,size_t size);
 template<> ValueData& ValueData::set<int>(int value,size_t size);
@@ -169,6 +170,7 @@ template<> ValueData& ValueData::set<float>(float value,size_t size);
 template<> ValueData& ValueData::set<uint64_t>(uint64_t value,size_t size);
 template<> ValueData& ValueData::set<void*>(void* value,size_t size);
 template<> ValueData& ValueData::set<const char*>(const char* value,size_t size);
+template<> ValueData& ValueData::set<std::string>(std::string value,size_t size);
 
 template<> bool ValueData::get<bool>() const;
 template<> int ValueData::get<int>() const;

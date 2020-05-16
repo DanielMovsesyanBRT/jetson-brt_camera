@@ -1,8 +1,14 @@
 #!/bin/bash
 
 DIRECTORY=$(cd `dirname $0` && pwd)
-CONFIG_FILE=$(cd `dirname $0` && pwd)/config.txt
-source ${DIRECTORY}/config.txt
+CONFIG_FILE=$(cd `dirname $0` && pwd)/config.local
+
+source ${CONFIG_FILE}
+if [ ! -z ${CUDA_TOOLKIT_ROOT} ]; then
+  export CUDA_HOME=${CUDA_TOOLKIT_ROOT}
+  export PATH=${CUDA_HOME}/bin:${PATH}
+fi
+
 
 echo "Build Type = ${BUILD_TYPE}"
 
@@ -13,7 +19,6 @@ if [ "$TARGET" = exe ]; then
 fi
 
 if [ "$ARCH" = ARM ]; then
-  # ARGUMENTS="${ARGUMENTS} -DCMAKE_TOOLCHAIN_FILE=${DIRECTORY}/targets/tegra_toolchain.cmake"
   ARGUMENTS="${ARGUMENTS} -DCMAKE_TOOLCHAIN_FILE=${DIRECTORY}/targets/aarch64_toolchainfile.cmake"
 fi
 

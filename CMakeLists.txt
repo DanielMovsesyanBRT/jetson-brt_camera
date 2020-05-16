@@ -1,5 +1,5 @@
 # Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 # if(NOT DEFINED CMAKE_TOOLCHAIN_FILE)
 #  message(FATAL_ERROR "CMAKE_TOOLCHAIN_FILE must be specified")
@@ -30,6 +30,7 @@ INCLUDE_DIRECTORIES(
 
 add_subdirectory(script)
 add_subdirectory(brt_common)
+add_subdirectory(cuda_lib)
 add_subdirectory(fltk_interface)
 
 #
@@ -54,7 +55,6 @@ set(SOURCES
   source/device/device_action.cpp
   source/device/device_manager.cpp
 
-  source/image/debayer.cu
   source/image/isp_manager.cpp
   source/image/isp.cpp
   
@@ -63,24 +63,13 @@ set(SOURCES
   source/window/window_manager.cpp
 )
 
-
-if(EXECUTABLE)
-  list(APPEND SOURCES 
-        source/main.cpp)
+list(APPEND SOURCES  source/main.cpp)
         
-  message(STATUS "Compiling Executable version")
-else()
-  message(STATUS "Compiling Library version")
-endif()
 
 include_directories("brt_common")
 include_directories("fltk_interface")
 
-if(EXECUTABLE)
-  add_executable(${PROJECT_NAME} ${SOURCES})
-else()
-  add_library(${PROJECT_NAME} SHARED ${SOURCES})
-endif()
+add_executable(${PROJECT_NAME} ${SOURCES})
 
 target_compile_definitions(${PROJECT_NAME} PUBLIC "ARM=${ARCH_ARM}" "X86_64=${ARCH_X86_64}" "ARCH=${ARCH}")
 target_include_directories(${PROJECT_NAME} 
@@ -90,10 +79,9 @@ target_include_directories(${PROJECT_NAME}
                               "source/fltk" 
                               "source/image" 
                               "source/window"
-                              "script" 
                               "png/include" 
                               ${X11_X11_INCLUDE_PATH})
                               
-target_link_libraries(${PROJECT_NAME} PUBLIC script pthread ${PNG} ${LIBZ})
+target_link_libraries(${PROJECT_NAME} PUBLIC script cuda_lib pthread ${PNG} ${LIBZ} dl)
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)
 

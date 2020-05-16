@@ -1,5 +1,5 @@
 # Copyright (c) 2016, NVIDIA CORPORATION.  All rights reserved.
-cmake_minimum_required(VERSION 2.8.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 
 #-------------------------------------------------------------------------------
 # Set basic configurations
@@ -17,8 +17,6 @@ project(brt_common C CXX CUDA)
 set(SOURCES 
   private/meta_impl.cpp
   private/value_data.cpp
-  private/cuda/cuda_data.cu
-  private/cuda/cuda_2d_data.cu
   image/image.cpp
   console_cli.cpp
   metadata.cpp

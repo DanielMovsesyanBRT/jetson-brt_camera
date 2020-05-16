@@ -1,0 +1,18 @@
+#!/bin/bash
+
+
+export ARCH=ARM
+export CMAKE=/usr/bin/cmake
+export ROS2_HOME_DIRECTORY=/home/daniel/Tools/ros2_arm64_dashing/install
+export JETSON_SYS_ROOT=/home/daniel/Tools/arm_sysroot/usr
+
+export BUILD_TYPE=Debug
+# export TOOLCHAIN=/home/daniel/Tools/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu/bin
+export TOOLCHAIN_PATH=/home/daniel/Tools/gcc-linaro-7.3.1-2018.05-x86_64_aarch64-linux-gnu/bin
+export TOOLCHAIN_PREFIX=aarch64-linux-gnu
+export CUDA_TOOLKIT_ROOT=/usr/local/cuda-10.0
+export BASE_PATH=/home/daniel/Development/vpu
+export FLTK_PATH=/home/daniel/Tools/fltk/Release_aarch64
+# export JUPITER_LIB=$(pwd)/install
+
+

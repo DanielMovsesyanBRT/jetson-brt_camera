@@ -133,25 +133,6 @@ RawRGB::~RawRGB()
   if (_buffer != nullptr)
     free(_buffer);
 }
-//
-///*
-// * \\fn Pixel RawRGB::pixel
-// *
-// * created on: Jan 23, 2020
-// * author: daniel
-// *
-// */
-//Pixel RawRGB::pixel(int x, int y)
-//{
-//  if ((_buffer == nullptr) ||
-//      (x >= static_cast<int>(_width)) ||
-//      (y >= static_cast<int>(_height)) ||
-//      (x < 0) || (y < 0))
-//    return Pixel();
-//
-//  size_t offset = (x + y * _width) * BYTES_PER_PIXELS(_depth) * type_size(_type);
-//  return Pixel(_buffer + offset,_type, _depth);
-//}
 
 /*
  * \\fn RawRGBPtr RawRGB::clone

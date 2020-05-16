@@ -11,13 +11,11 @@
 #include "utils.hpp"
 
 
-brt::jupiter::Metadata _context;
-
 namespace brt {
 
 namespace jupiter {
 
-
+GlobalMetadata GlobalMetadata::_object;
 
 /*
  * \\fn void void Metadata::init
@@ -387,112 +385,6 @@ std::string Metadata::to_json(bool nicely_formatted /*= true*/) const
 {
   return _impl->to_json(nicely_formatted);
 }
-
-#if COMPILE_WITH_ROS
-
-/*
- * \\fn void Metadata::import_ros_params
- *
- * created on: Dec 12, 2019
- * author: daniel
- *
- */
-void Metadata::import_ros_params(const ros::NodeHandle &node_handle, const char* name_space)
-{
-  std::vector<std::string> keys;
-  if (!node_handle.getParamNames(keys))
-    return;
-
-  for (std::string key : keys)
-  {
-    if (key.find(name_space) != 0)
-      continue;
-
-    key = key.substr(strlen(name_space));
-    if (key.empty())
-      continue;
-
-    XmlRpc::XmlRpcValue  rpc;
-    if (node_handle.getParam(key,rpc))
-      add_ros_param(key,rpc);
-  }
-}
-
-/*
- * \\fn void Metadata::add_ros_param
- *
- * created on: Dec 13, 2019
- * author: daniel
- *
- */
-void Metadata::add_ros_param(std::string key,XmlRpc::XmlRpcValue& rpc)
-{
-  switch(rpc.getType())
-  {
-  case XmlRpc::XmlRpcValue::TypeBoolean:
-    _impl->add(key.c_str(), (bool)rpc);
-    break;
-
-  case XmlRpc::XmlRpcValue::TypeInt:
-    _impl->add(key.c_str(), (int)rpc);
-    break;
-
-  case XmlRpc::XmlRpcValue::TypeDouble:
-    _impl->add(key.c_str(), (double)rpc);
-    break;
-
-  case XmlRpc::XmlRpcValue::TypeString:
-    _impl->add(key.c_str(), std::string(rpc).c_str());
-    break;
-
-  case XmlRpc::XmlRpcValue::TypeStruct:
-    for (auto srpc : rpc)
-    {
-      std::string name = key + srpc.first;
-      add_ros_param(name,srpc.second);
-    }
-    break;
-
-  case XmlRpc::XmlRpcValue::TypeArray:
-    for (size_t index = 0; index < rpc.size(); index++)
-      add_ros_param(key,rpc[index]);
-
-    break;
-
-  default:
-    break;
-  }
-}
-#endif
-
-
-GlobalMetadata GlobalMetadata::_object;
-
-/*
- * \\fn Metadata& GlobalMetadata::operator[]
- *
- * created on: Apr 21, 2020
- * author: daniel
- *
- */
-Metadata& GlobalMetadata::operator[](const char *str)
-{
-  return _data[str];
-}
-
-/*
- * \\fn Metadata& GlobalMetadata::operator[]
- *
- * created on: Apr 21, 2020
- * author: daniel
- *
- */
-Metadata& GlobalMetadata::operator[](std::string str)
-{
-  return _data[str];
-}
-
-
 
 } // jupiter
 } // brt

@@ -14,11 +14,6 @@
 
 #include "value.hpp"
 
-#if COMPILE_WITH_ROS
-#include <ros/ros.h>
-#endif
-
-
 namespace brt {
 
 namespace jupiter {
@@ -109,16 +104,9 @@ public:
         std::string               to_string() const;
         std::string               to_json(bool nicely_formatted = true) const;
 
-#if COMPILE_WITH_ROS
-        void                      import_ros_params(const ros::NodeHandle &node_handle, const char* name_space);
-#endif
-
 private:
         void                      init();
 
-#if COMPILE_WITH_ROS
-        void                      add_ros_param(std::string key,XmlRpc::XmlRpcValue& rpc);
-#endif
 protected:
   MetaImpl*                       _impl;
 };
@@ -144,8 +132,8 @@ private:
 
 public:
   static GlobalMetadata&          get() { return _object; }
-          Metadata&               operator[](const char *);
-          Metadata&               operator[](std::string);
+          Metadata&               operator[](const char *str) { return _data[str]; }
+          Metadata&               operator[](std::string str) { return _data[str]; }
 
 private:
   static GlobalMetadata           _object;

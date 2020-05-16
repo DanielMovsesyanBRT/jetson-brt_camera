@@ -135,7 +135,7 @@ template<> ValueData& ValueData::set<uint64_t>(uint64_t value,size_t size) { ret
 template<> ValueData& ValueData::set<void*>(void* value,size_t size) { return set_ptr(value,size); }
 template<> ValueData& ValueData::set<const char*>(const char* value,size_t size) { return set_string(value,size); }
 template<> ValueData& ValueData::set<char*>(char* value,size_t size) { return set_string(value,size); }
-template<> ValueData& ValueData::set<std::string>(std::string value,size_t size) { return set_string(value.c_str(),size); }
+template<> ValueData& ValueData::set<std::string>(std::string value,size_t size) { return set_string(value.c_str(),size == (size_t)-1?value.size():size); }
 
 template<> bool ValueData::get<bool>() const { return get_bool(); }
 template<> int ValueData::get<int>() const { return get_int(); }
@@ -732,10 +732,10 @@ ValueData::byte_buffer ValueData::get_byte_array() const
  * author: daniel
  *
  */
-void ValueData::extract(ValueData& where, int start, int length) const
+void ValueData::extract(ValueData& where, size_t start, size_t length) const
 {
   where._type = _type;
-  if (start >= static_cast<int>(size()) || (length == 0))
+  if (start >= size() || (length == 0))
   {
     where._size = 0;
     if (where._buffer != nullptr)
@@ -745,7 +745,7 @@ void ValueData::extract(ValueData& where, int start, int length) const
   }
   else
   {
-    if ((start + length) > static_cast<int>(size()))
+    if ((start + length) > size())
       length = size() - start;
 
     where._size = length;

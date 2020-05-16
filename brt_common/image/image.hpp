@@ -113,13 +113,11 @@ public:
           size_t                  height() const { return _height; }
           size_t                  depth() const { return _depth; }
           PixelType               type() const { return _type; }
-          size_t                  size() const { return _width * _height * BYTES_PER_PIXELS(_depth) * _type;}
+          size_t                  size() const { return _width * _height * BYTES_PER_PIXELS(_depth) * type_size(_type);}
 
           uint8_t*                bytes() { return _buffer; }
           const uint8_t*          bytes() const { return _buffer; }
           bool                    empty() const { return (_buffer == nullptr);}
-
-          //Pixel                   pixel(int x, int y);
 
           void                    set_histogram(HistPtr hist) { _hist = hist; }
           HistPtr                 get_histogram() const { return _hist; }
