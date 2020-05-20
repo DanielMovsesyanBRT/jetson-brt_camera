@@ -12,7 +12,7 @@ if(CMAKE_BUILD_TYPE EQUAL Debug)
   set(CMAKE_C_FLAGS_DEBUG       "-O0 -g -DDEBUG -D_DEBUG" CACHE STRING "c Debug flags" )
 endif()
 
-project(fltk_interfaces C CXX)
+project(fltk_interface C CXX)
 
 if (NOT FLTK_PATH)
   if (DEFINED ENV{FLTK_PATH})
@@ -26,15 +26,13 @@ if (NOT FLTK_PATH)
   endif()
 endif()
 
-find_package(FLTK REQUIRED NO_MODULE)
-#find_package(X11_user REQUIRED)
+set(FLTK_SKIP_FLUID true)
+
+#find_package(FLTK REQUIRED NO_MODULE)
+find_package(FLTK REQUIRED)
 find_package(X11 REQUIRED)
 find_library(GL REQUIRED
         NAMES GL)
-
-        # PATHS 
-        #   ${LD_PATH}
-        #   ${LD_PATH_EXTRA})
 
 set(SOURCES 
   fltk_manager.cpp
@@ -43,11 +41,21 @@ set(SOURCES
   
 add_library(${PROJECT_NAME} SHARED ${SOURCES})
 
-target_link_libraries(${PROJECT_NAME} PUBLIC ${X11_X11_LIB} ${GL} fltk)
-
 target_include_directories(${PROJECT_NAME} 
                             PUBLIC 
-                              ${CMAKE_CURRENT_SOURCE_DIR}
+                              $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
                             PRIVATE
                               ${X11_X11_INCLUDE_PATH}
-                              ${FLTK_INCLUDE_DIRS})
+                              ${FLTK_INCLUDE_DIR})
+
+target_link_libraries(${PROJECT_NAME} 
+                            PRIVATE 
+                              brt_common 
+                            PUBLIC 
+                              ${X11_X11_LIB}
+                              ${X11_Xrender_LIB}
+                              ${GL}
+                              ${FLTK_LIBRARIES})
+
+
+

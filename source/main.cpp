@@ -29,7 +29,7 @@
 
 using namespace brt::jupiter;
 
-#define FLTK_LIB_NAME                       "libfltk_interfaces.so"
+#define FLTK_LIB_NAME                       "libfltk_interface.so"
 /*
  * \\class FLTKLibrary
  *
@@ -199,7 +199,7 @@ private:
 
       // Write header (8 bit colour depth)
       png_set_IHDR(png_ptr, info_ptr, width, height,
-          8, PNG_COLOR_TYPE_RGBA, PNG_INTERLACE_NONE,
+          8, PNG_COLOR_TYPE_RGB, PNG_INTERLACE_NONE,
           PNG_COMPRESSION_TYPE_BASE, PNG_FILTER_TYPE_BASE);
 
       // Set title
@@ -215,7 +215,7 @@ private:
       png_write_info(png_ptr, info_ptr);
 
       // Allocate memory for one row (3 bytes per pixel - RGB)
-      row = (png_bytep) malloc(4 * width * sizeof(png_byte));
+      row = (png_bytep) malloc(3 * width * sizeof(png_byte));
   //
       // Write image data
       int x, y;
@@ -226,7 +226,7 @@ private:
           *((uint16_t*)&row[x * 4]) = *((uint16_t*)&buffer[(y*width +x) * 8]) >> 8;
           *((uint16_t*)&row[x * 4 + 1]) = *((uint16_t*)&buffer[(y*width +x) * 8 + 2]) >> 8;
           *((uint16_t*)&row[x * 4 + 2]) = *((uint16_t*)&buffer[(y*width +x) * 8 + 4]) >> 8;
-          *((uint16_t*)&row[x * 4 + 3]) = *((uint16_t*)&buffer[(y*width +x) * 8  + 6]) >> 8;
+          // *((uint16_t*)&row[x * 4 + 3]) = *((uint16_t*)&buffer[(y*width +x) * 8  + 6]) >> 8;
         }
         png_write_row(png_ptr, row);
       }

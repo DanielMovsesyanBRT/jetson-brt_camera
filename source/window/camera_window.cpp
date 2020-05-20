@@ -433,8 +433,8 @@ void CameraWindow::show_video(Context context,LShowImageEvent* evt)
   GLLibrary::get().call<void,GLenum,GLint,
       GLint,GLsizei,GLsizei,
       GLint,GLenum,GLenum,const GLvoid*>("glTexImage2D",GL_TEXTURE_2D,
-          0, GL_RGBA,  wnd._image->width(), wnd._image->height(),
-          0, GL_RGBA, GL_UNSIGNED_SHORT, wnd._image->bytes());
+          0, GL_RGB,  wnd._image->width(), wnd._image->height(),
+          0, GL_RGB, GL_UNSIGNED_SHORT, wnd._image->bytes());
 
 
   GLLibrary::get().call<void,GLenum>("glEnable",GL_TEXTURE_2D);

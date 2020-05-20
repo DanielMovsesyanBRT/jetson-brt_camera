@@ -18,15 +18,10 @@ if(CMAKE_BUILD_TYPE STREQUAL "Debug")
 endif()
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-long-long -pedantic")
+set(CMAKE_SKIP_BUILD_RPATH TRUE)
 
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/assets)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_SOURCE_DIR}/assets)
-
-
-INCLUDE_DIRECTORIES(
-  ${CMAKE_SOURCE_DIR}/script
-  ${CMAKE_SOURCE_DIR}/brt_common
-  ${CMAKE_SOURCE_DIR}/brt_common/image)
 
 add_subdirectory(script)
 add_subdirectory(brt_common)
@@ -38,15 +33,20 @@ add_subdirectory(fltk_interface)
 #
 project(jetson-brt_camera C CXX CUDA)
 
-find_package(X11 REQUIRED)
+# find_package(X11 REQUIRED)
 
 find_library(PNG
         NAMES png16
-        HINTS "${CMAKE_SOURCE_DIR}/png/lib")        
+        PATHS "png/lib")
 
 find_library(LIBZ
         NAMES z
-        HINTS "${CMAKE_SOURCE_DIR}/png/lib")        
+        PATHS "png/lib")        
+
+find_library(VCE
+        NAMES video_cuda_enc
+        PATHS libs)
+
 
 set(SOURCES 
 
@@ -66,7 +66,6 @@ set(SOURCES
 list(APPEND SOURCES  source/main.cpp)
         
 
-include_directories("brt_common")
 include_directories("fltk_interface")
 
 add_executable(${PROJECT_NAME} ${SOURCES})
@@ -76,12 +75,19 @@ target_include_directories(${PROJECT_NAME}
                               PRIVATE 
                               "source" 
                               "source/device" 
-                              "source/fltk" 
                               "source/image" 
                               "source/window"
-                              "png/include" 
+                              "png/include"
                               ${X11_X11_INCLUDE_PATH})
                               
-target_link_libraries(${PROJECT_NAME} PUBLIC script cuda_lib pthread ${PNG} ${LIBZ} dl)
+target_link_libraries(${PROJECT_NAME} PUBLIC script cuda_lib pthread brt_common  ${PNG} ${LIBZ} dl) # ${VCE})
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)
 
+
+set (source "${CMAKE_SOURCE_DIR}/libs/*")
+set (destination "${CMAKE_SOURCE_DIR}/assets")
+add_custom_command(
+        TARGET ${PROJECT_NAME} POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different ${source} ${destination} 
+        DEPENDS ${destination}
+)

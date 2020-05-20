@@ -23,6 +23,7 @@
       "label": "make",
       "type": "shell",
       "command": "make -j$(nproc)",
+      "dependsOn": ["configure"],
       "options":{
         "cwd": "${workspaceFolder}/build"
       },
@@ -36,6 +37,15 @@
       }
     },
     {
+      "label": "clean",
+      "type": "shell",
+      "command": "rm -rf ${workspaceFolder}/build/* && rm -rf ${workspaceFolder}/assets/* ",
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+      }
+    },
+    {
       "label": "upload",
       "type": "shell",
       "command": "scp ${workspaceFolder}/assets/* jupiter@192.168.20.251:/home/jupiter/daniel",
@@ -46,6 +56,10 @@
       }
     },
     {
+      "label": "rebuild",
+      "dependsOn": ["clean", "make"],
+    },
+    {
       "label": "gdbserver",
       "type": "shell",
       "isBackground": true,
@@ -53,7 +67,13 @@
       "command" : "xterm",
       "args": [
         "-e","\"", "ssh", "jupiter@192.168.20.251", "-t",
-        "'/usr/bin/gdbserver :2345 /home/jupiter/daniel/jetson-brt_camera --device1=/home/jupiter/daniel/gmsl2_vpu.i2c --frame_rate=3fps'", "\""
+        "'/home/jupiter/daniel/gdbrun.sh /home/jupiter/daniel/jetson-brt_camera --device0=/home/jupiter/daniel/gmsl2_vpu.i2c --frame_rate=3fps && read'", "\""
+        
+        /*
+        "-e","\"", "ssh", "jupiter@192.168.20.251", "-t",
+        "'export LD_LIBRARY_PATH=/home/jupiter/daniel:$LD_LIBRARY_PATH && echo $LD_LIBRARY_PATH && /usr/bin/gdbserver :2345 /home/jupiter/daniel/jetson-brt_camera --device0=/home/jupiter/daniel/gmsl2_vpu.i2c --frame_rate=3fps && read'", 
+        "\""  */
+
 
         /* "-e","\"", "ssh", "jupiter@192.168.20.77", "-t",
         "'/usr/bin/gdbserver :2345 /home/jupiter/daniel/new/jetson-brt_camera --device0=/home/jupiter/daniel/new/gmsl2_jtys_003.i2c'", "\"" */

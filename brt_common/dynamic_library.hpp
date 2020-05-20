@@ -34,7 +34,7 @@ protected:
   {
     _handle = dlopen(_lib_name.c_str(), RTLD_LAZY);
     if (_handle == nullptr)
-      std::cerr << "Unable to load: " << _lib_name << ", error = " << errno << std::endl;
+      std::cerr << "Unable to load: " << _lib_name << ", error = " << dlerror() << std::endl;
   }
 
   virtual ~DynamicLibrary()

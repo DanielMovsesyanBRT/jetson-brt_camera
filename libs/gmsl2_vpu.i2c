@@ -1,0 +1,853 @@
+s $num_cameras = 2
+
+s $x = 0
+s $y = 0
+s $width = 1920s2
+s $height = 1208s2
+
+s $serializer_addr[0] = 0x88
+s $serializer_addr[1] = 0x86
+
+s $sensor_addr[0] = 0x28
+s $sensor_addr[1] = 0x26
+
+s $temperature0_slope[0] = 1.0
+s $temperature1_slope[0] = 1.0
+s $temperature0_T0[0] = 0.0
+s $temperature1_T0[0] = 0.0
+
+s $temperature0_slope[1] = 1.0
+s $temperature1_slope[1] = 1.0
+s $temperature0_T0[1] = 0.0
+s $temperature1_T0[1] = 0.0
+
+#s $deser_address = 0x94
+s $deser_address = 0x90
+
+s $vts = 1354s2   # VTS 1354
+s $hts = 2162s2   # HTS 2162
+s $fvco = 720000000
+
+###
+### Maco Activate link
+###
+macro activate_link(address, links_bitmap)
+
+  e "Activate link 0x" + hex($links_bitmap)
+  r 1,$address,0x0010,$ctrl_0
+  e "CTRL_0 register = 0x" + hex($ctrl_0)
+  
+  s $new_link = ($ctrl_0 & 0xCC) 
+  w $address,0x0010,$new_link | $links_bitmap
+  w $address,0x0010,$new_link | 0x20 | $links_bitmap  # Reset One shot
+
+  d 100ms
+
+  s $loop_cntr = 0
+  loop $loop_cntr < 10
+      r 1,$address,0x0013,$link_lock
+      e "<LINK lock = 0x" + hex($link_lock) + ">"
+      
+      s $loop_cntr = (( ($links_bitmap << 4) & $link_lock) == 0) ? ($loop_cntr + 1) : 10
+      d 10ms
+  endloop
+
+  r 1,$address,0x0010,$ctrl_0
+  e "CTRL_0 register = 0x" + hex($ctrl_0)
+
+endm
+
+
+###
+###  Program addresses for camera
+###
+macro set_addresses(ser_src_address,ser_dst_address,sensor_src_address,sensor_dst_address,packet_id)
+    # Porgram Translation addresses A
+    
+    e "Set addresses " + hex($ser_src_address) + ":" + hex($ser_dst_address) + ", " + hex($sensor_src_address) + ":" + hex($sensor_dst_address)
+
+    w $ser_src_address,0x0042,$sensor_dst_address
+    w $ser_src_address,0x0043,$sensor_src_address
+
+    w $ser_src_address,0x0000,($ser_dst_address & 0xFE)
+    d 10ms
+    
+    # link reset
+    w $ser_dst_address,0x0010,0x31
+    d 100ms
+    
+    # Now change serializer’s GMSL2 packet identifier values so that they are unique to the other serializer’s values.
+    w $ser_dst_address,0x006B,0x12
+    w $ser_dst_address,0x0073,0x13
+    
+    w $ser_dst_address,0x007B,(0x30 | ($packet_id & 0x0F))
+    w $ser_dst_address,0x0083,(0x30 | ($packet_id & 0x0F))
+    w $ser_dst_address,0x0093,(0x30 | ($packet_id & 0x0F))
+    w $ser_dst_address,0x009B,(0x30 | ($packet_id & 0x0F))
+    w $ser_dst_address,0x00A3,(0x30 | ($packet_id & 0x0F))
+    w $ser_dst_address,0x00AB,(0x30 | ($packet_id & 0x0F))
+    w $ser_dst_address,0x008B,(0x30 | ($packet_id & 0x0F))
+
+    w $ser_dst_address,0x0042,$sensor_dst_address
+    w $ser_dst_address,0x0043,$sensor_src_address
+endm
+
+###
+### Configure Exposure
+###
+macro read_exposure(id)
+    s $address = $sensor_addr[$id]
+
+    r 2,$address,0x3012,$exp_value # COARSE_INTEGRATION_TIME_
+    e "Exposure 1 for (" + hex($address) + ") = " + dec($exp_value)
+    
+    r 2,$address,0x3212,$exp_value
+    e "Exposure 2 for (" + hex($address) + ") = " + dec($exp_value)
+    
+    r 2,$address,0x3216,$exp_value
+    e "Exposure 3 for (" + hex($address) + ") = " + dec($exp_value)
+
+    r 2,$address,0x321A,$exp_value
+    e "Exposure 4 for (" + hex($address) + ") = " + dec($exp_value)
+endm
+
+###
+### Retrieve Exposure
+###
+macro get_exposure(id)
+    s $address = $sensor_addr[$id]
+    r 2,$address,0x3012,$exp_value
+    
+    s $get_exposure = 1000.0 * int($exp_value) * $hts / $fvco
+endm
+
+###
+### Retrieve Temperature
+###
+macro get_temperature(id,temp_sensor)
+    s $address = $sensor_addr[$id]
+    if $temp_sensor == 0
+      r 2,$address,0x20B0,$_return
+      s $get_temperature = $temperature0_slope[$id] * int($_return) + $temperature0_T0[$id]
+   else
+      r 2,$address,0x20B2,$_return
+      s $get_temperature = $temperature1_slope[$id] * int($_return) + $temperature1_T0[$id]
+   endif
+endm
+
+###
+### Configure Exposure
+###
+macro set_exposure(id,exposure_ms)
+    s $address = $sensor_addr[$id]
+    s $exp_value = $exposure_ms / (1000.0 * $hts) * $fvco
+
+    # Debug Only
+    # if $id != 0
+    #   e "EXP(" + $id + ")=" + dec($exp_value)
+    # endif
+
+    w $address,0x3012,int($exp_value,2) # COARSE_INTEGRATION_TIME_
+    w $address,0x3212,int($exp_value / 8,2) # COARSE_INTEGRATION_TIME_2
+    w $address,0x3216,int($exp_value / 16,2) # COARSE_INTEGRATION_TIME_3
+endm
+
+###
+### Configure Gain
+### 
+###  Gains are:
+###       0 = 1/8x    5 = 4/6x        10 = 6/3x
+###       1 = 2/8x    6 = 4/5x        11 = 7/3x
+###       2 = 2/7x    7 = 5/5x (1)    12 = 7/2x
+###       3 = 3/7x    8 = 5/4x        13 = 8/2x
+###       4 = 3/6x    9 = 6/4x        14 = 8/1x
+###       
+###
+macro set_gain(id,gain)
+    s $address = $sensor_addr[$id]
+    s $dcg = ($gain <= 7) ? 0s2 : 0xFFs2
+    e "Set Dual Conversion Gain to " + $dcg + " for sensor " + $sns_addr
+    w $address,0x3362,$dcg # Dual conversion gain
+    
+    s $new_gain = $gain | ($gain << 4) | ($gain << 8) | ($gain << 12) 
+    w $address,0x3366,$new_gain
+endm
+
+
+###
+### Reset Serializer and sensor
+###
+macro reset_serializer(address)
+    e "Reseting Serializer 0x" + hex($address)
+
+    # Reset Serializer
+    w $address,0x0010,0x80
+    d 50ms
+
+    # Reset Sensor
+    w $address,0x02BE,0x80
+    d 10ms
+    # Set GPIO_0 to 1MOHm pull up
+    
+    w $address,0x02BE,0x90
+    d 10ms
+    
+endm
+
+###
+###  Camera status
+###
+macro cam_stat(address)
+
+    r 2,$address,0x2006,$GPI_STATUS
+    e "< 0x" + hex($address) + ",0x2006 GPI Status of camera = 0x" + hex($GPI_STATUS)
+    r 2,$address,0x2008,$FRAME_STATUS
+    e "< 0x" + hex($address) + ",0x2008 Frame status of camera = 0x" + hex($FRAME_STATUS) + "\n"
+    
+    r 2,$address,0x2000,$FRAME_COUNT
+    e "< 0x" + hex($address) + ",0x2000 Frame Count2 = " + int($FRAME_COUNT)
+    r 2,$address,0x2002,$FRAME_COUNT
+    e "< 0x" + hex($address) + ",0x2002 Frame Count = " + int($FRAME_COUNT) + "\n"
+    e "<-------------------------------------------------------------->"
+endm
+
+###
+###  Enable Streaming
+###
+macro enable_streaming(address)
+    e "Enable straming camera 0x" + hex($address)
+    w $address,0x301A,0x011C
+    d 100ms
+endm
+
+
+
+###
+###  CROSS BAR
+###
+macro crossbar(address,first_reg)
+    w $address,($first_reg +  0),0x04  #CROSS_0
+    w $address,($first_reg +  1),0x05  #CROSS_1
+    w $address,($first_reg +  2),0x06  #CROSS_2
+    w $address,($first_reg +  3),0x07  #CROSS_3
+    w $address,($first_reg +  4),0x08  #CROSS_4
+    w $address,($first_reg +  5),0x09  #CROSS_5
+    w $address,($first_reg +  6),0x0A  #CROSS_6
+    w $address,($first_reg +  7),0x0B  #CROSS_7
+
+    w $address,($first_reg +  8),0x00  #CROSS_8
+    w $address,($first_reg +  9),0x01  #CROSS_9
+    w $address,($first_reg + 10),0x02  #CROSS_10
+    w $address,($first_reg + 11),0x03  #CROSS_11
+    
+    e "Cross bar last reg " + hex($first_reg + 11)
+endm
+
+
+#
+#
+#
+macro config_serializer(address,pipe_id)
+  e "Config serializer 0x" + hex($address)
+  
+  w $address, 0x0040, 0x06
+  w $address, 0x0041, 0x66
+  w $address, 0x0005, 0xC0
+  w $address, 0x0330, 0x00
+  w $address, 0x0332, 0xee
+  w $address, 0x0333, 0xe4
+  w $address, 0x0331, 0x33
+  w $address, 0x0308, 0x7F
+  
+  # Set GPIO_0 to 1MOHm pull up
+  w $address, 0x02BE, 0x90
+  
+  # Enable PCLOCK out from GPIO 4
+  w $address, 0x03F1, 0x89
+  
+  # GPIO8 controls sensor's address
+  # 0: address = 0x20 - x
+  # 1: address = 0x30
+  w $address, 0x02D6, 0x00
+    
+  w $address, 0x03F0, 0x51
+  d 10ms
+  
+  w $address, 0x0314, 0xE2
+  w $address, 0x0316, 0x62
+  w $address, 0x0318, 0x62
+  w $address, 0x031A, 0x62
+
+  # Enable Pipe $pipe_id
+  w $address, 0x0311, (0x10 << $pipe_id)
+  s $route_register = (0x0314 + 2 * $pipe_id)
+  
+  r 1, $address, $route_register, $value
+  w $address, $route_register, ($value & 0xC0) | 0x2C
+  
+  # Disable heart beat for pipeline (ID)
+  # w $address,(0x0102 + ($pipe_id * 8)),0x0E
+  
+  d 10ms
+
+  w $address, 0x0002, 0xF3
+
+  # x crossbar $address,(0x01B0 + 0x43 * $pipe_id)
+  # d 10ms
+     
+  # FRAME SYNC
+  w $address,0x02D3,0x84
+  w $address,0x02D5,0x07
+    
+endm
+
+
+#
+#
+#
+macro config_deser(address)
+  e "Config deserializer 0x" + hex($address)
+
+  w $address, 0x0330, 0x04
+  w $address, 0x0333, 0x4b  # 0xb4
+  w $address, 0x0313, 0x00
+
+  ############## Y
+  w $address, 0x044B, 0x07
+  w $address, 0x046D, 0x15
+  w $address, 0x044D, 0x2C # source
+  w $address, 0x044E, 0x2C # dst
+  w $address, 0x044F, 0x00 # source
+  w $address, 0x0450, 0x00 # dst
+  w $address, 0x0451, 0x01 # source
+  w $address, 0x0452, 0x01 # dst
+  d 10ms
+  
+  ############## U
+  w $address, 0x04CB, 0x07
+  w $address, 0x04ED, 0x15
+  w $address, 0x04CD, 0x2C # source
+  w $address, 0x04CE, 0x6C # dst
+  w $address, 0x04CF, 0x00 # source
+  w $address, 0x04D0, 0x40 # dst
+  w $address, 0x04D1, 0x01 # source
+  w $address, 0x04D2, 0x41 # dst
+  d 10ms
+  
+  # FRAME SYNC
+  w $address,0x03E0,0x0C
+  
+  # w $address,0x02B0,0x83  # This is MFP0
+  # w $address,0x02B1,0x07
+
+  w $address,0x02C5,0x83 # This is MFP7
+  w $address,0x02C6,0x07
+
+  w $address,0x0313,0x02
+endm
+
+#
+#
+#
+macro read_temp_calib(addr_id,id)
+  s $address = $sensor_addr[$addr_id]
+
+  if $id == 0
+    r 2, $address, 0x30C6, $calib1
+    r 2, $address, 0x30C8, $calib2
+    s $temperature0_slope[$addr_id] = (125.0 - 55.0) / (int($calib1) - int($calib2))
+    s $temperature0_T0[$addr_id] = 55.0 - $temperature0_slope[$addr_id] * int($calib2)
+
+    e "Calib = " + dec($calib1) + ", " + dec($calib2) + "| " + $temperature0_slope[$addr_id] + ", " +  $temperature0_T0[$addr_id]
+
+  else
+    r 2, $address, 0x30CA, $calib1
+    r 2, $address, 0x30CC, $calib2
+    s $temperature1_slope[$addr_id] = (125.0 - 55.0) / (int($calib1) - int($calib2))
+    s $temperature1_T0[$addr_id] = 55.0 - $temperature1_slope[$addr_id] * int($calib2)
+  endif
+endm
+
+#
+#
+#
+macro config_sensor(id)
+  s $address = $sensor_addr[$id]
+  
+  e "Config Sensor 0x" + hex($address)
+  # Check Sensor
+  
+  r 2, $address, 0x2002, $version
+  e "Chip version = 0x" + hex($version)
+
+  w $address, 0x301A, 0x0018    # RESET_REGISTER
+  # d 500ms
+  d 200ms
+  w $address, 0x3092, 0x0C24    # ROW_NOISE_CONTROL
+  w $address, 0x337A, 0x0C80    # DBLC_SCALE0
+  w $address, 0x3520, 0x1288    # RESERVED_MFR_3520
+  w $address, 0x3522, 0x880C    # RESERVED_MFR_3522
+  w $address, 0x3524, 0x0C12    # RESERVED_MFR_3524
+  w $address, 0x352C, 0x1212    # RESERVED_MFR_352C
+  w $address, 0x354A, 0x007F    # RESERVED_MFR_354A
+  w $address, 0x350C, 0x055C    # RESERVED_MFR_350C
+  w $address, 0x3506, 0x3333    # RESERVED_MFR_3506
+  w $address, 0x3508, 0x3333    # RESERVED_MFR_3508
+  w $address, 0x3100, 0x4000    # DLO_CONTROL0
+  w $address, 0x3280, 0x0FA0    # RESERVED_MFR_3280
+  w $address, 0x3282, 0x0FA0    # RESERVED_MFR_3282
+  w $address, 0x3284, 0x0FA0    # RESERVED_MFR_3284
+  w $address, 0x3286, 0x0FA0    # RESERVED_MFR_3286
+  w $address, 0x3288, 0x0FA0    # RESERVED_MFR_3288
+  w $address, 0x328A, 0x0FA0    # RESERVED_MFR_328A
+  w $address, 0x328C, 0x0FA0    # RESERVED_MFR_328C
+  w $address, 0x328E, 0x0FA0    # RESERVED_MFR_328E
+  w $address, 0x3290, 0x0FA0    # RESERVED_MFR_3290
+  w $address, 0x3292, 0x0FA0    # RESERVED_MFR_3292
+  w $address, 0x3294, 0x0FA0    # RESERVED_MFR_3294
+  w $address, 0x3296, 0x0FA0    # RESERVED_MFR_3296
+  w $address, 0x3298, 0x0FA0    # RESERVED_MFR_3298
+  w $address, 0x329A, 0x0FA0    # RESERVED_MFR_329A
+  w $address, 0x329C, 0x0FA0    # RESERVED_MFR_329C
+  w $address, 0x329E, 0x0FA0    # RESERVED_MFR_329E
+  w $address, 0x301A, 0x10D8    # RESET_REGISTER
+  d 200ms
+  
+  w $address, 0x32E6, 0x00E0    # RESERVED_MFR_32E6
+  w $address, 0x1008, 0x036F    # RESERVED_PARAM_1008
+  w $address, 0x100C, 0x058F    # RESERVED_PARAM_100C
+  w $address, 0x100E, 0x07AF    # RESERVED_PARAM_100E
+  w $address, 0x1010, 0x014F    # RESERVED_PARAM_1010
+  w $address, 0x3230, 0x0312    # FINE_CORRECTION
+  w $address, 0x3232, 0x0532    # FINE_CORRECTION2
+  w $address, 0x3234, 0x0752    # FINE_CORRECTION3
+  w $address, 0x3236, 0x00F2    # FINE_CORRECTION4
+  w $address, 0x3566, 0x3328    # RESERVED_MFR_3566
+  w $address, 0x32D0, 0x3A02    # RESERVED_MFR_32D0
+  w $address, 0x32D2, 0x3508    # RESERVED_MFR_32D2
+  w $address, 0x32D4, 0x3702    # RESERVED_MFR_32D4
+  w $address, 0x32D6, 0x3C04    # RESERVED_MFR_32D6
+  w $address, 0x32DC, 0x370A    # RESERVED_MFR_32DC
+  w $address, 0x30B0, 0x0800    # DIGITAL_TEST
+
+  w $address, 0x302A, 0x0008    # VT_PIX_CLK_DIV
+  w $address, 0x302C, 0x0001    # VT_SYS_CLK_DIV
+  w $address, 0x302E, 0x0003    # PRE_PLL_CLK_DIV
+  w $address, 0x3030, 0x0050    # PLL_MULTIPLIER
+  w $address, 0x3036, 0x000C    # OP_WORD_CLK_DIV
+  w $address, 0x3038, 0x0001    # OP_SYS_CLK_DIV
+  
+  w $address, 0x30B0, 0x0800    # DIGITAL_TEST
+  w $address, 0x30A2, 0x0001    # X_ODD_INC_
+  w $address, 0x30A6, 0x0001    # Y_ODD_INC_
+  w $address, 0x3040, 0x0000    # READ_MODE
+  w $address, 0x3040, 0x0000    # READ_MODE
+  w $address, 0x3082, 0x0008    # OPERATION_MODE_CTRL
+  w $address, 0x3082, 0x0008    # OPERATION_MODE_CTRL
+  w $address, 0x3082, 0x0008    # OPERATION_MODE_CTRL
+  w $address, 0x3082, 0x0008    # OPERATION_MODE_CTRL
+  w $address, 0x30BA, 0x11F2    # DIGITAL_CTRL
+  w $address, 0x30BA, 0x11F2    # DIGITAL_CTRL
+  w $address, 0x30BA, 0x11F2    # DIGITAL_CTRL
+  w $address, 0x3044, 0x0400    # DARK_CONTROL
+  w $address, 0x3044, 0x0400    # DARK_CONTROL
+  w $address, 0x3044, 0x0400    # DARK_CONTROL
+  w $address, 0x3044, 0x0400    # DARK_CONTROL
+  w $address, 0x3064, 0x1802    # SMIA_TEST
+  w $address, 0x3064, 0x1802    # SMIA_TEST
+  w $address, 0x3064, 0x1802    # SMIA_TEST
+  w $address, 0x3064, 0x1802    # SMIA_TEST
+  w $address, 0x33E0, 0x0C80    # TEST_ASIL_ROWS
+  w $address, 0x33E0, 0x0C80    # TEST_ASIL_ROWS
+  w $address, 0x3180, 0x0080    # RESERVED_MFR_3180
+  w $address, 0x33E4, 0x0080    # RESERVED_MFR_33E4
+  w $address, 0x33E0, 0x0C80    # TEST_ASIL_ROWS
+  w $address, 0x33E0, 0x0C80    # TEST_ASIL_ROWS
+  w $address, 0x3004, $x        # X_ADDR_START_
+  w $address, 0x3008, $width + $x - 1 # X_ADDR_END_
+  w $address, 0x3002, $y    # Y_ADDR_START_
+  w $address, 0x3006, $height + $y - 1 # Y_ADDR_END_
+  w $address, 0x3032, 0x0000    # SCALING_MODE
+  w $address, 0x3400, 0x0010    # RESERVED_MFR_3400
+  w $address, 0x3402, 0x0788    # X_OUTPUT_CONTROL
+  w $address, 0x3402, 0x0F10    # X_OUTPUT_CONTROL
+  w $address, 0x3404, 0x04B8    # Y_OUTPUT_CONTROL
+  w $address, 0x3404, 0x0970    # Y_OUTPUT_CONTROL
+  w $address, 0x3082, 0x0000    # OPERATION_MODE_CTRL
+  w $address, 0x30BA, 0x11F1    # DIGITAL_CTRL
+  d 100ms
+  w $address, 0x30BA, 0x11F0    # DIGITAL_CTRL
+  w $address, 0x300C, $hts # 0x043E    # LINE_LENGTH_PCK_
+  w $address, 0x300A, $vts # 0x0ACE    # FRAME_LENGTH_LINES_
+  w $address, 0x3042, 0x0000    # EXTRA_DELAY
+  w $address, 0x3238, 0x0222    # EXPOSURE_RATIO
+  w $address, 0x3238, 0x0222    # EXPOSURE_RATIO
+  w $address, 0x3238, 0x0222    # EXPOSURE_RATIO
+  w $address, 0x3238, 0x0222    # EXPOSURE_RATIO
+  w $address, 0x3012, 0x0288    # COARSE_INTEGRATION_TIME_
+  w $address, 0x3014, 0x014F    # FINE_INTEGRATION_TIME_
+  w $address, 0x30B0, 0x0800    # DIGITAL_TEST
+  w $address, 0x32EA, 0x3C0C    # RESERVED_MFR_32EA
+  w $address, 0x32EA, 0x3C08    # RESERVED_MFR_32EA
+  w $address, 0x32EA, 0x3C08    # RESERVED_MFR_32EA
+  w $address, 0x32EC, 0x72A1    # RESERVED_MFR_32EC
+  w $address, 0x32EC, 0x72A1    # RESERVED_MFR_32EC
+  w $address, 0x32EC, 0x72A1    # RESERVED_MFR_32EC
+  w $address, 0x32EC, 0x72A1    # RESERVED_MFR_32EC
+  w $address, 0x32EC, 0x72A1    # RESERVED_MFR_32EC
+  w $address, 0x32EC, 0x72A1    # RESERVED_MFR_32EC
+  w $address, 0x31D0, 0x0000    # COMPANDING
+  w $address, 0x31AE, 0x0204    # SERIAL_FORMAT
+  w $address, 0x31AE, 0x0304    # SERIAL_FORMAT
+  w $address, 0x31AC, 0x140C    # DATA_FORMAT_BITS
+  w $address, 0x31AC, 0x0C0C    # DATA_FORMAT_BITS
+  w $address, 0x301A, 0x1098    # RESET_REGISTER
+  w $address, 0x301A, 0x1018    # RESET_REGISTER
+  w $address, 0x301A, 0x0018    # RESET_REGISTER
+  w $address, 0x31AE, 0x0204    # SERIAL_FORMAT
+  w $address, 0x3342, 0x122C    # MIPI_F1_PDT_EDT
+  w $address, 0x3346, 0x122C    # MIPI_F2_PDT_EDT
+  w $address, 0x334A, 0x122C    # MIPI_F3_PDT_EDT
+  w $address, 0x334E, 0x122C    # MIPI_F4_PDT_EDT
+  w $address, 0x3344, 0x0011    # MIPI_F1_VDT_VC
+  w $address, 0x3348, 0x0111    # MIPI_F2_VDT_VC
+  w $address, 0x334C, 0x0211    # MIPI_F3_VDT_VC
+  w $address, 0x3350, 0x0311    # MIPI_F4_VDT_VC
+  w $address, 0x31B0, 0x0049    # FRAME_PREAMBLE
+  w $address, 0x31B2, 0x0033    # LINE_PREAMBLE
+  w $address, 0x31B4, 0x2185    # RESERVED_MFR_31B4
+  w $address, 0x31B6, 0x1146    # RESERVED_MFR_31B6
+  w $address, 0x31B8, 0x3047    # RESERVED_MFR_31B8
+  w $address, 0x31BA, 0x0186    # RESERVED_MFR_31BA
+  w $address, 0x31BC, 0x8805    # RESERVED_MFR_31BC
+  
+  w $address, 0x30B4, 0x0003    # Enable TEMP sensor 0
+  w $address, 0x30B8, 0x0003    # Enable TEMP sensor 1
+  x read_temp_calib $id,0
+  x read_temp_calib $id,1
+
+  # White balance
+  w $address, 0x3056, 0x0080    # GREEN1_GAIN
+  w $address, 0x3058, 0x0132    # BLUE_GAIN
+  w $address, 0x305A, 0x00A7    # RED_GAIN
+  w $address, 0x305C, 0x0080    # GREEN2_GAIN
+  w $address, 0x3308, 0x0200    # DIG_GAIN_GLOBAL
+
+
+  # Enable GPIO0 to to trigger fsync
+  w $address,0x340A,0x00,0xEE
+  w $address,0x340C,0x00,0x02   # GPIO0 TRIGGER mode
+  w $address,0x30CE,0x01,0x20   # GRR_CONTROL1, enable synchronization
+
+  # w $address,0x340A,0x00,0xEE
+  # w $address,0x340C,0x00,0x02   # GPIO0 TRIGGER mode
+  # w $address,0x30CE,0x01,0x00   # GRR_CONTROL1, enable synchronization
+  
+  d 200ms
+
+  #w $address, 0x301A, 0x001C    # RESET_REGISTER
+  #w $address, 0x301A, 0x001C    # RESET_REGISTER
+  e "Finish sensor " + hex($address) + "\n"
+endm
+
+
+#
+#
+#
+macro config_hdr_sensor(id)
+  s $address = $sensor_addr[$id]
+  
+  e "Config Sensor 0x" + hex($address)
+  # Check Sensor
+  
+  r 2, $address, 0x2002, $version
+  e "Chip version = 0x" + hex($version)
+
+  w $address, 0x301A, 0x0018    # RESET_REGISTER
+  d 200ms
+  
+  w $address, 0x1008,   0x036F      # RESERVED_PARAM_1008
+  w $address, 0x100C,   0x058F      # RESERVED_PARAM_100C
+  w $address, 0x100E,   0x07AF      # RESERVED_PARAM_100E
+  w $address, 0x1010,   0x014F      # RESERVED_PARAM_1010
+
+  w $address, 0x3004, $x        # X_ADDR_START_
+  w $address, 0x3008, $width + $x - 1 # X_ADDR_END_
+  w $address, 0x3002, $y    # Y_ADDR_START_
+  w $address, 0x3006, $height + $y - 1 # Y_ADDR_END_
+  w $address, 0x300A,   $vts        # 0x0ACE    # FRAME_LENGTH_LINES_
+  w $address, 0x300C,   $hts        # 0x043E    # LINE_LENGTH_PCK_
+
+  w $address, 0x302A,   0x0008      # VT_PIX_CLK_DIV
+  w $address, 0x302C,   0x0001      # VT_SYS_CLK_DIV
+  w $address, 0x302E,   0x0003      # PRE_PLL_CLK_DIV
+  w $address, 0x3030,   0x0050      # PLL_MULTIPLIER
+  w $address, 0x3032,   0x0000      # SCALING_MODE
+  w $address, 0x3036,   0x000C      # OP_WORD_CLK_DIV
+  w $address, 0x3038,   0x0001      # OP_SYS_CLK_DIV
+
+  w $address, 0x3040,   0x0000      # READ_MODE
+  w $address, 0x3040,   0x0000      # READ_MODE
+  w $address, 0x3042,   0x0000      # EXTRA_DELAY
+  
+  w $address, 0x3044,   0x0400      # DARK_CONTROL
+  w $address, 0x3064,   0x1982      # SMIA_TEST
+  w $address, 0x3082,   0x0008      # OPERATION_MODE_CTRL
+  
+  w $address, 0x30A2,   0x0001      # X_ODD_INC_
+  w $address, 0x30A6,   0x0001      # Y_ODD_INC_
+  w $address, 0x30B0,   0x0800      # DIGITAL_TEST
+  w $address, 0x30BA,   0x11F2      # DIGITAL_CTRL
+  
+  w $address, 0x3180,   0x0080      # RESERVED_MFR_3180
+  w $address, 0x31AC,   0x100C      # DATA_FORMAT_BITS
+  w $address, 0x31AE,   0x0204      # SERIAL_FORMAT
+  w $address, 0x31AE,   0x0304      # SERIAL_FORMAT
+  w $address, 0x31AE,   0x0204      # SERIAL_FORMAT
+  w $address, 0x31B0,   0x0049      # FRAME_PREAMBLE
+  w $address, 0x31B2,   0x0033      # LINE_PREAMBLE
+  w $address, 0x31B4,   0x2185      # RESERVED_MFR_31B4
+  w $address, 0x31B6,   0x1146      # RESERVED_MFR_31B6
+  w $address, 0x31B8,   0x3047      # RESERVED_MFR_31B8
+  w $address, 0x31BA,   0x0186      # RESERVED_MFR_31BA
+  w $address, 0x31BC,   0x8805      # RESERVED_MFR_31BC
+  w $address, 0x31D0,   0x0001      # COMPANDING
+  
+  w $address, 0x3012,   0x0288      # COARSE_INTEGRATION_TIME_
+  w $address, 0x3212,   0x0288 / 2  # COARSE_INTEGRATION_TIME_
+  w $address, 0x3216,   0x0288 / 4  # COARSE_INTEGRATION_TIME_
+
+  w $address, 0x3014,   0x0A3B      # FINE_INTEGRATION_TIME_
+  w $address, 0x321E,   0x0A3B      # FINE_INTEGRATION_TIME2
+  w $address, 0x3222,   0x09F1      # FINE_INTEGRATION_TIME3
+  w $address, 0x3226,   0x09F1      # FINE_INTEGRATION_TIME4
+
+  w $address, 0x3230,   0x0312      # FINE_CORRECTION
+  w $address, 0x3232,   0x0532      # FINE_CORRECTION2
+  w $address, 0x3234,   0x0752      # FINE_CORRECTION3
+  w $address, 0x3236,   0x00F2      # FINE_CORRECTION4
+  w $address, 0x3238,   0x0444      # EXPOSURE_RATIO
+  
+  w $address, 0x3342,   0x122C      # MIPI_F1_PDT_EDT
+  w $address, 0x3344,   0x0011      # MIPI_F1_VDT_VC
+  w $address, 0x3346,   0x122C      # MIPI_F2_PDT_EDT
+  w $address, 0x3348,   0x0111      # MIPI_F2_VDT_VC
+  w $address, 0x334A,   0x122C      # MIPI_F3_PDT_EDT
+  w $address, 0x334C,   0x0211      # MIPI_F3_VDT_VC
+  w $address, 0x334E,   0x122C      # MIPI_F4_PDT_EDT
+  w $address, 0x3350,   0x0311      # MIPI_F4_VDT_VC
+  w $address, 0x337A,   0x0C80      # DBLC_SCALE0
+  w $address, 0x33E0,   0x0C80      # TEST_ASIL_ROWS
+  w $address, 0x33E4,   0x0080      # RESERVED_MFR_33E4
+  w $address, 0x3400,   0x0010      # RESERVED_MFR_3400
+  w $address, 0x3402,   0x0788      # X_OUTPUT_CONTROL
+  w $address, 0x3402,   0x0F10      # X_OUTPUT_CONTROL
+  w $address, 0x3404,   0x04B8      # Y_OUTPUT_CONTROL
+  w $address, 0x3404,   0x0970      # Y_OUTPUT_CONTROL
+  w $address, 0x3506,   0x3333      # RESERVED_MFR_3506
+  w $address, 0x3508,   0x3333      # RESERVED_MFR_3508
+  w $address, 0x350C,   0x055C      # RESERVED_MFR_350C
+  w $address, 0x3520,   0x1288      # RESERVED_MFR_3520
+  w $address, 0x3522,   0x880C      # RESERVED_MFR_3522
+  w $address, 0x3524,   0x0C12      # RESERVED_MFR_3524
+  w $address, 0x352C,   0x1212      # RESERVED_MFR_352C
+  w $address, 0x354A,   0x007F      # RESERVED_MFR_354A
+  w $address, 0x3566,   0x3328      # RESERVED_MFR_3566
+
+  w $address, 0x30B4, 0x0003    # Enable TEMP sensor 0
+  w $address, 0x30B8, 0x0003    # Enable TEMP sensor 1
+  x read_temp_calib $id,0
+  x read_temp_calib $id,1
+
+  # White balance
+  w $address, 0x3056, 0x0080    # GREEN1_GAIN
+  w $address, 0x3058, 0x0132    # BLUE_GAIN
+  w $address, 0x305A, 0x00A7    # RED_GAIN
+  w $address, 0x305C, 0x0080    # GREEN2_GAIN
+  w $address, 0x3308, 0x0200    # DIG_GAIN_GLOBAL
+
+
+  # Enable GPIO0 to to trigger fsync
+  w $address,0x340A,0x00,0xEE
+  w $address,0x340C,0x00,0x02   # GPIO0 TRIGGER mode
+  w $address,0x30CE,0x01,0x20   # GRR_CONTROL1, enable synchronization
+  
+  d 200ms
+
+  w $address, 0x301A, 0x001C    # RESET_REGISTER
+endm
+
+
+#
+#
+#
+macro config_hdr_x_sensor(id)
+  s $address = $sensor_addr[$id]
+  
+  e "Config Sensor 0x" + hex($address)
+  # Check Sensor
+  
+  r 2, $address, 0x2002, $version
+  e "Chip version = 0x" + hex($version)
+
+  w $address, 0x301A, 0x0018    # RESET_REGISTER
+  d 200ms
+  
+  w $address, 0x1008, 0x0374    # FINE_INTEGRATION_TIME_MIN
+  w $address, 0x100C, 0x0594    # FINE_INTEGRATION_TIME2_MIN
+  w $address, 0x100E, 0x07B4    # FINE_INTEGRATION_TIME3_MIN
+  w $address, 0x1010, 0x0154    # FINE_INTEGRATION_TIME4_MIN
+  
+  w $address, 0x3004, $x        # X_ADDR_START_
+  w $address, 0x3008, $width + $x - 1 # X_ADDR_END_
+  w $address, 0x3002, $y    # Y_ADDR_START_
+  w $address, 0x3006, $height + $y - 1 # Y_ADDR_END_
+  w $address, 0x300A, $vts      # FRAME_LENGTH_LINES_
+  w $address, 0x300C, $hts      # LINE_LENGTH_PCK_
+  w $address, 0x3012, 0x00C3    # COARSE_INTEGRATION_TIME_
+  w $address, 0x3014, 0x0A3B    # FINE_INTEGRATION_TIME_
+  
+  w $address, 0x302A, 0x0008    # VT_PIX_CLK_DIV
+  w $address, 0x302C, 0x0001    # VT_SYS_CLK_DIV
+  w $address, 0x302E, 0x0003    # PRE_PLL_CLK_DIV
+  w $address, 0x3030, 0x0050    # PLL_MULTIPLIER
+  w $address, 0x3032, 0x0000    # SCALING_MODE
+  w $address, 0x3036, 0x000C    # OP_WORD_CLK_DIV
+  w $address, 0x3038, 0x0001    # OP_SYS_CLK_DIV
+  
+  w $address, 0x3040, 0x0000    # READ_MODE
+  w $address, 0x3044, 0x0400    # DARK_CONTROL
+  w $address, 0x3064, 0x1982    # SMIA_TEST
+  w $address, 0x306E, 0x9010    # DATAPATH_SELECT
+  w $address, 0x3082, 0x0008    # OPERATION_MODE_CTRL
+  w $address, 0x30A2, 0x0001    # X_ODD_INC_
+  w $address, 0x30A6, 0x0001    # Y_ODD_INC_
+  w $address, 0x30B0, 0x0800    # DIGITAL_TEST
+  w $address, 0x30BA, 0x11F2    # DIGITAL_CTRL
+  w $address, 0x3180, 0x0080    # DELTA_DK_CONTROL
+  w $address, 0x31AC, 0x100C    # DATA_FORMAT_BITS
+  w $address, 0x31AE, 0x0204    # SERIAL_FORMAT
+  w $address, 0x31B0, 0x003A    # FRAME_PREAMBLE
+  w $address, 0x31B2, 0x0020    # LINE_PREAMBLE
+  w $address, 0x31B4, 0x21C6    # MIPI_TIMING_0
+  w $address, 0x31B6, 0x2188    # MIPI_TIMING_1
+  w $address, 0x31B8, 0x3048    # MIPI_TIMING_2
+  w $address, 0x31BA, 0x0188    # MIPI_TIMING_3
+  w $address, 0x31BC, 0x8986    # MIPI_TIMING_4
+  w $address, 0x31D0, 0x0001    # COMPANDING
+  w $address, 0x3212, 0x0288 / 2    # COARSE_INTEGRATION_TIME_
+  w $address, 0x3216, 0x0288 / 4    # COARSE_INTEGRATION_TIME_
+  w $address, 0x321E, 0x0A3B    # FINE_INTEGRATION_TIME2
+  w $address, 0x3222, 0x09F1    # FINE_INTEGRATION_TIME3
+  w $address, 0x3226, 0x09F1    # FINE_INTEGRATION_TIME4
+  w $address, 0x3238, 0x0444    # EXPOSURE_RATIO
+  w $address, 0x32EC, 0x72A1    # SHUT_CTRL2
+  w $address, 0x3342, 0x122C    # MIPI_F1_PDT_EDT
+  w $address, 0x3344, 0x0011    # MIPI_F1_VDT_VC
+  w $address, 0x3346, 0x122C    # MIPI_F2_PDT_EDT
+  w $address, 0x3348, 0x0111    # MIPI_F2_VDT_VC
+  w $address, 0x334A, 0x122C    # MIPI_F3_PDT_EDT
+  w $address, 0x334C, 0x0211    # MIPI_F3_VDT_VC
+  w $address, 0x334E, 0x122C    # MIPI_F4_PDT_EDT
+  w $address, 0x3350, 0x0011    # MIPI_F4_VDT_VC
+  w $address, 0x33E0, 0x0000    # TEST_ASIL_ROWS
+  w $address, 0x33E4, 0x0080    # VERT_SHADING_CONTROL
+  w $address, 0x3400, 0x0010    # SCALE_M
+  w $address, 0x3402, 0x0780    # X_OUTPUT_CONTROL
+  w $address, 0x3404, 0x04B0    # Y_OUTPUT_CONTROL
+
+  w $address, 0x30B4, 0x0003    # Enable TEMP sensor 0
+  w $address, 0x30B8, 0x0003    # Enable TEMP sensor 1
+  x read_temp_calib $id,0
+  x read_temp_calib $id,1
+
+  # White balance
+  w $address, 0x3056, 0x0080    # GREEN1_GAIN
+  w $address, 0x3058, 0x0132    # BLUE_GAIN
+  w $address, 0x305A, 0x00A7    # RED_GAIN
+  w $address, 0x305C, 0x0080    # GREEN2_GAIN
+  w $address, 0x3308, 0x0200    # DIG_GAIN_GLOBAL
+
+
+  # Enable GPIO0 to to trigger fsync
+  w $address,0x340A,0x00,0xEE
+  w $address,0x340C,0x00,0x02   # GPIO0 TRIGGER mode
+  w $address,0x30CE,0x01,0x20   # GRR_CONTROL1, enable synchronization
+  
+  d 200ms
+
+  w $address, 0x301A, 0x001C    # RESET_REGISTER
+endm
+
+
+####################
+# Change deserializer address
+w 0x90,0x0000,$deser_address
+
+####################
+# RESET ALL
+
+e "RESET Deserializer"
+w $deser_address,0x0010,($ctrl_0 | 0x80)
+d 1s
+
+e "Initializeng Deserializer address :0x" + hex($deser_address)
+r 1,$deser_address,0x000D,$device_id
+r 1,$deser_address,0x000E,$revision
+e "Found device :" + hex(int($device_id)) + "." + (int($revision) & 0xF) 
+
+r 1,$deser_address,0x0010,$ctrl_0
+
+####################
+ 
+w $deser_address,0x0001,0x01
+d 20ms
+
+s $global_loop_cntr = 0
+loop $global_loop_cntr < $num_cameras
+ 
+   x activate_link $deser_address, (0x01 << $global_loop_cntr)
+   
+   x reset_serializer 0x80
+   x reset_serializer $serializer_addr[$global_loop_cntr]
+   d 1s
+   
+   e "Serializer address = 0x" + hex($serializer_addr[$global_loop_cntr]) + "[0x" + hex($global_loop_cntr) + "]"
+ 
+   x set_addresses 0x80,$serializer_addr[$global_loop_cntr],0x20,$sensor_addr[$global_loop_cntr],$global_loop_cntr * 2
+   x config_serializer $serializer_addr[$global_loop_cntr], 1 + $global_loop_cntr * 2  # Y or U
+   d 100ms
+ 
+   r 1528,0xA0,0x0000,$camera_eeprom[$global_loop_cntr]
+   e "Serial Number N1 " + sub_array($camera_eeprom[$global_loop_cntr],48,11)
+   
+   if $hdr_mode
+#      x config_hdr_sensor $global_loop_cntr
+      x config_hdr_x_sensor $global_loop_cntr
+   else
+      x config_sensor $global_loop_cntr
+   endif
+   
+   s $global_loop_cntr = $global_loop_cntr + 1
+endloop
+e "Finished global loop \n\n"
+ 
+x activate_link $deser_address, (0x01 << $num_cameras) - 1
+x config_deser $deser_address
+d 100ms
+ 
+s $global_loop_cntr = 0
+loop $global_loop_cntr < $num_cameras
+  x enable_streaming $sensor_addr[$global_loop_cntr]
+  s $global_loop_cntr = $global_loop_cntr + 1
+endloop
+
+d 1s
+
+s $global_loop_cntr = 0
+loop $global_loop_cntr < $num_cameras
+  x cam_stat $sensor_addr[$global_loop_cntr]
+  s $global_loop_cntr = $global_loop_cntr + 1
+endloop
+
+

@@ -18,26 +18,23 @@ namespace brt
 namespace jupiter
 {
 
-/*
- * \\class name
+/**
+ * \struct RGB
  *
- * created on: Feb 14, 2020
- *
+ * \brief <description goes here>
  */
-struct RGBA
+struct RGB
 {
   uint16_t                        _r;
   uint16_t                        _g;
   uint16_t                        _b;
-  uint16_t                        _a;
 };
 
 
-/*
- * \\struct LAB
+/**
+ * \struct LAB
  *
- * created on: Feb 20, 2020
- *
+ * \brief <description goes here>
  */
 struct LAB
 {
@@ -46,18 +43,18 @@ struct LAB
   int32_t                         _a;
   int32_t                         _b;
 
-  __device__ void                 from(RGBA& rgba)
+  __device__ void                 from(RGB& rgb)
   {
-    _L = (rgba._r+rgba._r+rgba._r + rgba._b + rgba._g+rgba._g+rgba._g+rgba._g) >> 3;
-    _a = 5 * (rgba._r+rgba._r + rgba._b - rgba._g-rgba._g-rgba._g);
-    _b = 4 * (rgba._r+rgba._r + rgba._g+rgba._g+rgba._g - rgba._b-rgba._b-rgba._b-rgba._b);
+    _L = (rgb._r+rgb._r+rgb._r + rgb._b + rgb._g+rgb._g+rgb._g+rgb._g) >> 3;
+    _a = 5 * (rgb._r+rgb._r + rgb._b - rgb._g-rgb._g-rgb._g);
+    _b = 4 * (rgb._r+rgb._r + rgb._g+rgb._g+rgb._g - rgb._b-rgb._b-rgb._b-rgb._b);
   }
 };
-/*
- * \\class Debayer_impl
+
+/**
+ * \class Debayer_impl
  *
- * created on: Feb 14, 2020
- *
+ * \brief <description goes here>
  */
 class Debayer_impl
 {
@@ -78,9 +75,9 @@ Debayer_impl()
 private:
 
   CudaPtr<uint16_t>               _raw;
-  CudaPtr<RGBA>                   _horiz;
-  CudaPtr<RGBA>                   _vert;
-  CudaPtr<RGBA>                   _result;
+  CudaPtr<RGB>                    _horiz;
+  CudaPtr<RGB>                    _vert;
+  CudaPtr<RGB>                    _result;
 
   CudaPtr<LAB>                    _hlab;
   CudaPtr<LAB>                    _vlab;
@@ -96,16 +93,20 @@ private:
   std::mutex                      _mutex;
 };
 
-/*
- * \\fn void green_interpolate
+/**
+ * \fn  green_interpolate
  *
- * created on: Feb 11, 2020, 4:25:08 PM
- * author daniel
- *
+ * @param  width : size_t 
+ * @param  height :  size_t 
+ * @param  raw :  uint16_t* 
+ * @param  hr :  RGB* 
+ * @param  vr :  RGB* 
+ * @return  __global__ void
+ * \brief <description goes here>
  */
 __global__ void green_interpolate(size_t width, size_t height,
                                           uint16_t* raw,
-                                          RGBA* hr, RGBA* vr)
+                                          RGB* hr, RGB* vr)
 {
   int origx = ((blockIdx.x * blockDim.x) + threadIdx.x) << 1;
   int origy = ((blockIdx.y * blockDim.y) + threadIdx.y) << 1;
@@ -125,7 +126,6 @@ __global__ void green_interpolate(size_t width, size_t height,
   int io = x + y * width; // input offset
 
   vr[io]._g = hr[io]._g = raw[io];
-  vr[io]._a = hr[io]._a = (uint16_t)-1;
 
   ////////////////////////////////////////////////
   // (1,0) -> Red
@@ -179,26 +179,31 @@ __global__ void green_interpolate(size_t width, size_t height,
   io = x + y * width; // input offset
 
   vr[io]._g = hr[io]._g = raw[io];
-  vr[io]._a = hr[io]._a = (uint16_t)-1;
 }
 
-/*
- * \\fn void blue_red_interpolate
+/**
+ * \fn  blue_red_interpolate
  *
- * created on: Feb 12, 2020, 11:35:37 AM
- * author daniel
- *
+ * @param  width : size_t 
+ * @param  height :  size_t 
+ * @param  raw :  uint16_t* 
+ * @param  hr :  RGB* 
+ * @param  vr :  RGB* 
+ * @param  hl :  LAB* 
+ * @param  vl : LAB* 
+ * @return  __global__ void
+ * \brief <description goes here>
  */
 __global__ void blue_red_interpolate( size_t width, size_t height,
                                       uint16_t* raw,
-                                      RGBA* hr, RGBA* vr,
+                                      RGB* hr, RGB* vr,
                                       LAB* hl,LAB* vl)
 {
   int origx = ((blockIdx.x * blockDim.x) + threadIdx.x) << 1;
   int origy = ((blockIdx.y * blockDim.y) + threadIdx.y) << 1;
   int z = blockIdx.z;
 
-  RGBA* ip[2] = {hr, vr};
+  RGB*  ip[2] = {hr, vr};
   LAB*  lb[2] = {hl, vl};
 
   auto limit = [](int x,int a,int b)->int
@@ -292,15 +297,25 @@ __global__ void blue_red_interpolate( size_t width, size_t height,
 }
 
 
-/*
- * \\fn void misguidance_color_artifacts
+/**
+ * \fn  misguidance_color_artifacts
  *
- * created on: Feb 12, 2020, 3:21:22 PM
- * author daniel
- *
+ * @param  width : size_t 
+ * @param  height :  size_t 
+ * @param  rst :  RGB* 
+ * @param  hr :  RGB* 
+ * @param  vr : RGB* 
+ * @param  hl :  LAB* 
+ * @param  vl : LAB* 
+ * @param  histogram :  uint32_t* 
+ * @param  histogram_size : uint32_t 
+ * @param  small_histogram :  uint32_t* 
+ * @param  small_histogram_size :  uint32_t 
+ * @return  __global__ void
+ * \brief <description goes here>
  */
-__global__ void misguidance_color_artifacts(size_t width, size_t height, RGBA* rst,
-                                            RGBA* hr,RGBA* vr,
+__global__ void misguidance_color_artifacts(size_t width, size_t height, RGB* rst,
+                                            RGB* hr,RGB* vr,
                                             LAB* hl,LAB* vl,
                                             uint32_t* histogram,uint32_t histogram_size,
                                             uint32_t* small_histogram, uint32_t small_histogram_size)
@@ -356,7 +371,7 @@ __global__ void misguidance_color_artifacts(size_t width, size_t height, RGBA* r
        ((lv[1]<=eps_l) * (cv[1]<= eps_c));
 
   uint32_t r = 0,g = 0,b = 0;
-  RGBA *lf, *rt;
+  RGB *lf, *rt;
 
   lf = (hh > hv)? &hr[io] : &vr[io];
   rt = (hv > hh)? &vr[io] : &hr[io];
@@ -364,7 +379,6 @@ __global__ void misguidance_color_artifacts(size_t width, size_t height, RGBA* r
   r = rst[io]._r = (lf->_r + rt->_r) >> 1;
   g = rst[io]._g = (lf->_g + rt->_g) >> 1;
   b = rst[io]._b = (lf->_b + rt->_b) >> 1;
-  rst[io]._a = (uint16_t)-1;
 
   uint32_t brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
   atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
@@ -374,12 +388,13 @@ __global__ void misguidance_color_artifacts(size_t width, size_t height, RGBA* r
 }
 
 
-/*
- * \\fn void cudaMax
+/**
+ * \fn  cudaMax
  *
- * created on: Nov 22, 2019
- * author: daniel
- *
+ * @param  org : uint32_t* 
+ * @param  max : uint32_t* 
+ * @return  __global__ void
+ * \brief <description goes here>
  */
 __global__ void cudaMax(uint32_t* org,uint32_t* max)
 {
@@ -405,7 +420,6 @@ __global__ void cudaMax(uint32_t* org,uint32_t* max)
     number_of_threads >>= 1;
   }
 }
-
 
 
 /**
@@ -496,7 +510,7 @@ __constant__ int16_t red_blue[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
  * @param  width : size_t 
  * @param  height :  size_t 
  * @param  raw : uint16_t* 
- * @param  result :  RGBA* 
+ * @param  result :  RGB* 
  * @param  histogram :  uint32_t* 
  * @param  histogram_size : uint32_t 
  * @param  small_histogram :  uint32_t* 
@@ -504,7 +518,7 @@ __constant__ int16_t red_blue[MHC_KERNEL_SIZE][MHC_KERNEL_SIZE] =
  * @return  __global__ void
  * \brief <description goes here>
  */
-__global__ void mhc_debayering(size_t width, size_t height,uint16_t* raw, RGBA* result,
+__global__ void mhc_debayering(size_t width, size_t height,uint16_t* raw, RGB* result,
                                 uint32_t* histogram,uint32_t histogram_size,
                                 uint32_t* small_histogram, uint32_t small_histogram_size)
 {
@@ -524,7 +538,7 @@ __global__ void mhc_debayering(size_t width, size_t height,uint16_t* raw, RGBA* 
 
   // convolution
   ColorPos  pos = position(x0, y0);
-  int r,g,b,a = 0xFFFF;
+  int r,g,b;
   switch (pos)
   {
   case eClearRed:
@@ -555,7 +569,6 @@ __global__ void mhc_debayering(size_t width, size_t height,uint16_t* raw, RGBA* 
   result[g_loc]._r = (r <= 0xFFFF) ? r : 0xFFFF;
   result[g_loc]._g = (g <= 0xFFFF) ? g : 0xFFFF;
   result[g_loc]._b = (b <= 0xFFFF) ? b : 0xFFFF;
-  result[g_loc]._a = (a <= 0xFFFF) ? a : 0xFFFF;
   
   uint32_t brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
   atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
@@ -578,7 +591,7 @@ __global__ void mhc_debayering(size_t width, size_t height,uint16_t* raw, RGBA* 
  * @param  small_histogram_size :  uint32_t 
  * \brief <description goes here>
  */
-__global__ void bilinear_debayering(size_t width, size_t height,uint16_t* raw, RGBA* result,
+__global__ void bilinear_debayering(size_t width, size_t height,uint16_t* raw, RGB* result,
                                 uint32_t* histogram,uint32_t histogram_size,
                                 uint32_t* small_histogram, uint32_t small_histogram_size)
 {
@@ -632,7 +645,6 @@ __global__ void bilinear_debayering(size_t width, size_t height,uint16_t* raw, R
   result[g_loc]._r = (r <= 0xFFFF) ? r : 0xFFFF;
   result[g_loc]._g = (g <= 0xFFFF) ? g : 0xFFFF;
   result[g_loc]._b = (b <= 0xFFFF) ? b : 0xFFFF;
-  result[g_loc]._a = 0xFFFF;
 
   uint32_t brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
   atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
@@ -653,7 +665,6 @@ __global__ void bilinear_debayering(size_t width, size_t height,uint16_t* raw, R
   result[g_loc]._r = (r <= 0xFFFF) ? r : 0xFFFF;
   result[g_loc]._g = (g <= 0xFFFF) ? g : 0xFFFF;
   result[g_loc]._b = (b <= 0xFFFF) ? b : 0xFFFF;
-  result[g_loc]._a = 0xFFFF;
 
   brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
   atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
@@ -673,7 +684,6 @@ __global__ void bilinear_debayering(size_t width, size_t height,uint16_t* raw, R
   result[g_loc]._r = (r <= 0xFFFF) ? r : 0xFFFF;
   result[g_loc]._g = (g <= 0xFFFF) ? g : 0xFFFF;
   result[g_loc]._b = (b <= 0xFFFF) ? b : 0xFFFF;
-  result[g_loc]._a = 0xFFFF;
 
   brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
   atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
@@ -693,7 +703,6 @@ __global__ void bilinear_debayering(size_t width, size_t height,uint16_t* raw, R
   result[g_loc]._r = (r <= 0xFFFF) ? r : 0xFFFF;
   result[g_loc]._g = (g <= 0xFFFF) ? g : 0xFFFF;
   result[g_loc]._b = (b <= 0xFFFF) ? b : 0xFFFF;
-  result[g_loc]._a = 0xFFFF;
  
   brightness = ((r+r+r+b+g+g+g+g) >> 3) * small_histogram_size >> 16;
   atomicAdd(&small_histogram[brightness % small_histogram_size], 1);
@@ -746,9 +755,9 @@ void Debayer_impl::init(size_t width,size_t height,size_t small_hits_size)
 {
   _raw = CudaPtr<uint16_t>(width * height);  _raw.fill(0);
 
-  _horiz = CudaPtr<RGBA>(width * height); _horiz.fill(0);
-  _vert = CudaPtr<RGBA>(width * height); _vert.fill(0);
-  _result = CudaPtr<RGBA>(width * height); _result.fill(0);
+  _horiz = CudaPtr<RGB>(width * height); _horiz.fill(0);
+  _vert = CudaPtr<RGB>(width * height); _vert.fill(0);
+  _result = CudaPtr<RGB>(width * height); _result.fill(0);
 
   _hlab = CudaPtr<LAB>(width * height); _hlab.fill(0);
   _vlab = CudaPtr<LAB>(width * height); _vlab.fill(0);
@@ -832,8 +841,8 @@ image::RawRGBPtr Debayer_impl::ahd(image::RawRGBPtr img)
 
   cudaMax<<<_histogram.size() / thx, thx>>>(_histogram.ptr(), _histogram_max.ptr());
 
-  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGBA));
-  _result.get((RGBA*)result->bytes(), result->width() * result->height());
+  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGB));
+  _result.get((RGB*)result->bytes(), result->width() * result->height());
 
   image::HistPtr  full_hist(new image::Histogram);
   full_hist->_histogram.resize(_histogram.size());
@@ -883,8 +892,8 @@ image::RawRGBPtr Debayer_impl::mhc(image::RawRGBPtr img)
 
   cudaMax<<<_histogram.size() / thx, thx>>>(_histogram.ptr(), _histogram_max.ptr());
 
-  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGBA));
-  _result.get((RGBA*)result->bytes(), result->width() * result->height());
+  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGB));
+  _result.get((RGB*)result->bytes(), result->width() * result->height());
 
   image::HistPtr  full_hist(new image::Histogram);
   full_hist->_histogram.resize(_histogram.size());
@@ -933,8 +942,8 @@ image::RawRGBPtr Debayer_impl::bilinear(image::RawRGBPtr img)
 
   cudaMax<<<_histogram.size() / thx, thx>>>(_histogram.ptr(), _histogram_max.ptr());
 
-  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGBA));
-  _result.get((RGBA*)result->bytes(), result->width() * result->height());
+  image::RawRGBPtr result(new image::RawRGB(img->width(), img->height(), img->depth(), image::eRGB));
+  _result.get((RGB*)result->bytes(), result->width() * result->height());
 
   image::HistPtr  full_hist(new image::Histogram);
   full_hist->_histogram.resize(_histogram.size());
@@ -961,7 +970,6 @@ image::RawRGBPtr Debayer::mhc(image::RawRGBPtr img)
 {
   return _impl->mhc(img);
 }
-
 
 
 /*

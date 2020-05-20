@@ -12,7 +12,7 @@ if(CMAKE_BUILD_TYPE EQUAL Debug)
   set(CMAKE_C_FLAGS_DEBUG       "-O0 -g -DDEBUG -D_DEBUG" CACHE STRING "c Debug flags" )
 endif()
 
-set(CMAKE_EXE_LINKER_FLAGS "-Wl,-as-needed")
+# set(CMAKE_EXE_LINKER_FLAGS "-Wl,-as-needed")
 
 project(cuda_lib VERSION 1.0 LANGUAGES CXX CUDA)
 
@@ -23,7 +23,7 @@ set(SOURCES
   cuda_data.cu
 )
     
-add_library(${PROJECT_NAME} SHARED ${SOURCES})
+add_library(${PROJECT_NAME} STATIC ${SOURCES})
 target_include_directories(${PROJECT_NAME} 
                             PUBLIC 
                               $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>
