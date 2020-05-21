@@ -327,6 +327,95 @@ void ImageProducer::consume(ImageBox box)
 }
 
 
+/**
+ * \fn  constructor PostImageConsumer::PostImageConsumer
+ *
+ * @param  buff_size : size_t 
+ * \brief <description goes here>
+ */
+PostImageConsumer::PostImageConsumer(size_t buff_size /*= DEFAULT_IMAGE_SIZE*/)
+: _buff_size(buff_size)
+, _thread()
+, _mutex()
+, _cv()
+, _terminate_flag(false)
+, _image_buf()
+{
+  _thread = std::thread([](PostImageConsumer* pic)
+  {
+    pic->loop();
+  }, this);
+}
+
+/**
+ * \fn  destructor PostImageConsumer::~PostImageConsumer
+ *
+ * \brief <description goes here>
+ */
+PostImageConsumer::~PostImageConsumer()
+{
+  _mutex.lock();
+  _terminate_flag = true;
+  _mutex.unlock();
+  
+  _cv.notify_all();
+  _thread.join();
+}
+
+/**
+ * \fn  PostImageConsumer::consume
+ *
+ * @param  box : ImageBox 
+ * \brief <description goes here>
+ */
+void PostImageConsumer::consume(ImageBox box)
+{
+  std::unique_lock<std::mutex> lk(_mutex);
+  if (_image_buf.size() >= _buff_size)
+    return;
+
+  _image_buf.push_back(box);
+  lk.unlock();
+
+  _cv.notify_all();
+}
+
+/**
+ * \fn  PostImageConsumer::loop
+ *
+ * \brief <description goes here>
+ */
+void PostImageConsumer::loop()
+{
+  _mutex.lock();
+  bool terminate = _terminate_flag;
+  _mutex.unlock();
+
+  while (!terminate)
+  {
+    ImageBox box;
+    std::unique_lock<std::mutex> lk(_mutex);
+    if (!_image_buf.empty())
+    {
+      box = _image_buf.front();
+      _image_buf.pop_front();
+    }
+    else
+      _cv.wait(lk);
+
+    terminate = _terminate_flag;
+    lk.unlock(); 
+
+    if (terminate)
+      break;
+
+    if (!box.empty())
+      post_consume(box);
+  }
+}
+
+
+
 } /* namespace image */
 } /* namespace jupiter */
 } /* namespace brt */

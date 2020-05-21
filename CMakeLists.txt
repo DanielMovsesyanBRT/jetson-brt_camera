@@ -27,6 +27,7 @@ add_subdirectory(script)
 add_subdirectory(brt_common)
 add_subdirectory(cuda_lib)
 add_subdirectory(fltk_interface)
+add_subdirectory(encoder)
 
 #
 # ---------- Define Project
@@ -43,9 +44,9 @@ find_library(LIBZ
         NAMES z
         PATHS "png/lib")        
 
-find_library(VCE
-        NAMES video_cuda_enc
-        PATHS libs)
+# find_library(VCE
+#         NAMES video_cuda_enc
+#         PATHS libs)
 
 
 set(SOURCES 
@@ -57,6 +58,9 @@ set(SOURCES
 
   source/image/isp_manager.cpp
   source/image/isp.cpp
+  source/image/encoder.cpp
+  source/image/image_net.cpp
+  source/image/image_net_interface.cpp
   
   source/window/camera_window.cpp
   source/window/window.cpp
@@ -80,7 +84,7 @@ target_include_directories(${PROJECT_NAME}
                               "png/include"
                               ${X11_X11_INCLUDE_PATH})
                               
-target_link_libraries(${PROJECT_NAME} PUBLIC script cuda_lib pthread brt_common  ${PNG} ${LIBZ} dl) # ${VCE})
+target_link_libraries(${PROJECT_NAME} PUBLIC script cuda_lib pthread brt_common video_cuda_enc ${PNG} ${LIBZ} dl) # ${VCE})
 target_compile_definitions(${PROJECT_NAME} PUBLIC HARDWARE)
 
 

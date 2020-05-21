@@ -47,10 +47,8 @@ endif()
 
 set(CMAKE_CUDA_HOST_COMPILER ${CMAKE_CXX_COMPILER})
 
-# set(CMAKE_EXE_LINKER_FLAGS " -L${SYSROOT}/lib -Wl,--allow-shlib-undefined -Wl,-as-needed")
-# set(CMAKE_SHARED_LINKER_FLAGS " -L${SYSROOT}/lib -Wl,--allow-shlib-undefined -Wl,-as-needed")
-set(CMAKE_EXE_LINKER_FLAGS " -L${SYSROOT}/lib")
-set(CMAKE_SHARED_LINKER_FLAGS " -L${SYSROOT}/lib")
+set(CMAKE_EXE_LINKER_FLAGS " -L${SYSROOT}/lib -Wl,--allow-shlib-undefined -Wl,-as-needed")
+set(CMAKE_SHARED_LINKER_FLAGS " -L${SYSROOT}/lib -Wl,--allow-shlib-undefined -Wl,-as-needed")
 
 
 if(NOT DEFINED CUDA_TOOLKIT_ROOT_DIR)

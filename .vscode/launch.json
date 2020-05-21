@@ -14,7 +14,7 @@
       "stopAtEntry": true,
       "cwd": "${workspaceFolder}",
       "externalConsole": true,
-      "logging" :{"engineLogging": true, "exceptions": true, "programOutput": true} ,
+      "logging" :{ "exceptions": true, "programOutput": true, "moduleLoad": true} ,
       // "logging": {"engineLogging": true, "exceptions": true, "moduleLoad": true, "programOutput": true, "trace": true, "traceResponse": true  },
       "MIMode": "gdb",
       "miDebuggerPath": "/home/daniel/Tools/aarch64-gcc-7.4.0/bin/aarch64-unknown-linux-gnu-gdb",

@@ -1,6 +1,18 @@
 {
   "ros.distro": "dashing",
   "C_Cpp.default.configurationProvider": "go2sh.cmake-integration",
+  "C_Cpp.default.includePath": [
+      "brt_common", 
+      "brt_common/image", 
+      "brt_common/private", 
+      "cuda_lib",
+      "fltk_interface",
+      "script",
+      "source",
+      "source/device",
+      "source/image",
+      "source/window",
+      ],
   "files.associations": {
     "atomic": "cpp",
     "optional": "cpp",
@@ -12,6 +24,36 @@
     "string_view": "cpp",
     "deque": "cpp",
     "vector": "cpp",
-    "*.cu": "cpp"
-  }
+    "*.cu": "cpp",
+    "variant": "cpp",
+    "*.ipp": "cpp",
+    "memory": "cpp",
+    "initializer_list": "cpp",
+    "type_traits": "cpp",
+    "tuple": "cpp",
+    "array": "cpp",
+    "stdexcept": "cpp",
+    "exception": "cpp",
+    "string": "cpp",
+    "thread": "cpp",
+    "cstdlib": "cpp",
+    "fstream": "cpp",
+    "bitset": "cpp",
+    "list": "cpp",
+    "iterator": "cpp",
+    "functional": "cpp",
+    "istream": "cpp",
+    "ostream": "cpp",
+    "valarray": "cpp",
+    "iosfwd": "cpp",
+    "sstream": "cpp",
+    "condition_variable": "cpp"
+  },
+  "C_Cpp.default.systemIncludePath": [
+    "/home/daniel/Tools/aarch64-gcc-7.4.0/aarch64-unknown-linux-gnu/sysroot/usr/include",
+    "/home/daniel/Tools/aarch64-gcc-7.4.0/aarch64-unknown-linux-gnu/sysroot/usr/include/linux",
+    "/home/daniel/Tools/aarch64-gcc-8.3.0/aarch64-unknown-linux-gnu/include/c++/8.3.0",
+    "/home/daniel/Tools/aarch64-gcc-8.3.0/lib/gcc/aarch64-unknown-linux-gnu/8.3.0/include",
+    "/home/daniel/Tools/aarch64-gcc-8.3.0/aarch64-unknown-linux-gnu/include/c++/8.3.0/aarch64-unknown-linux-gnu"
+    ],
 }

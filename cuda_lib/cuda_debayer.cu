@@ -51,6 +51,7 @@ struct LAB
   }
 };
 
+
 /**
  * \class Debayer_impl
  *

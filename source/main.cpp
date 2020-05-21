@@ -15,16 +15,19 @@
 #include <fstream>
 #include <string>
 #include <atomic>
+#include <sstream>
 
 #include <stdint.h>
 
 #include "fltk_interface_exports.hpp"
-#include "device/camera.hpp"
-#include "device/deserializer.hpp"
-#include "device/device_manager.hpp"
+#include "camera.hpp"
+#include "deserializer.hpp"
+#include "device_manager.hpp"
 #include "utils.hpp"
 #include "png.h"
 #include "console_cli.hpp"
+#include "encoder.hpp"
+#include "image_net_interface.hpp"
 
 
 using namespace brt::jupiter;
@@ -373,7 +376,7 @@ private:
  */
 int main(int argc, char **argv)
 {
-  std::string _cur_file = argv[0];
+  std::string _cur_file = ((argv != nullptr) && (argv[0] != nullptr)) ? argv[0] : "";
   size_t idx = _cur_file.rfind('/');
   if (idx != std::string::npos)
   {
@@ -440,6 +443,9 @@ int main(int argc, char **argv)
   getcwd(cwd, sizeof(cwd));
 
   // Check Displays
+  ImageNetInterface net;
+  //Encoder ecd;
+  bool flag = false;
 
   window::CameraWindow *wnd = nullptr;
   std::vector<uint16_t> cam_des;
@@ -481,7 +487,18 @@ int main(int argc, char **argv)
 
           //cam->register_consumer(&camera[id],Metadata().set("<id>", index));
           if (cam->debayer_producer() != nullptr)
+          {
             cam->debayer_producer()->register_consumer(&camera_png[id],Metadata().set("<id>", index));
+            std::stringstream ss;
+            ss << "device_" << device << "_cam_" << index;
+            
+            net.add_producer(cam->debayer_producer(),ss.str().c_str());
+            // if (!flag)
+            // {
+            //   cam->debayer_producer()->register_consumer(&ecd);
+            //   flag = true;
+            // }
+          }
 
           cam->register_consumer(&camera_raw[id],Metadata().set("<id>", index));
 

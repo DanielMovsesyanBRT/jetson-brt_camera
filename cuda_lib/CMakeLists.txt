@@ -20,6 +20,7 @@ set(SOURCES
   cuda_lib.cu
   cuda_debayer.cu
   cuda_2d_data.cu
+  cuda_color_convert.cu
   cuda_data.cu
 )
     

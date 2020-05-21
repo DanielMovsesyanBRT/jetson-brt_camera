@@ -13,6 +13,8 @@
 #include <mutex>
 #include <vector>
 #include <deque>
+#include <thread>
+#include <condition_variable>
 
 #include "metadata.hpp"
 #include "utils.hpp"
@@ -240,6 +242,37 @@ public:
   virtual ~ImageConsumer() {}
 
   virtual void                    consume(ImageBox) = 0;
+};
+
+
+#define DEFAULT_IMAGE_SIZE                  (10)
+/**
+ * \class PostImageConsumer
+ *
+ * Inherited from :
+ *             ImageConsumer 
+ * \brief <description goes here>
+ */
+class PostImageConsumer : public ImageConsumer
+{
+public:
+  PostImageConsumer(size_t buff_size = DEFAULT_IMAGE_SIZE);
+  virtual ~PostImageConsumer();
+
+  virtual void                    consume(ImageBox);
+  virtual void                    post_consume(ImageBox) = 0;
+
+private:
+          void                    loop();
+
+private:
+  size_t                          _buff_size;
+  std::thread                     _thread;
+  std::mutex                      _mutex;
+  std::condition_variable         _cv;
+  bool                            _terminate_flag;
+  
+  std::deque<ImageBox>            _image_buf;
 };
 
 } /* namespace image */
